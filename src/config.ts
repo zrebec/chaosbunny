@@ -8,11 +8,36 @@ export const CANVAS_SCALE = 4
 export const LANGUAGE_CODE = 'sk'
 
 /**
+ * Floors to climb before the escape hatch — the room's goal, shown in the HUD.
+ * 11 matches the hand-built vertical slice (one platform ≈ one floor). The full
+ * game targets 50 across ~5 escalating cave strata; bump this when the world
+ * goes procedural.
+ */
+export const FLOOR_TARGET = 11 as const
+
+/**
  * Lighting renderer:
  *  - 'zx'     — authentic 8×8 cell light levels + ordered dither (default).
  *  - 'smooth' — shelved modern soft radial gradients (flip here to compare).
  */
 export const LIGHTING_MODE = 'zx' as const
+
+/**
+ * Darkest the cave ever gets — applied at the very **bottom** (deepest) of the
+ * world. A fraction of full black (0 = no darkness, 1 = pure black outside every
+ * light). Below 1 the unlit cave stays a *dim stipple* — silhouettes remain
+ * faintly visible instead of vanishing. Dial up toward 1.0 for a darker deep.
+ */
+export const MAX_DARKNESS = 0.9 as const
+
+/**
+ * Depth-based lighting: how dark it stays near the **surface** (the moon), as a
+ * fraction of {@link MAX_DARKNESS}. The baseline darkness lerps from
+ * `MAX_DARKNESS × SURFACE_LIGHT_FACTOR` at the top to `MAX_DARKNESS` at the
+ * bottom — so the deep cave keeps its murk while the climb brightens toward the
+ * moonlit exit. 0.12 ≈ "the surface is basically lit". 1.0 disables the gradient.
+ */
+export const SURFACE_LIGHT_FACTOR = 0.12 as const
 
 /**
  * Platformer physics in pixel/millisecond units (frame-rate independent —
@@ -43,7 +68,21 @@ export const physics = {
   coyoteMs: 100,
   /** Window before landing during which a jump press is remembered (ms). */
   jumpBufferMs: 120,
+  /** Ladder climb speed (px/ms) — a touch slower than running. */
+  climbSpeed: 0.06,
 } as const
+
+/**
+ * Jump envelope, derived once from {@link physics} — the single source of truth
+ * the world generator measures platform spacing against. Retune the jump or
+ * speed and the reachable spacing follows automatically; no magic numbers.
+ *
+ *  - `JUMP_APEX_PX`  — peak rise of a full jump (`v² / 2g`).
+ *  - `JUMP_REACH_PX` — horizontal distance covered on the way up at full speed
+ *    (conservative: rise time × max speed).
+ */
+export const JUMP_APEX_PX = (physics.jumpVelocity ** 2) / (2 * physics.gravity)
+export const JUMP_REACH_PX = physics.maxSpeed * (Math.abs(physics.jumpVelocity) / physics.gravity)
 
 /** Ink colour for the (monochrome-first) rabbit — bright ZX blue/cyan. */
 export const RABBIT_INK = '#00FFFF' as const

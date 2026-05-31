@@ -6,7 +6,10 @@
  *    32×24 grid of 8×8 cells; each cell gets a light level 0–3 from the nearest
  *    light, and darkness is drawn as an **ordered (Bayer) dither** of pure black
  *    pixels. No alpha gradients — hard, blocky light pools with a stipple edge,
- *    the look the brief asked for ("ZX-style palette and dithering").
+ *    the look the brief asked for ("ZX-style palette and dithering"). The
+ *    ambient darkness is also **depth-scaled**: brightest near the surface (the
+ *    moon), darkest at the cave floor — see `camY`/`worldH` and config's
+ *    `MAX_DARKNESS` / `SURFACE_LIGHT_FACTOR`.
  *
  *  - **'smooth' (Variant B, shelved)** — modern soft radial gradients punched
  *    out of a translucent black layer. Pretty but not period-accurate. Kept so
@@ -14,7 +17,7 @@
  *
  * Lights are given in *screen* pixels (camera already applied).
  */
-import { GAME_WIDTH, GAME_HEIGHT } from '../config.js'
+import { GAME_WIDTH, GAME_HEIGHT, MAX_DARKNESS, SURFACE_LIGHT_FACTOR } from '../config.js'
 
 export interface Light {
   x: number
@@ -59,16 +62,27 @@ function cellLevel(px: number, py: number, lights: readonly Light[]): number {
   return Math.min(3, Math.floor(bright * 4))
 }
 
-export function renderDarknessZX(ctx: CanvasRenderingContext2D, lights: readonly Light[]): void {
+export function renderDarknessZX(
+  ctx: CanvasRenderingContext2D,
+  lights: readonly Light[],
+  camY: number,
+  worldH: number,
+): void {
   if (!dark || !dctx || !zxImg) return
   const data = zxImg.data
   const cols = GAME_WIDTH >> 3
   const rows = GAME_HEIGHT >> 3
 
   for (let cy = 0; cy < rows; cy++) {
+    // Depth-based ambient darkness: brightest near the surface (worldY → 0),
+    // darkest at the cave floor (worldY → worldH). Per-row, so it's cheap.
+    const worldY = camY + cy * 8 + 4
+    const depth = Math.max(0, Math.min(1, worldY / worldH))
+    const cellMaxDark = MAX_DARKNESS * (SURFACE_LIGHT_FACTOR + (1 - SURFACE_LIGHT_FACTOR) * depth)
     for (let cx = 0; cx < cols; cx++) {
       const level = cellLevel(cx * 8 + 4, cy * 8 + 4, lights)
-      const a = (3 - level) / 3 // darkness amount: level3→0, level0→1
+      // darkness amount: level3→0 (lit), level0→cellMaxDark (depth-scaled dim)
+      const a = ((3 - level) / 3) * cellMaxDark
       for (let y = 0; y < 8; y++) {
         const py = cy * 8 + y
         for (let x = 0; x < 8; x++) {
@@ -119,7 +133,9 @@ export function renderDarkness(
   ctx: CanvasRenderingContext2D,
   lights: readonly Light[],
   mode: LightingMode,
+  camY: number,
+  worldH: number,
 ): void {
-  if (mode === 'zx') renderDarknessZX(ctx, lights)
+  if (mode === 'zx') renderDarknessZX(ctx, lights, camY, worldH)
   else renderDarknessSmooth(ctx, lights)
 }

@@ -14,11 +14,13 @@
 import {
   drawBitmap, mirrorBitmap, bitmapPixelMask, resolveRectX, resolveRectY, isHeld, CELL,
   type Rect, type Bitmap, type PixelMask, type TileMap,
+  C,
 } from 'zx-kit'
-import { atlas, type SpriteAsset } from '../art/atlas.js'
-import { physics, RABBIT_INK } from '../config.js'
+import { atlas, type RabbitAsset } from '../art/atlas.js'
+import { RABBIT_BOX } from '../rabbit.js'
+import { physics } from '../config.js'
 
-export type PlayerState = 'idle' | 'walk' | 'jump' | 'crouch' | 'shoot'
+export type PlayerState = 'idle' | 'walk' | 'jump' | 'crouch' | 'shoot' | 'climb'
 
 export interface Player {
   x: number
@@ -34,6 +36,8 @@ export interface Player {
   jumpBuffer: number
   jumpHeld: boolean
   fireHeld: boolean
+  /** True while gripping a ladder (gravity suspended, vertical control). */
+  onLadder: boolean
   /** Hit points. */
   hp: number
   /** Invulnerability time remaining after a hit (ms) — also drives the blink. */
@@ -54,11 +58,10 @@ export interface PlayerEvents {
 
 const SPRITE_W = atlas.rabbitSideIdleA.width
 
-// Hand-tuned body collision box (relative to the 24×32 sprite origin). It skips
-// the ears and the top of the head (rows 0–7) so the rabbit is ~22px tall for
-// collision — short enough to slip between platforms a bit more than its full
-// sprite height — and narrower than the art for a forgiving fit.
-const BOX: Rect = { x: 2, y: 8, w: 12, h: 22 }
+// Body collision box — derived from the rabbit's actual pixels in `rabbit.ts`
+// (skips the ears, forgiving side inset). Scales with the sprite size, so a
+// redraw needs no change here.
+const BOX: Rect = RABBIT_BOX
 
 /** Player collision height in pixels — used by spawn placement. */
 export const PLAYER_HEIGHT = BOX.y + BOX.h
@@ -77,12 +80,24 @@ function solidBelow(b: Rect, map: TileMap): boolean {
   return false
 }
 
+/** Column of a ladder tile overlapping the body box, or -1 if none in reach. */
+function ladderColAt(b: Rect, map: TileMap): number {
+  const x0 = Math.floor(b.x / CELL)
+  const x1 = Math.floor((b.x + b.w - 1) / CELL)
+  const y0 = Math.floor(b.y / CELL)
+  const y1 = Math.floor((b.y + b.h - 1) / CELL)
+  for (let tx = x0; tx <= x1; tx++)
+    for (let ty = y0; ty <= y1; ty++)
+      if (map.getTile(tx, ty)?.id === 'ladder') return tx
+  return -1
+}
+
 export function createPlayer(spawnX: number, spawnY: number): Player {
   return {
     x: spawnX, y: spawnY, vx: 0, vy: 0,
     facing: 1, onGround: false, state: 'idle',
     animTime: 0, shootLock: 0, coyote: 0, jumpBuffer: 0,
-    jumpHeld: false, fireHeld: false,
+    jumpHeld: false, fireHeld: false, onLadder: false,
     hp: 3, invuln: 0, knockback: 0,
     homeX: spawnX, homeY: spawnY,
   }
@@ -113,11 +128,36 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
   const left = isHeld('ArrowLeft') || isHeld('a') || isHeld('A')
   const right = isHeld('ArrowRight') || isHeld('d') || isHeld('D')
   const down = isHeld('ArrowDown') || isHeld('s') || isHeld('S')
-  const jump = isHeld(' ') || isHeld('ArrowUp') || isHeld('w') || isHeld('W')
+  const climbUp = isHeld('ArrowUp')                 // ladders use Up/Down…
+  const jump = isHeld(' ') || isHeld('w') || isHeld('W')  // …jump is Space/W
   const fire = isHeld('z') || isHeld('Z') || isHeld('Control')
 
   const jumpPressed = jump && !p.jumpHeld
   const firePressed = fire && !p.fireHeld
+
+  // ── Ladders: a second route where a jump can't go (stacked / too-high platforms).
+  // Grab with Up; climb with Up/Down; step off with Left/Right or hop off with jump.
+  const ladderCol = ladderColAt(box(p), map)
+  if (!p.onLadder && ladderCol >= 0 && climbUp) p.onLadder = true
+  if (p.onLadder) {
+    if (ladderCol < 0 || left || right || jumpPressed) {
+      p.onLadder = false
+      if (jumpPressed) { p.vy = physics.jumpVelocity; p.onGround = false; events.jumped = true }
+      // fall through to normal movement this frame
+    } else {
+      p.x = ladderCol * CELL + (CELL - SPRITE_W) / 2 // centre the sprite on the rungs
+      p.vx = 0
+      p.vy = 0
+      if (climbUp) p.y -= physics.climbSpeed * dt
+      else if (down) p.y += physics.climbSpeed * dt
+      p.state = 'climb'
+      p.animTime += dt
+      p.jumpHeld = jump
+      p.fireHeld = fire
+      return events
+    }
+  }
+
   const crouching = down && p.onGround
 
   // ── Horizontal: accelerate on the ground, preserve momentum in the air ──
@@ -227,28 +267,33 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
   return events
 }
 
-function frameAsset(p: Player): SpriteAsset {
+function frameAsset(p: Player): RabbitAsset {
   switch (p.state) {
     case 'jump': return atlas.rabbitJump
     case 'crouch': return atlas.rabbitCrouch
     case 'shoot': return atlas.rabbitShoot
-    case 'walk': return Math.floor(p.animTime / 110) % 2 === 0 ? atlas.rabbitWalkA : atlas.rabbitWalkB
+    case 'climb': return atlas.rabbitSideIdleA // dedicated climb pose: later
+    case 'walk': {
+      // 3-beat gait: stride → passing → stride → passing, ~130ms/beat.
+      const cycle = [atlas.rabbitWalkA, atlas.rabbitWalkB, atlas.rabbitWalkC, atlas.rabbitWalkB]
+      return cycle[Math.floor(p.animTime / 130) % cycle.length]!
+    }
     case 'idle':
     default: return Math.floor(p.animTime / 600) % 2 === 0 ? atlas.rabbitSideIdleA : atlas.rabbitSideIdleB
   }
 }
 
-const flipCache = new Map<SpriteAsset, Bitmap>()
-function flipped(a: SpriteAsset): Bitmap {
-  let f = flipCache.get(a)
-  if (!f) { f = mirrorBitmap(a.bitmap); flipCache.set(a, f) }
+const flipCache = new Map<Bitmap, Bitmap>()
+function flippedBitmap(bitmap: Bitmap): Bitmap {
+  let f = flipCache.get(bitmap)
+  if (!f) { f = mirrorBitmap(bitmap); flipCache.set(bitmap, f) }
   return f
 }
 
-const maskFlipCache = new Map<SpriteAsset, PixelMask>()
-function flippedMask(a: SpriteAsset): PixelMask {
+const maskFlipCache = new Map<RabbitAsset, PixelMask>()
+function flippedMask(a: RabbitAsset): PixelMask {
   let m = maskFlipCache.get(a)
-  if (!m) { m = bitmapPixelMask(flipped(a)); maskFlipCache.set(a, m) }
+  if (!m) { m = bitmapPixelMask(flippedBitmap(a.bitmap)); maskFlipCache.set(a, m) }
   return m
 }
 
@@ -262,8 +307,14 @@ export function renderPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: num
   // Blink while invulnerable.
   if (p.invuln > 0 && Math.floor(p.invuln / 70) % 2 === 1) return
   const asset = frameAsset(p)
-  const bmp = p.facing < 0 ? flipped(asset) : asset.bitmap
-  drawBitmap(ctx, bmp, Math.round(p.x - camX), Math.round(p.y - camY), RABBIT_INK)
+  const x = Math.round(p.x - camX)
+  const y = Math.round(p.y - camY)
+  const layer = (bitmap: Bitmap): Bitmap => p.facing < 0 ? flippedBitmap(bitmap) : bitmap
+
+  drawBitmap(ctx, layer(asset.layers.body), x, y, C.B_CYAN, undefined, true)
+  drawBitmap(ctx, layer(asset.layers.belly), x, y, C.B_WHITE, undefined, true)
+  drawBitmap(ctx, layer(asset.layers.accent), x, y, C.B_MAGENTA, undefined, true)
+  drawBitmap(ctx, layer(asset.layers.eye), x, y, C.BLACK, undefined, true)
 }
 
 /** Current collision box in world pixels — for the debug overlay. */

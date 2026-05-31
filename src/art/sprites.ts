@@ -1,51 +1,44 @@
 /**
- * Source pixel art for the chaosBunny 0.1.0 vertical slice.
+ * Source pixel art for the chaosBunny vertical slice.
  *
- * The rabbit side poses are 24×32 (taller, big ears, long legs) and composed
- * from one BASE silhouette via {@link pose} — every variant copies BASE and
- * overrides only the ear/leg/arm rows, so widths can never drift. Monochrome
- * for now (the mask collapses every non-dot symbol to a pixel); the `.` eye gap
- * reads as an eye against the dark cave.
+ * The rabbit side poses are 16×24: long ears, a clear right-facing profile,
+ * white cheek/belly, pink ear/skirt accents and a black eye. They are composed
+ * from one BASE silhouette via {@link pose}; every variant copies BASE and
+ * overrides only the rows that change, so all poses keep one size.
  *
- * Front poses, carrot, enemies and tiles are unchanged from the design docs.
+ * Walk is a 3-beat cycle (A → B → C) for a more deliberate step. Front poses,
+ * carrot, enemies and tiles are unchanged from the design docs.
  */
 
-// ─── Player — 24×32 side poses (composed) ──────────────────────────────────────
+// ─── Player — 16×24 side poses (composed) ──────────────────────────────────────
 
-// BASE = idle, facing right. Ears rows 0–4, head 5–13, body 14–23, legs 24–30.
+// BASE = idle, facing right. B=body, W=white cheek/belly, P=accent/skirt, K=eye.
+// Ears rows 0–6, head 7–12, body 13–18, legs 19–23.
 const RABBIT_BASE: readonly string[] = [
-  '....XX..XX..............', // 0  ears
-  '....XX..XX..............', // 1
-  '....XX..XX..............', // 2
-  '....XX..XX..............', // 3
-  '....XXXXXX..............', // 4  ears meet
-  '...XXXXXXXX.............', // 5  head
-  '..XXXXXXXXXX............', // 6
-  '..XXXXXXXXXX............', // 7
-  '..XXXX..XXXX............', // 8  eye gap
-  '..XXXXXXXXXX............', // 9
-  '..XXXXXXXXXX............', // 10
-  '...XXXXXXXX.............', // 11 jaw
-  '....XXXXXX..............', // 12 neck
-  '...XXXXXXXX.............', // 13
-  '..XXXXXXXXXX............', // 14 body
-  '.XXXXXXXXXXXX...........', // 15
-  '.XXXXXXXXXXXX...........', // 16
-  'XXXXXXXXXXXXXX..........', // 17 widest (tail bump at left)
-  'XXXXXXXXXXXXXX..........', // 18
-  '.XXXXXXXXXXXXX..........', // 19
-  '.XXXXXXXXXXXX...........', // 20
-  '..XXXXXXXXXX............', // 21
-  '..XXXXXXXXXX............', // 22
-  '..XXXXXXXXXX............', // 23
-  '..XXX...XXXX............', // 24 legs
-  '..XXX...XXXX............', // 25
-  '.XXXX...XXXX............', // 26
-  '.XXX....XXX.............', // 27
-  '.XXXX...XXXX............', // 28
-  'XXXXX...XXXXX...........', // 29 feet
-  'XXXX.....XXX............', // 30
-  '........................', // 31
+  '...BBB.BBB......', // 0  long ears
+  '...BPB.BPB......', // 1  inner ear (pink)
+  '...BPB.BPB......', // 2
+  '...BPB.BPB......', // 3
+  '...BPB.BPB......', // 4
+  '...BBB.BBB......', // 5  ear base
+  '...BBBBBBB......', // 6  ears → head
+  '..BBBBBBBBB.....', // 7  head top
+  '..BBWWBBKBB.....', // 8  cheek (W) + eye (K), facing right
+  '..BBBBBBBBBB....', // 9  snout
+  '..BBBBBBBBBBB...', // 10 snout tip (reaches right)
+  '...BBBBBBBB.....', // 11 under-snout
+  '....BBBBB.......', // 12 neck
+  '...BBBBBBB......', // 13 shoulders
+  '..BBBWWWWBBB....', // 14 belly (white)
+  '..BBWWWWWWBB....', // 15
+  '..BBPPPPPPBB....', // 16 skirt accent (pink)
+  '..BBBPPPPBBB....', // 17
+  '...BBBBBBBB.....', // 18 hips
+  '...BBB.BBB......', // 19 legs
+  '..BBB...BBB.....', // 20
+  '..BB.....BB.....', // 21
+  '.BBB.....BBB....', // 22 feet
+  '.BB.......BB....', // 23
 ] as const
 
 function pose(edits: ReadonlyArray<readonly [number, string]>): string[] {
@@ -56,84 +49,81 @@ function pose(edits: ReadonlyArray<readonly [number, string]>): string[] {
 
 export const RABBIT_SIDE_IDLE_A = [...RABBIT_BASE]
 
-// Gentle blink — no position change, so the idle never "trembles".
+// Gentle blink — eye (K) closes, no position change so the idle never "trembles".
 export const RABBIT_SIDE_IDLE_B = pose([
-  [8, '..XXXXXXXXXX............'],
+  [8, '..BBWWBBBBB.....'],
 ])
 
+// ── 3-beat walk: A (right stride) → B (passing) → C (left stride) ──
 export const RABBIT_WALK_A = pose([
-  [24, '..XX....XXXXX..........'],
-  [25, '..XX....XXXXX..........'],
-  [26, '.XXX.....XXXX..........'],
-  [27, 'XXX......XXX...........'],
-  [28, 'XXX.......XXX..........'],
-  [29, 'XX........XXXX.........'],
-  [30, '..........XXX..........'],
+  [19, '...BBB.BBB......'],
+  [20, '..BBB...BBB.....'],
+  [21, '.BBB......BB....'],
+  [22, 'BBB.......BBB...'],
+  [23, 'BB.........BB...'],
 ])
 
 export const RABBIT_WALK_B = pose([
-  [24, '..XXXXX...XX...........'],
-  [25, '..XXXXX...XX...........'],
-  [26, '..XXXX....XXX..........'],
-  [27, '...XXX....XXX..........'],
-  [28, '..XXX......XXX.........'],
-  [29, '..XXX.......XX.........'],
-  [30, '..XXX...................'],
+  [19, '...BBB.BBB......'],
+  [20, '...BBBBBB.......'],
+  [21, '...BBBBBB.......'],
+  [22, '..BBB..BB.......'],
+  [23, '..BB...BB.......'],
+])
+
+export const RABBIT_WALK_C = pose([
+  [19, '...BBB.BBB......'],
+  [20, '..BBB...BBB.....'],
+  [21, '...BB......BBB..'],
+  [22, '..BBB.......BBB.'],
+  [23, '..BB.........BB.'],
 ])
 
 export const RABBIT_JUMP = pose([
-  [0, '...XX..XX...............'],
-  [1, '...XX..XX...............'],
-  [2, '...XX..XX...............'],
-  [3, '...XXXXXX...............'],
-  [24, '.XXX.....XXX...........'],
-  [25, '.XXX.....XXX...........'],
-  [26, 'XXX......XXX...........'],
-  [27, 'XXX......XXX...........'],
-  [28, 'XX.......XX............'],
-  [29, 'XX.......XX............'],
-  [30, '.X........X............'],
+  [0, '...BB..BB.......'],
+  [1, '...BB..BB.......'],
+  [2, '...BP..PB.......'],
+  [3, '...BP..PB.......'],
+  [4, '....BPPB.......'],
+  [19, '...BB...BB......'],
+  [20, '..BBB...BBB.....'],
+  [21, '..BB.....BB.....'],
+  [22, '...............'],
+  [23, '...............'],
 ])
 
 export const RABBIT_SHOOT = pose([
-  [14, '..XXXXXXXXXX.XXX........'],
-  [15, '.XXXXXXXXXXXX.XXX.......'],
+  [13, '...BBBBBBBBB....'],
+  [14, '..BBBWWWWBB.BB..'],
 ])
 
-// Crouch — its own compressed silhouette (ears flat, body low, legs splayed).
+// Crouch — its own compressed silhouette (ears flat, body low, feet on the
+// ground line at rows 21–23 so the rabbit doesn't float when crouching).
 export const RABBIT_CROUCH = [
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '..XX............XX......',
-  '..XXX..........XXX......',
-  '...XXXXXXXXXXXXXX.......',
-  '..XXXXXXXXXXXXXXXX......',
-  '.XXXXX..XXXX..XXXXX.....',
-  '.XXXXXXXXXXXXXXXXXX.....',
-  '.XXXXXXXXXXXXXXXXXX.....',
-  '.XXXXXXXXXXXXXXXXXX.....',
-  '..XXXXXXXXXXXXXXXX......',
-  '..XXXXXXXXXXXXXXXX......',
-  '...XXXX......XXXX.......',
-  '..XXXX........XXXX......',
-  '..XXX..........XXX......',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
+  '...............', // 0
+  '...............', // 1
+  '...............', // 2
+  '...............', // 3
+  '...............', // 4
+  '...............', // 5
+  '...............', // 6
+  '...............', // 7
+  '...............', // 8
+  '...............', // 9
+  '..BB.......BB..', // 10 flattened ears
+  '..BBBBBBBBBBB..', // 11 back
+  '.BBWWBBKBBBBBB.', // 12 cheek + eye
+  '.BBWWBBBBBBBBB.', // 13
+  '.BBBBBBBBBBBBB.', // 14
+  '.BBPPPPPPPPPBB.', // 15 skirt
+  '..BBPPPPPPPBB..', // 16
+  '..BBBBBBBBBBB..', // 17
+  '..BBB.....BBB..', // 18 legs
+  '.BBB.......BBB.', // 19
+  '.BB.........BB.', // 20
+  'BBB.........BBB', // 21 feet
+  'BB...........BB', // 22
+  'BB...........BB', // 23
 ] as const
 
 // ─── Front poses (title screen — unchanged, normalized to 32 wide by the atlas) ─
@@ -290,4 +280,16 @@ export const ONE_WAY_PLATFORM_TILE = [
   '........',
   '........',
   '........',
+] as const
+
+// Vine ladder — two rails + rungs, tiles vertically into a climbable run.
+export const LADDER_TILE = [
+  '.G....G.',
+  '.G....G.',
+  '.GGGGGG.',
+  '.G....G.',
+  '.G....G.',
+  '.GGGGGG.',
+  '.G....G.',
+  '.G....G.',
 ] as const

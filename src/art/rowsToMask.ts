@@ -51,3 +51,14 @@ export function rowsToMaskRows(rows: SpriteRows): string[] {
 export function toBitmapRows(rows: SpriteRows): string[] {
   return rowsToMaskRows(normalizeRows(rows))
 }
+
+/**
+ * Extracts one colour layer from multi-symbol source art. Any character in
+ * `symbols` becomes solid; everything else is transparent.
+ */
+export function toLayerRows(rows: SpriteRows, symbols: string): string[] {
+  const set = new Set(symbols)
+  return normalizeRows(rows).map((row) =>
+    [...row].map((ch) => set.has(ch) ? 'X' : '.').join(''),
+  )
+}

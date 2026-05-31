@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeRows, rowsToMaskRows, toBitmapRows } from '../src/art/rowsToMask.js'
+import { normalizeRows, rowsToMaskRows, toBitmapRows, toLayerRows } from '../src/art/rowsToMask.js'
 import { atlas, buildAsset } from '../src/art/atlas.js'
 import { RABBIT_FRONT_IDLE, CARROT_SHOT } from '../src/art/sprites.js'
 import { masksOverlap } from 'zx-kit'
@@ -40,6 +40,14 @@ describe('toBitmapRows', () => {
   })
 })
 
+// ── toLayerRows ───────────────────────────────────────────────────────────────
+
+describe('toLayerRows', () => {
+  it('extracts only the requested symbols into a byte-aligned bitmap layer', () => {
+    expect(toLayerRows(['BP.W'], 'BW')).toEqual(['X..X....'])
+  })
+})
+
 // ── atlas builds ──────────────────────────────────────────────────────────────
 
 describe('atlas', () => {
@@ -56,15 +64,27 @@ describe('atlas', () => {
     expect(atlas.rabbitFrontIdle.height).toBe(32)
   })
 
-  it('all rabbit side poses are exactly 24×32 (guards ragged composed rows)', () => {
+  it('all rabbit side poses share one size (guards ragged composed rows)', () => {
+    // No magic numbers — every pose must match the canonical idle pose, whatever
+    // size the art currently is, so a redraw can never leave a pose ragged.
     const sidePoses = [
       'rabbitSideIdleA', 'rabbitSideIdleB', 'rabbitWalkA', 'rabbitWalkB',
       'rabbitJump', 'rabbitCrouch', 'rabbitShoot',
     ] as const
+    const { width, height } = atlas.rabbitSideIdleA
     for (const key of sidePoses) {
-      expect(atlas[key].width, `${key} width`).toBe(24)
-      expect(atlas[key].height, `${key} height`).toBe(32)
+      expect(atlas[key].width, `${key} width`).toBe(width)
+      expect(atlas[key].height, `${key} height`).toBe(height)
     }
+  })
+
+  it('rabbit side poses carry separate render layers matching the union bitmap size', () => {
+    const rabbit = atlas.rabbitSideIdleA
+    for (const [name, layer] of Object.entries(rabbit.layers)) {
+      expect(layer.width, `${name} width`).toBe(rabbit.width)
+      expect(layer.height, `${name} height`).toBe(rabbit.height)
+    }
+    expect(rabbit.mask.totalPixels).toBeGreaterThan(0)
   })
 })
 
