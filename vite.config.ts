@@ -5,10 +5,12 @@ import { readFileSync } from 'fs'
 // node_modules at build time, injected so the game can show it (e.g. to confirm
 // GitHub Pages is running the new version). Not just what package.json asks for.
 const zxKitVersion = (JSON.parse(readFileSync('./node_modules/zx-kit/package.json', 'utf-8')) as { version: string }).version
+const appVersion = (JSON.parse(readFileSync('./package.json', 'utf-8')) as { version: string }).version
 
 export default defineConfig({
   base: './',
   define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
     'import.meta.env.VITE_ZX_KIT_VERSION': JSON.stringify(zxKitVersion),
   },
   build: {

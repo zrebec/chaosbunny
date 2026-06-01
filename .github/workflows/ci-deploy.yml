@@ -2,7 +2,7 @@ name: CI & Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +16,15 @@ concurrency:
 
 jobs:
   build:
+    # Deploy only on releasable commits (Conventional Commits): feat / fix / perf
+    # / breaking changes. Docs, refactor, chore, style, test, ci… do NOT deploy.
+    # A manual run (workflow_dispatch) always builds — an override.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.head_commit.message, 'feat') ||
+      startsWith(github.event.head_commit.message, 'fix') ||
+      startsWith(github.event.head_commit.message, 'perf') ||
+      contains(github.event.head_commit.message, 'BREAKING CHANGE')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

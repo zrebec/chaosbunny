@@ -248,9 +248,10 @@ function frame(now: number): void {
   const fpsInk = fps >= 55 ? C.B_GREEN : fps >= 30 ? C.B_YELLOW : C.B_RED
   drawText(ctx, fpsText, GAME_WIDTH - CELL - fpsText.length * CELL, bottomY, fpsInk, C.BLACK)
 
-  // Real running zx-kit version (injected from the installed package).
+  // Versions, bottom-left: game version / real running zx-kit version.
+  const appVer = import.meta.env.VITE_APP_VERSION ?? '?'
   const zxKit = import.meta.env.VITE_ZX_KIT_VERSION ?? '?'
-  drawText(ctx, `ZX-KIT ${zxKit}`, CELL, bottomY, C.BLUE, C.BLACK)
+  drawText(ctx, `v${appVer}/${zxKit}`, CELL, bottomY, C.BLUE, C.BLACK)
 
   if (debug) {
     const b = playerBox(player)

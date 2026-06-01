@@ -6,6 +6,8 @@ the project aims at [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-01
+
 ### Added
 - **Collect-to-escape goal** — gather every carrot to open the moon-lit exit,
   then reach it to win. The moon stays dim until the last carrot is collected.
