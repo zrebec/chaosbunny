@@ -16,11 +16,12 @@ export const LANGUAGE_CODE = 'sk'
 export const FLOOR_TARGET = 11 as const
 
 /**
- * Lighting renderer:
- *  - 'zx'     — authentic 8×8 cell light levels + ordered dither (default).
- *  - 'smooth' — shelved modern soft radial gradients (flip here to compare).
+ * Lighting starting mode (toggle on/off in-game with the `L` key):
+ *  - 'none' — start with the cave fully lit (current default; revisit with biomes).
+ *  - 'zx'   — dithered cave darkness (via zx-kit's `lighting` module).
+ * Darkness is OFF by default for now while we build levels; `L` turns it on.
  */
-export const LIGHTING_MODE = 'zx' as const
+export const LIGHTING_MODE: 'zx' | 'none' = 'none'
 
 /**
  * Darkest the cave ever gets — applied at the very **bottom** (deepest) of the

@@ -27,7 +27,7 @@ export const LEVEL: LevelData = {
     { x: 18, y: 31, w: 5 }, // 5  (turn left)
     { x: 11, y: 27, w: 5 }, // 6
     { x: 4, y: 23, w: 5 },  // 7
-    { x: 11, y: 19, w: 5 }, // 8  (turn right)
+    { x: 11, y: 19, w: 5, kind: 'crumble' }, // 8 crumbles — cross it before it goes!
     { x: 18, y: 15, w: 5 }, // 9
     { x: 24, y: 11, w: 4 }, // 10
     { x: 17, y: 7, w: 6 },  // 11 top ledge (under the exit)

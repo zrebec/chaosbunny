@@ -293,3 +293,27 @@ export const LADDER_TILE = [
   '.G....G.',
   '.G....G.',
 ] as const
+
+// Crumbling platform — a fragile, dotted look so you read "don't linger here".
+export const CRUMBLE_TILE = [
+  'X.X.X.X.',
+  '.X.X.X.X',
+  'X.X.X.X.',
+  '.X.X.X.X',
+  'X.X.X.X.',
+  '.X.X.X.X',
+  'X.X.X.X.',
+  '.X.X.X.X',
+] as const
+
+// Heart — HP indicator (raw 8×8 sprite, drawn via zx-kit `drawSprite`).
+export const HEART = new Uint8Array([
+  0x00, // ........
+  0x66, // .##..##.  two bumps
+  0xFE, // #######.
+  0xFE, // #######.
+  0x7C, // .#####..
+  0x38, // ..###...
+  0x10, // ...#....  tip
+  0x00, // ........
+])

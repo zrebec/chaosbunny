@@ -41,8 +41,9 @@ export interface LevelData {
   spawn: { x: number; y: number }
   /** Ceiling escape hole / win zone (tiles). */
   exit: { x: number; y: number; w: number; h: number }
-  /** Platforms: left-top corner `(x,y)` + width `w`, all in tiles. */
-  platforms: ReadonlyArray<{ x: number; y: number; w: number }>
+  /** Platforms: left-top corner `(x,y)` + width `w` (tiles). `kind:'crumble'`
+   *  collapses a moment after you stand on it, then respawns. */
+  platforms: ReadonlyArray<{ x: number; y: number; w: number; kind?: 'moss' | 'crumble' }>
   /** Ladders: column `x`, top row `y`, height `h` rows (climb mechanic: next step). */
   ladders: ReadonlyArray<{ x: number; y: number; h: number }>
   carrots: ReadonlyArray<{ x: number; y: number }>
@@ -288,6 +289,7 @@ export function buildRoomFromLevel(level: LevelData): Room {
 
   const stone = () => tile('caveStoneTile', C.WHITE, C.BLACK, true, 'stone')
   const moss = () => tile('mossPlatformTile', C.B_GREEN, C.BLACK, true, 'moss')
+  const crumble = () => tile('crumbleTile', C.B_YELLOW, C.BLACK, true, 'crumble')
 
   // Solid border: ceiling, floor, both walls.
   map.fillRect(0, 0, cols, 1, stone())
@@ -298,7 +300,7 @@ export function buildRoomFromLevel(level: LevelData): Room {
   // Carve the ceiling at the exit hole.
   for (let c = level.exit.x; c < level.exit.x + level.exit.w; c++) map.clearTile(c, 0)
 
-  for (const p of level.platforms) map.fillRect(p.x, p.y, p.w, 1, moss())
+  for (const p of level.platforms) map.fillRect(p.x, p.y, p.w, 1, p.kind === 'crumble' ? crumble() : moss())
 
   // Ladders — non-solid climbable tiles (id 'ladder'); the player detects them.
   // A 1-tile gap punched into a platform doesn't drop the rabbit (neighbours hold).

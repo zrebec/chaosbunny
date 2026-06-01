@@ -23,18 +23,21 @@ export function makeMoon(exit: Rect): Moon {
   return { x: exit.x + exit.w / 2, y: 4, r: 9 }
 }
 
-/** Big, soft moonlight — brightest at the hole, fading down the shaft. */
-export function moonLight(moon: Moon, camX: number, camY: number): Light {
-  return { x: moon.x - camX, y: moon.y - camY, radius: 150, intensity: 1 }
+/** Big, soft moonlight — brightest at the hole, fading down the shaft. Dim until
+ *  the exit is "open" (all carrots collected), then full. */
+export function moonLight(moon: Moon, camX: number, camY: number, intensity = 1): Light {
+  return { x: moon.x - camX, y: moon.y - camY, radius: 150, intensity }
 }
 
-/** Draws the moon disc + craters with a gentle breathing pulse. */
+/** Draws the moon disc + craters with a gentle breathing pulse. When the exit is
+ *  not yet `open`, the disc reads dim/cold — a clear "not yet" signal. */
 export function renderMoon(
   ctx: CanvasRenderingContext2D,
   moon: Moon,
   camX: number,
   camY: number,
   now: number,
+  open = true,
 ): void {
   const sx = moon.x - camX
   const sy = moon.y - camY
@@ -43,13 +46,13 @@ export function renderMoon(
 
   const r = moon.r * (1 + Math.sin(now / 900) * 0.06)
 
-  ctx.fillStyle = C.B_WHITE
+  ctx.fillStyle = open ? C.B_WHITE : C.BLUE // bright full moon vs dim "closed" disc
   ctx.beginPath()
   ctx.arc(sx, sy, r, 0, Math.PI * 2)
   ctx.fill()
 
   // A few pale craters give the disc a face instead of a blank dot.
-  ctx.fillStyle = C.B_CYAN
+  ctx.fillStyle = open ? C.B_CYAN : C.B_BLUE
   for (const [dx, dy, cr] of [[-3, -2, 1.6], [2, 3, 1.2], [4, -3, 1]] as const) {
     ctx.beginPath()
     ctx.arc(sx + dx, sy + dy, cr, 0, Math.PI * 2)

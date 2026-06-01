@@ -11,6 +11,7 @@ import {
   drawScanlines,
   drawText,
   drawTextCentered,
+  drawSprite,
   flashBorder,
   C,
   CELL,
@@ -30,9 +31,11 @@ import {
 import { GAME_WIDTH, GAME_HEIGHT, CANVAS_SCALE, LIGHTING_MODE, FLOOR_TARGET } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
 import { LEVEL } from './world/level.js'
+import { HEART } from './art/sprites.js'
 import { drawDungeonBackground, initBackground } from './world/background.js'
 import { initLighting, renderDarkness, type Light } from './world/lighting.js'
 import { makeMoon, moonLight, renderMoon } from './world/moon.js'
+import { makeCrumblers, updateCrumblers } from './world/crumble.js'
 import { makeTorches, emitTorchFire, torchLights, renderTorches } from './entities/torch.js'
 import {
   createPlayer, updatePlayer, renderPlayer, playerBox, playerMask, damagePlayer, muzzle,
@@ -51,6 +54,13 @@ canvas.style.height = ''
 initInput()
 window.addEventListener('keydown', ensureAudio)
 window.addEventListener('pointerdown', ensureAudio)
+
+// Lighting toggle (L): play with the cave lit or dark. Darkness rendering lives
+// in zx-kit now; `lightsOn` just gates whether we draw it this frame.
+let lightsOn = LIGHTING_MODE !== 'none'
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
+})
 
 let room = buildRoomFromLevel(LEVEL)
 const world = tileMapWorldSize(room.map)
@@ -74,10 +84,13 @@ let bats = makeBats(room.bats)
 let torches = makeTorches(room.torches)
 const fire = createParticleSystem(600)
 let moon = makeMoon(room.exit)
+let crumblers = makeCrumblers(room.map, LEVEL.platforms)
 
 let carrotCount = 0
+const TOTAL_CARROTS = LEVEL.carrots.length // collect them all to open the moon (the exit)
 let debug = false
 let last = performance.now()
+let frameMs = 16 // smoothed real frame time (debug FPS readout)
 
 // ── Goal: climb to the escape hatch ───────────────────────────────────────────
 // Floor 0 at spawn → FLOOR_TARGET at the top ledge under the exit. The counter
@@ -100,6 +113,7 @@ function resetGame(): void {
   // Same fixed level every run — learnable and speedrun-able.
   room = buildRoomFromLevel(LEVEL)
   moon = makeMoon(room.exit)
+  crumblers = makeCrumblers(room.map, LEVEL.platforms)
   player = createPlayer(room.spawnX, room.spawnY)
   shots.length = 0
   carrots = makeCarrots(room.carrots)
@@ -116,8 +130,10 @@ function resetGame(): void {
 }
 
 function frame(now: number): void {
-  const dt = Math.min(now - last, 50)
+  const rawDt = now - last
+  const dt = Math.min(rawDt, 50)
   last = now
+  frameMs += (rawDt - frameMs) * 0.08 // EMA of actual frame time
 
   if (consumeDebug()) debug = !debug
 
@@ -133,13 +149,22 @@ function frame(now: number): void {
 
     updateShots(shots, room.map, dt, world.width)
 
+    // Crumbling platforms collapse under the rabbit, then respawn.
+    updateCrumblers(crumblers, room.map, playerBox(player), player.onGround, dt)
+
     // Pixel-perfect interactions (masksOverlap is the final decision).
     const pMask = playerMask(player)
     const px = Math.round(player.x)
     const py = Math.round(player.y)
 
     const got = updateCarrots(carrots, pMask, px, py)
-    if (got > 0) { carrotCount += got; SFX.pickup() }
+    if (got > 0) {
+      const was = carrotCount
+      carrotCount += got
+      SFX.pickup()
+      // The last carrot opens the moon — flash to signal the exit is live.
+      if (was < TOTAL_CARROTS && carrotCount >= TOTAL_CARROTS) flashBorder(C.B_YELLOW, 3, 120)
+    }
 
     const spiderRes = updateSpiders(spiders, pMask, px, py, shots, dt)
     const batRes = updateBats(bats, pMask, px, py, shots, dt)
@@ -157,7 +182,7 @@ function frame(now: number): void {
     // ── Goal: track progress, then test win (escaped) / lose (no HP) ──
     const f = floorOf(player.y)
     if (f > highestFloor) highestFloor = f
-    if (rectsOverlap(playerBox(player), room.exit)) {
+    if (carrotCount >= TOTAL_CARROTS && rectsOverlap(playerBox(player), room.exit)) {
       state = 'won'; endTimer = 0; flashBorder(C.B_GREEN, 2, 150)
     } else if (player.hp <= 0) {
       state = 'lost'; endTimer = 0; flashBorder(C.B_RED, 2, 120)
@@ -190,29 +215,49 @@ function frame(now: number): void {
   renderPlayer(ctx, player, camX, camY)
 
   // Lighting: dim the scene, then punch soft holes at each light source.
+  const exitOpen = carrotCount >= TOTAL_CARROTS
   const lights: Light[] = [
     { x: player.x + 8 - camX, y: player.y + 16 - camY, radius: 72, intensity: 1.0 },
-    moonLight(moon, camX, camY),
+    moonLight(moon, camX, camY, exitOpen ? 1 : 0.3), // dim until all carrots collected
   ]
   for (const l of torchLights(torches, camX, camY, now)) lights.push(l)
   for (const s of shots) if (s.active) lights.push({ x: s.x - camX, y: s.y - camY, radius: 38, intensity: 0.9 })
-  renderDarkness(ctx, lights, LIGHTING_MODE, camY, world.height)
+  if (lightsOn) renderDarkness(ctx, lights, camY, world.height)
 
   // Light-emitting objects glow on top of the darkness.
-  renderMoon(ctx, moon, camX, camY, now)
+  renderMoon(ctx, moon, camX, camY, now, exitOpen)
   renderParticles(ctx, fire, camX, camY)
 
   // HUD — above the darkness so it stays readable.
-  drawText(ctx, `CARROTS:${carrotCount}`, 2, 2, C.B_YELLOW)
-  drawTextCentered(ctx, `FLOOR ${highestFloor}/${FLOOR_TARGET}`, 2, GAME_WIDTH / CELL, C.B_WHITE)
-  drawText(ctx, `HP:${Math.max(0, player.hp)}`, GAME_WIDTH - 8 * 5, 2, C.B_RED)
+  // HUD is inset one tile (CELL) past the stone border walls, and drawn on a
+  // black paper so it stays readable over the bricks / stone.
+  drawText(ctx, `CARROTS:${carrotCount}/${TOTAL_CARROTS}`, CELL, 2, exitOpen ? C.B_GREEN : C.B_YELLOW, C.BLACK)
+  drawText(ctx, `FLOOR ${highestFloor}/${FLOOR_TARGET}`, 13 * CELL, 2, C.B_WHITE, C.BLACK)
+  // HP as little hearts, right-aligned inside the right border wall.
+  for (let i = 0; i < Math.max(0, player.hp); i++) {
+    drawSprite(ctx, HEART, GAME_WIDTH - CELL - (i + 1) * CELL, 2, C.B_RED, C.BLACK)
+  }
+
+  // Permanent FPS readout, bottom-right (Firefox eats Ctrl+Shift+B, so the
+  // debug overlay can't be the only place to see it).
+  // Bottom row: inset one tile up from the floor border and past the side walls,
+  // on black paper. Version bottom-left, FPS bottom-right.
+  const bottomY = GAME_HEIGHT - 2 * CELL
+  const fps = Math.round(1000 / frameMs)
+  const fpsText = `${fps} FPS`
+  const fpsInk = fps >= 55 ? C.B_GREEN : fps >= 30 ? C.B_YELLOW : C.B_RED
+  drawText(ctx, fpsText, GAME_WIDTH - CELL - fpsText.length * CELL, bottomY, fpsInk, C.BLACK)
+
+  // Real running zx-kit version (injected from the installed package).
+  const zxKit = import.meta.env.VITE_ZX_KIT_VERSION ?? '?'
+  drawText(ctx, `ZX-KIT ${zxKit}`, CELL, bottomY, C.BLUE, C.BLACK)
 
   if (debug) {
     const b = playerBox(player)
     ctx.strokeStyle = C.B_GREEN
     ctx.lineWidth = 1
     ctx.strokeRect(Math.round(b.x - camX), Math.round(b.y - camY), b.w, b.h)
-    drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} sh:${shots.length}`, 2, 12, C.B_CYAN)
+    drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
   }
 
   // Result overlay — win/lose, above everything but the scanlines.

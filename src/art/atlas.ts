@@ -76,6 +76,7 @@ export const atlas = {
   mossPlatformTile: buildAsset(S.MOSS_PLATFORM_TILE),
   oneWayPlatformTile: buildAsset(S.ONE_WAY_PLATFORM_TILE),
   ladderTile: buildAsset(S.LADDER_TILE),
+  crumbleTile: buildAsset(S.CRUMBLE_TILE),
 } as const
 
 export type AtlasKey = keyof typeof atlas

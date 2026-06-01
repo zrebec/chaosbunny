@@ -6,13 +6,15 @@
  */
 import { initAudio, resumeAudio, getAudioContext, beep } from 'zx-kit'
 
-let ready = false
-
-/** Idempotent — create the audio context on first user gesture. */
+/**
+ * Unlocks audio on a user gesture. Call from every keydown/pointerdown: it
+ * creates the context once, then **resumes it on every gesture** — gated on the
+ * real `AudioContext`, not a module flag. A one-shot flag could go stale across
+ * Vite HMR while the context was left suspended, killing all sound.
+ */
 export function ensureAudio(): void {
-  if (ready) return
-  initAudio(0.3)
-  ready = true
+  if (!getAudioContext()) initAudio(0.3)
+  resumeAudio()
 }
 
 function blip(freq: number, durMs: number, delayMs = 0): void {

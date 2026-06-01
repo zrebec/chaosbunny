@@ -1159,3 +1159,41 @@ Add debug toggles:
 
 The debug overlay must make it obvious when AABB overlaps but pixel masks do not. That is the main proof that chaosBunny is truly pixel-perfect.
 
+---
+
+# Current status & direction — 2026-05-31 (major shift)
+
+The doc above is the original design brief. Reality has moved on; this section is the source of truth for *where the game is now*.
+
+## What the game is
+
+A cute-rabbit **vertical cave climber**. Loop: **collect all carrots → the moon (the exit) opens → escape to the moonlit surface.** Chosen feel = **Manic Miner spine, de-cruelled** (collect-then-exit, hazards you avoid, gentle 3-HP + respawn — never instant death). Mantra: *reviving the ZX Spectrum without the Speccy HW limits.*
+
+## Big architectural decisions (this session)
+
+- **Hand-authored, FIXED levels — NOT procedural at runtime.** Procedural generation fought us (unfair traps); a fixed level is learnable and speedrun-able like Manic Miner / Jump King. The runtime level is `src/world/level.ts` (`LEVEL`, **tile coords, y-down**); `buildRoomFromLevel(level)` builds the `Room`. The old generator (`generateCaveRoom`) is **kept only as a draft tool**.
+- **Reachability is a tested linter, not a generator guarantee.** `tests/level.tests.ts` floods from the floor and asserts every platform is reachable by **jump (with head-clearance) or ladder**. Tune `LEVEL` freely — the test fails and names any unclimbable platform.
+- **Everything derives from the rabbit's collision box** (`src/rabbit.ts` `RABBIT_BOX`, computed from the sprite mask): `STEP_UP` (platform spacing = **head clearance**, derived from `BOX.h`, *not* rabbit height — that earlier mistake caused the head-bonk where you couldn't jump up), `PLAT_W_MIN`, etc. Tests assert *relationships*, never magic numbers. Sprite is **16×24** with a 3-beat walk (A/B/C).
+- **Ladders = a second route where a jump can't go** (stacked / too-high platforms). Climb with ↑/↓; jump is **Space/W** (↑ no longer jumps). Ladder tiles are non-solid, `id:'ladder'`.
+- **Crumbling platforms** (`platforms[].kind:'crumble'`, `src/world/crumble.ts`): collapse ~450 ms after you stand, respawn ~2.5 s — gentle, recoverable.
+- **Light toggle:** key **`L`** turns the cave dark/lit at runtime; `LIGHTING_MODE` gained `'none'`. Depth-based darkness (brightest at the surface) lives in `renderDarknessZX`.
+
+## Performance — the rule we learned
+
+zx-kit's `drawBitmap` paints **1×1 `fillRect`s per pixel** — fine for sprites, catastrophic in a per-frame full-screen loop. The dungeon background was ~**30 000 fillRects/frame** (Firefox GPU pegged). Fixed by **pre-rendering once to an offscreen canvas and blitting** (`src/world/background.ts`). **Offscreen-cache is the go-to pattern for any static layer redrawn each frame.**
+
+## Open issues — DRAFTED, not yet implemented (next session)
+
+1. **Audio went off** (no SFX even after click). Not the perf change — an audio-**unlock** fragility. `src/audio/sfx.ts` `ensureAudio` is one-shot (a `ready` flag) and only `initAudio` — it does **not** `resumeAudio()` on the gesture, and `ready` can go stale across Vite HMR while the AudioContext stays suspended.
+   **Fix:** unlock on *every* gesture, gated on the real context state: `if (!getAudioContext()) initAudio(0.3); resumeAudio();`. Consider a zx-kit `unlockAudio()`.
+2. **GPU still ~120%** — too high for a ZX-style game. Remaining hot paths: `drawTileMapAt` and `renderDarknessZX` (both zx-kit) + `drawScanlines`.
+3. **Bug ownership:** the background was a **game** misuse of a correct fn (game bug, not zx-kit). But `drawTileMapAt`/`renderDarknessZX` are **not bugs** — unoptimised zx-kit functions that re-rasterise every frame. **The right fix belongs in zx-kit** (helps every game):
+   - **Cached tile-layer renderer** — render the static tilemap to an offscreen once, blit, invalidate only on tile change (e.g. a crumble). Generalises the background fix.
+   - **Dirty-flag darkness buffer** — recompute the dither only when lights move.
+   - **Cached scanline overlay** — it's static; render once, blit.
+   Game-side stopgap meanwhile: cache the level tilemap offscreen + invalidate on crumble; or play with light off (`L`).
+
+## Build / verify
+
+Run with Node 22 (default 20 breaks vitest 4): `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"`, then `npx tsc --noEmit`, `npm test`, `npm run build`. The owner commits; do not commit unless asked.
+

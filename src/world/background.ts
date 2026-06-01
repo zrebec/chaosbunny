@@ -103,27 +103,6 @@ const DECOS: Deco[] = [
 const PARALLAX = 0.5
 const INK = C.BLUE
 
-// Decorations placed (deterministically, via zx-kit's seeded RNG) on the
-// parallax wall grid. Keyed by "col,row" → index into DECOS.
-let decoMap = new Map<string, number>()
-
-/**
- * Seeds and scatters wall decorations across the backdrop's parallax extent.
- * Call once after the room (world size) is known. Deterministic per seed.
- */
-export function initBackground(worldW: number, worldH: number, seed = 'chaosBunny-dungeon'): void {
-  const rng = createRng(seed)
-  const cols = Math.ceil((worldW * PARALLAX) / CELL) + 4
-  const rows = Math.ceil((worldH * PARALLAX) / CELL) + 4
-  const count = Math.max(1, Math.floor(cols * rows * 0.04))
-  decoMap = new Map()
-  for (let i = 0; i < count; i++) {
-    const col = rng.int(cols)
-    const row = rng.int(rows)
-    decoMap.set(`${col},${row}`, rng.int(DECOS.length))
-  }
-}
-
 /** Stable per-cell tile choice — same cell always picks the same variant. */
 function bgIndex(col: number, row: number): number {
   let h = (Math.imul(col, 374761393) + Math.imul(row, 668265263)) >>> 0
@@ -131,30 +110,58 @@ function bgIndex(col: number, row: number): number {
   return h % BG_TILES.length
 }
 
-/**
- * Draws the parallax dungeon wall covering the viewport. Call first each frame,
- * right after clearing to black and before the tilemap/entities.
- */
-export function drawDungeonBackground(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
-  const ox = Math.round(camX * PARALLAX)
-  const oy = Math.round(camY * PARALLAX)
-  const startCol = Math.floor(ox / CELL)
-  const startRow = Math.floor(oy / CELL)
-  const cols = Math.ceil(GAME_WIDTH / CELL) + 1
-  const rows = Math.ceil(GAME_HEIGHT / CELL) + 1
+// Pre-rendered backdrop. The wall pattern + decorations are deterministic and
+// only ever scroll (parallax), so we paint the whole parallax extent ONCE into
+// an offscreen canvas and blit a window of it each frame — one `drawImage`
+// instead of ~30k per-pixel `fillRect`s. (This was the GPU hog the profiler
+// pointed at: drawDungeonBackground → fillRect at ~40% of the frame.)
+let bgCanvas: HTMLCanvasElement | null = null
+let bgW = 0
+let bgH = 0
 
-  for (let ry = 0; ry < rows; ry++) {
-    const ty = startRow + ry
-    for (let rx = 0; rx < cols; rx++) {
-      const tx = startCol + rx
-      const sx = tx * CELL - ox
-      const sy = ty * CELL - oy
-      drawBitmap(ctx, BG_TILES[bgIndex(tx, ty)]!, sx, sy, INK)
+/**
+ * Builds the parallax backdrop once the room (world size) is known. Renders the
+ * full scrollable extent into an offscreen canvas. Deterministic per seed.
+ */
+export function initBackground(worldW: number, worldH: number, seed = 'chaosBunny-dungeon'): void {
+  const rng = createRng(seed)
+  // Cover the whole parallax window the camera can ever show, plus a tile margin.
+  bgW = GAME_WIDTH + Math.ceil(worldW * PARALLAX) + CELL
+  bgH = GAME_HEIGHT + Math.ceil(worldH * PARALLAX) + CELL
+  const cols = Math.ceil(bgW / CELL)
+  const rows = Math.ceil(bgH / CELL)
+
+  // Scatter decorations across the grid (deterministic).
+  const decoMap = new Map<string, number>()
+  const count = Math.max(1, Math.floor(cols * rows * 0.04))
+  for (let i = 0; i < count; i++) {
+    decoMap.set(`${rng.int(cols)},${rng.int(rows)}`, rng.int(DECOS.length))
+  }
+
+  bgCanvas = document.createElement('canvas')
+  bgCanvas.width = bgW
+  bgCanvas.height = bgH
+  const bctx = bgCanvas.getContext('2d')
+  if (!bctx) return
+  bctx.imageSmoothingEnabled = false
+  for (let ty = 0; ty < rows; ty++) {
+    for (let tx = 0; tx < cols; tx++) {
+      const x = tx * CELL
+      const y = ty * CELL
+      drawBitmap(bctx, BG_TILES[bgIndex(tx, ty)]!, x, y, INK)
       const d = decoMap.get(`${tx},${ty}`)
-      if (d !== undefined) {
-        const deco = DECOS[d]!
-        drawBitmap(ctx, deco.bmp, sx, sy, deco.ink)
-      }
+      if (d !== undefined) drawBitmap(bctx, DECOS[d]!.bmp, x, y, DECOS[d]!.ink)
     }
   }
+}
+
+/**
+ * Blits the parallax dungeon wall covering the viewport — a single `drawImage`.
+ * Call first each frame, right after clearing to black and before the tilemap.
+ */
+export function drawDungeonBackground(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
+  if (!bgCanvas) return
+  const ox = Math.max(0, Math.min(bgW - GAME_WIDTH, Math.round(camX * PARALLAX)))
+  const oy = Math.max(0, Math.min(bgH - GAME_HEIGHT, Math.round(camY * PARALLAX)))
+  ctx.drawImage(bgCanvas, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
 }
