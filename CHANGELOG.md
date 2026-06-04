@@ -6,6 +6,18 @@ the project aims at [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Background music** — a looping arrangement of the traditional **Scarborough
+  Fair** (A-Dorian, ~9.6 s): melody + low bass drone + a heavy kick drum per bar,
+  built on zx-kit's new `music` helpers (note-name composing + a looping player).
+  Press **`M`** to mute / unmute.
+- In-game **version readout** now shows the game version too: `vX.Y.Z/<zx-kit>`.
+- **CI deploy gate** — GitHub Pages deploys only on releasable commits
+  (`feat` / `fix` / `perf` / breaking); docs, refactor, chore… are skipped.
+
+### Changed
+- CI deploys from the `master` branch.
+
 ## [0.2.0] — 2026-06-01
 
 ### Added

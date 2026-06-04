@@ -1,8 +1,8 @@
 # chaosBunny 🐰
 
 A cute-rabbit **vertical cave climber** for the browser, built on
-[zx-kit](https://www.npmjs.com/package/zx-kit) — ZX Spectrum looks (256×192, 15
-colours, 8×8 dither), without the Speccy hardware limits.
+[zx-kit](https://www.npmjs.com/package/zx-kit) `^0.28.0` — ZX Spectrum looks
+(256×192, 15 colours, 8×8 dither), without the Speccy hardware limits.
 
 A small blue rabbit is trapped deep underground. Climb the cave, **collect every
 carrot** to open the moon-lit exit, and escape to the surface — past spiders,
@@ -29,6 +29,7 @@ deploys to GitHub Pages via `.github/workflows/ci-deploy.yml`.
 | `↓` / `S` | Crouch (on ground) |
 | `Z` / `Ctrl` | Throw a carrot |
 | `L` | **Toggle cave darkness on/off** |
+| `M` | Mute / unmute the background music |
 | `Ctrl+Shift+B` | Debug overlay (note: Firefox steals this shortcut) |
 
 The HUD shows carrots collected, floor reached and HP (hearts); the real running

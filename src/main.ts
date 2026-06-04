@@ -45,6 +45,7 @@ import { makeCarrots, updateCarrots, renderCarrots } from './entities/pickup.js'
 import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
+import { startMusic, toggleMusic, stopMusic } from './audio/music.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = setupCanvas(canvas, CANVAS_SCALE, GAME_WIDTH, GAME_HEIGHT)
@@ -52,14 +53,17 @@ canvas.style.width = ''
 canvas.style.height = ''
 
 initInput()
-window.addEventListener('keydown', ensureAudio)
-window.addEventListener('pointerdown', ensureAudio)
+// First gesture unlocks audio and kicks off the background music loop.
+const unlockAudio = () => { ensureAudio(); startMusic() }
+window.addEventListener('keydown', unlockAudio)
+window.addEventListener('pointerdown', unlockAudio)
 
 // Lighting toggle (L): play with the cave lit or dark. Darkness rendering lives
 // in zx-kit now; `lightsOn` just gates whether we draw it this frame.
 let lightsOn = LIGHTING_MODE !== 'none'
 window.addEventListener('keydown', (e) => {
   if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
+  if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
 })
 
 let room = buildRoomFromLevel(LEVEL)
@@ -126,6 +130,7 @@ function resetGame(): void {
   // Snap the camera to the new spawn so the view doesn't slide up from the old cave.
   cam.x = 0
   cam.y = Math.max(0, Math.min(world.height - GAME_HEIGHT, room.spawnY - GAME_HEIGHT / 2))
+  startMusic() // resume music for the new run (stopped on game over)
   state = 'playing'
 }
 
@@ -185,7 +190,7 @@ function frame(now: number): void {
     if (carrotCount >= TOTAL_CARROTS && rectsOverlap(playerBox(player), room.exit)) {
       state = 'won'; endTimer = 0; flashBorder(C.B_GREEN, 2, 150)
     } else if (player.hp <= 0) {
-      state = 'lost'; endTimer = 0; flashBorder(C.B_RED, 2, 120)
+      state = 'lost'; endTimer = 0; flashBorder(C.B_RED, 2, 120); stopMusic()
     }
 
     setCameraTarget(cam, player.x + 8, player.y + 16)
