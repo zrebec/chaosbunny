@@ -20,6 +20,9 @@ import {
   tickCamera,
   drawTileMapAt,
   tileMapWorldSize,
+  createLayerCache,
+  refreshLayer,
+  invalidateLayer,
   initInput,
   consumeDebug,
   consumeAnyKey,
@@ -70,6 +73,10 @@ let room = buildRoomFromLevel(LEVEL)
 const world = tileMapWorldSize(room.map)
 initBackground(world.width, world.height)
 initLighting()
+// The level geometry is static (only crumble platforms mutate it), so cache the
+// whole tilemap to an offscreen and blit a camera window each frame — one
+// drawImage instead of re-rasterising every visible tile (per-pixel fillRect).
+const tileCache = createLayerCache(world.width, world.height)
 const cam = createCamera({
   viewW: GAME_WIDTH,
   viewH: GAME_HEIGHT,
@@ -118,6 +125,7 @@ function resetGame(): void {
   room = buildRoomFromLevel(LEVEL)
   moon = makeMoon(room.exit)
   crumblers = makeCrumblers(room.map, LEVEL.platforms)
+  invalidateLayer(tileCache) // room.map was rebuilt — re-render the cached tiles
   player = createPlayer(room.spawnX, room.spawnY)
   shots.length = 0
   carrots = makeCarrots(room.carrots)
@@ -154,8 +162,11 @@ function frame(now: number): void {
 
     updateShots(shots, room.map, dt, world.width)
 
-    // Crumbling platforms collapse under the rabbit, then respawn.
-    updateCrumblers(crumblers, room.map, playerBox(player), player.onGround, dt)
+    // Crumbling platforms collapse under the rabbit, then respawn. Either change
+    // mutates the tilemap → invalidate the cached tile layer so it re-renders.
+    if (updateCrumblers(crumblers, room.map, playerBox(player), player.onGround, dt)) {
+      invalidateLayer(tileCache)
+    }
 
     // Pixel-perfect interactions (masksOverlap is the final decision).
     const pMask = playerMask(player)
@@ -211,7 +222,13 @@ function frame(now: number): void {
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
   drawDungeonBackground(ctx, camX, camY) // deepest layer (parallax)
-  drawTileMapAt(ctx, room.map, camX, camY)
+  // Cached tile layer: render the whole map once, then blit the camera window.
+  const tiles = refreshLayer(tileCache, (lctx) => drawTileMapAt(lctx, room.map, 0, 0, world.width, world.height))
+  if (tiles) {
+    const sx = Math.max(0, Math.min(world.width - GAME_WIDTH, camX))
+    const sy = Math.max(0, Math.min(world.height - GAME_HEIGHT, camY))
+    ctx.drawImage(tiles, sx, sy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
+  }
   renderCarrots(ctx, carrots, camX, camY)
   renderSpiders(ctx, spiders, camX, camY)
   renderBats(ctx, bats, camX, camY)

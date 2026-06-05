@@ -44,25 +44,29 @@ function restore(cr: Crumbler, map: TileMap): void {
   cr.timer = 0
 }
 
-/** Returns true the frame a platform collapses (so the caller can play SFX). */
+/**
+ * Advances crumble timers and mutates the tilemap on collapse/respawn. Returns
+ * `true` on any frame a platform's tiles change (collapse OR respawn) so the
+ * caller can invalidate a cached tile layer (zx-kit `invalidateLayer`).
+ */
 export function updateCrumblers(crumblers: Crumbler[], map: TileMap, box: Rect, onGround: boolean, dt: number): boolean {
   const feetRow = Math.floor((box.y + box.h) / CELL)
   const c0 = Math.floor(box.x / CELL)
   const c1 = Math.floor((box.x + box.w - 1) / CELL)
-  let collapsed = false
+  let changed = false
   for (const cr of crumblers) {
     if (cr.state === 'gone') {
       cr.timer -= dt
-      if (cr.timer <= 0) restore(cr, map)
+      if (cr.timer <= 0) { restore(cr, map); changed = true }
       continue
     }
     const standing = onGround && feetRow === cr.row && c1 >= cr.x && c0 <= cr.x + cr.w - 1
     if (standing) {
       cr.timer += dt
-      if (cr.timer >= CRUMBLE_MS) { collapse(cr, map); collapsed = true }
+      if (cr.timer >= CRUMBLE_MS) { collapse(cr, map); changed = true }
     } else {
       cr.timer = Math.max(0, cr.timer - dt * 0.5) // recovers if you step off in time
     }
   }
-  return collapsed
+  return changed
 }

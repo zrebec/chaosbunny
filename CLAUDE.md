@@ -1182,16 +1182,16 @@ A cute-rabbit **vertical cave climber**. Loop: **collect all carrots → the moo
 
 zx-kit's `drawBitmap` paints **1×1 `fillRect`s per pixel** — fine for sprites, catastrophic in a per-frame full-screen loop. The dungeon background was ~**30 000 fillRects/frame** (Firefox GPU pegged). Fixed by **pre-rendering once to an offscreen canvas and blitting** (`src/world/background.ts`). **Offscreen-cache is the go-to pattern for any static layer redrawn each frame.**
 
-## Open issues — DRAFTED, not yet implemented (next session)
+**Applied twice now, and generalised into zx-kit.** The pattern is now a kit primitive — `cache.ts` (`createLayerCache` / `refreshLayer` / `invalidateLayer`) — and the **tile layer** uses it (`src/main.ts`): the whole map renders once to an offscreen, a camera window is blitted each frame, and the cache is invalidated only when a crumble platform collapses/respawns (`updateCrumblers` now returns whether the map changed) or the level resets. The static **dungeon backdrop** still uses its own bespoke offscreen in `background.ts`. **Darkness is already cheap** — zx-kit's `lighting.ts` has its own per-cell dirty buffer; no work needed there.
 
-1. **Audio went off** (no SFX even after click). Not the perf change — an audio-**unlock** fragility. `src/audio/sfx.ts` `ensureAudio` is one-shot (a `ready` flag) and only `initAudio` — it does **not** `resumeAudio()` on the gesture, and `ready` can go stale across Vite HMR while the AudioContext stays suspended.
-   **Fix:** unlock on *every* gesture, gated on the real context state: `if (!getAudioContext()) initAudio(0.3); resumeAudio();`. Consider a zx-kit `unlockAudio()`.
-2. **GPU still ~120%** — too high for a ZX-style game. Remaining hot paths: `drawTileMapAt` and `renderDarknessZX` (both zx-kit) + `drawScanlines`.
-3. **Bug ownership:** the background was a **game** misuse of a correct fn (game bug, not zx-kit). But `drawTileMapAt`/`renderDarknessZX` are **not bugs** — unoptimised zx-kit functions that re-rasterise every frame. **The right fix belongs in zx-kit** (helps every game):
-   - **Cached tile-layer renderer** — render the static tilemap to an offscreen once, blit, invalidate only on tile change (e.g. a crumble). Generalises the background fix.
-   - **Dirty-flag darkness buffer** — recompute the dither only when lights move.
-   - **Cached scanline overlay** — it's static; render once, blit.
-   Game-side stopgap meanwhile: cache the level tilemap offscreen + invalidate on crumble; or play with light off (`L`).
+## Open issues
+
+1. **Audio unlock — RESOLVED.** `src/audio/sfx.ts` `ensureAudio` now unlocks on *every* gesture gated on the real context state (`if (!getAudioContext()) initAudio(0.3); resumeAudio();`), called from `main.ts`. No longer fragile across Vite HMR.
+2. **GPU/perf — mostly RESOLVED.** Of the three caching candidates:
+   - **Tile layer** — DONE. Cached via zx-kit's new `cache.ts` (`createLayerCache` in `src/main.ts`); invalidated on crumble + level reset. Replaces the per-frame per-pixel `fillRect` `drawTileMapAt`.
+   - **Darkness** — already cheap (zx-kit `lighting.ts` has its own dirty-cell buffer + one blit/frame). Earlier "renderDarknessZX hot path" note was wrong. Also off by default (`LIGHTING_MODE='none'`).
+   - **Scanlines** — still naive (`drawScanlines` = `fillRect` per row each frame). The remaining easy win: wrap it in a `createLayerCache` static overlay (render once, blit). **Not yet done.**
+3. **Dev linking caveat.** The `cache` module isn't in the published `zx-kit@0.28.0` yet, so this repo is temporarily on `"zx-kit": "file:../zx-kit"`. Once zx-kit is published (semantic-release on push → next version), switch back to a `^x.y.0` range and run `npm run dev -- --force` so Vite re-bundles.
 
 ## Build / verify
 
