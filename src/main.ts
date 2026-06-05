@@ -77,6 +77,9 @@ initLighting()
 // whole tilemap to an offscreen and blit a camera window each frame — one
 // drawImage instead of re-rasterising every visible tile (per-pixel fillRect).
 const tileCache = createLayerCache(world.width, world.height)
+// The CRT scanline overlay is fully static — pre-render it once at device
+// resolution and blit it each frame instead of ~384 `fillRect`s/frame.
+const scanlineCache = createLayerCache(canvas.width, canvas.height)
 const cam = createCamera({
   viewW: GAME_WIDTH,
   viewH: GAME_HEIGHT,
@@ -297,7 +300,15 @@ function frame(now: number): void {
     if (endTimer > 700) drawTextCentered(ctx, 'PRESS ANY KEY', 110, cols, C.B_YELLOW)
   }
 
-  drawScanlines(ctx)
+  // CRT scanlines: rendered once into an offscreen at device resolution, then
+  // blitted in physical pixels (reset the ×SCALE transform for a 1:1 copy).
+  const scan = refreshLayer(scanlineCache, (sctx) => drawScanlines(sctx))
+  if (scan) {
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.drawImage(scan, 0, 0)
+    ctx.restore()
+  }
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)

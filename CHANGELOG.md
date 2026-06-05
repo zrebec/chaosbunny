@@ -16,11 +16,12 @@ the project aims at [Semantic Versioning](https://semver.org/).
   (`feat` / `fix` / `perf` / breaking); docs, refactor, chore… are skipped.
 
 ### Changed
-- **Cached tile rendering (perf)** — the whole tile layer now renders once to an
-  offscreen canvas and blits a camera window each frame (via zx-kit's new
-  `createLayerCache`), invalidated only when a platform crumbles/respawns or the
-  level resets. Replaces per-frame, per-pixel `fillRect` tile drawing — the main
-  remaining GPU cost. Requires a `zx-kit` build with the `cache` module.
+- **Cached offscreen rendering (perf)** — the tile layer and the static CRT
+  scanline overlay now each render once to an offscreen canvas and blit per frame
+  (via zx-kit's new `createLayerCache`); the tile cache is invalidated only when a
+  platform crumbles/respawns or the level resets. Replaces per-frame, per-pixel
+  `fillRect` drawing — the main remaining GPU cost. Requires a `zx-kit` build with
+  the `cache` module.
 - CI deploys from the `master` branch.
 
 ## [0.2.0] — 2026-06-01

@@ -62,11 +62,11 @@ to turn it on. We'll properly tune it — depth, `MAX_DARKNESS`,
 - **Pixel-perfect** pickups/hits via zx-kit mask overlap (never bounding boxes).
 - Crumbling platforms, ladders, a collect-to-open moon, and a Manic-Miner-style
   "gather then escape" loop.
-- **Cached rendering** — the parallax dungeon backdrop and the whole tile layer are
-  each rendered once to an offscreen canvas and blitted per frame (via zx-kit's
-  `createLayerCache`); the tile cache is invalidated only when a platform crumbles
-  or the level resets. One `drawImage` instead of thousands of per-pixel
-  `fillRect`s a frame — the change that fixed the frame rate.
+- **Cached rendering** — the parallax dungeon backdrop, the whole tile layer, and
+  the static CRT scanline overlay are each rendered once to an offscreen canvas and
+  blitted per frame (via zx-kit's `createLayerCache`); the tile cache is invalidated
+  only when a platform crumbles or the level resets. A few `drawImage`s instead of
+  thousands of per-pixel `fillRect`s a frame — the change that fixed the frame rate.
 
 ## Develop
 

@@ -1187,11 +1187,12 @@ zx-kit's `drawBitmap` paints **1×1 `fillRect`s per pixel** — fine for sprites
 ## Open issues
 
 1. **Audio unlock — RESOLVED.** `src/audio/sfx.ts` `ensureAudio` now unlocks on *every* gesture gated on the real context state (`if (!getAudioContext()) initAudio(0.3); resumeAudio();`), called from `main.ts`. No longer fragile across Vite HMR.
-2. **GPU/perf — mostly RESOLVED.** Of the three caching candidates:
+2. **GPU/perf — RESOLVED.** Of the three caching candidates:
    - **Tile layer** — DONE. Cached via zx-kit's new `cache.ts` (`createLayerCache` in `src/main.ts`); invalidated on crumble + level reset. Replaces the per-frame per-pixel `fillRect` `drawTileMapAt`.
    - **Darkness** — already cheap (zx-kit `lighting.ts` has its own dirty-cell buffer + one blit/frame). Earlier "renderDarknessZX hot path" note was wrong. Also off by default (`LIGHTING_MODE='none'`).
-   - **Scanlines** — still naive (`drawScanlines` = `fillRect` per row each frame). The remaining easy win: wrap it in a `createLayerCache` static overlay (render once, blit). **Not yet done.**
-3. **Dev linking caveat.** The `cache` module isn't in the published `zx-kit@0.28.0` yet, so this repo is temporarily on `"zx-kit": "file:../zx-kit"`. Once zx-kit is published (semantic-release on push → next version), switch back to a `^x.y.0` range and run `npm run dev -- --force` so Vite re-bundles.
+   - **Scanlines** — DONE. Cached as a static `createLayerCache` overlay at device resolution (`src/main.ts`); rendered once, blitted in physical pixels each frame (reset the ×SCALE transform for a 1:1 copy). Replaces the per-row `fillRect` loop.
+   - **HUD text — OPTIONAL, only if a future bottleneck appears.** With tilemap + scanlines cached, the remaining per-frame `fillRect` cost is HUD text (`drawText`→`drawChar`→`_draw8x8Bits`, ~11% self in the profiler) plus moving sprites. Measured **~40% CPU (htop), ~2.3 ms/frame** — well within the 16.6 ms budget, so **not worth doing now**. If a later feature pushes us into a frame-budget bottleneck, cache the HUD too (effort S–M). **Caveat:** the FPS readout changes every frame → needs per-field invalidation or a separate always-redrawn FPS layer.
+3. **Dev linking — RESOLVED.** `zx-kit@0.29.0` is published with the `cache` module; this repo is back on `"zx-kit": "^0.29.0"`. (When bumping zx-kit during dev, run `npm run dev -- --force` so Vite re-bundles.)
 
 ## Build / verify
 
