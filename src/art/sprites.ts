@@ -1,8 +1,9 @@
 /**
  * Source pixel art for the chaosBunny vertical slice.
  *
- * The rabbit side poses are 16×24: long ears, a clear right-facing profile,
- * white cheek/belly, pink ear/skirt accents and a black eye. They are composed
+ * The rabbit side poses are 24×24: compact, ZX-authentic silhouettes inspired by
+ * the generated concept sheet — bent ears, large head, small body, cotton tail,
+ * magenta ear/nose accents, cyan shade and a black eye. They are composed
  * from one BASE silhouette via {@link pose}; every variant copies BASE and
  * overrides only the rows that change, so all poses keep one size.
  *
@@ -10,35 +11,36 @@
  * carrot, enemies and tiles are unchanged from the design docs.
  */
 
-// ─── Player — 16×24 side poses (composed) ──────────────────────────────────────
+// ─── Player — 24×24 side poses (composed) ──────────────────────────────────────
 
-// BASE = idle, facing right. B=body, W=white cheek/belly, P=accent/skirt, K=eye.
-// Ears rows 0–6, head 7–12, body 13–18, legs 19–23.
+// BASE = idle, facing right. B=white body, W=cyan shade, P=magenta accent, K=eye.
+// Ears rows 0–6, head 5–12, body 12–19, feet 20–23. The ears bend backward so
+// the mono silhouette stays cute and readable without a huge non-colliding tower.
 const RABBIT_BASE: readonly string[] = [
-  '...BBB.BBB......', // 0  long ears
-  '...BPB.BPB......', // 1  inner ear (pink)
-  '...BPB.BPB......', // 2
-  '...BPB.BPB......', // 3
-  '...BPB.BPB......', // 4
-  '...BBB.BBB......', // 5  ear base
-  '...BBBBBBB......', // 6  ears → head
-  '..BBBBBBBBB.....', // 7  head top
-  '..BBWWBBKBB.....', // 8  cheek (W) + eye (K), facing right
-  '..BBBBBBBBBB....', // 9  snout
-  '..BBBBBBBBBBB...', // 10 snout tip (reaches right)
-  '...BBBBBBBB.....', // 11 under-snout
-  '....BBBBB.......', // 12 neck
-  '...BBBBBBB......', // 13 shoulders
-  '..BBBWWWWBBB....', // 14 belly (white)
-  '..BBWWWWWWBB....', // 15
-  '..BBPPPPPPBB....', // 16 skirt accent (pink)
-  '..BBBPPPPBBB....', // 17
-  '...BBBBBBBB.....', // 18 hips
-  '...BBB.BBB......', // 19 legs
-  '..BBB...BBB.....', // 20
-  '..BB.....BB.....', // 21
-  '.BBB.....BBB....', // 22 feet
-  '.BB.......BB....', // 23
+  '....BBBBBB..............', // 0  folded ear cap
+  '..BBBBBBBBBB............', // 1
+  '.BBBBPPPPBBBB...........', // 2  clear magenta inner ear
+  '.BBB.PPPP.BBBB..........', // 3
+  '..BBBPPPP.BBBBB.........', // 4
+  '...BBBBBBBBBBBB.........', // 5  ear → head bridge
+  '.....BBBBBBBBBBB........', // 6  head top
+  '....BBBBBBBBBBBBB.......', // 7
+  '...BBB..BBBBKBBBB.......', // 8  cheek cut + eye
+  '...BB....BBBBBBBBB......', // 9
+  '....BBBBBBBBBBBBBP......', // 10 nose accent
+  '.....BBBBBBBBBBBB.......', // 11 jaw
+  '.......BBBBBBB..........', // 12 neck
+  '....BBBBBBBB............', // 13 chest
+  '...BBBBBBBBB............', // 14
+  '..BBBBBWWBBBB...........', // 15 cyan belly shade
+  '.BB.BBBBWWBBBB..........', // 16 tail + body
+  '.BB..BBBBBBBBB..........', // 17
+  '..B...BBBBBBB...........', // 18
+  '......BBB.BBB...........', // 19 legs
+  '.....BBB...BBB..........', // 20
+  '.....BB.....BB..........', // 21
+  '....BBB.....BBB.........', // 22 feet
+  '....BB.......BB.........', // 23
 ] as const
 
 function pose(edits: ReadonlyArray<readonly [number, string]>): string[] {
@@ -51,79 +53,98 @@ export const RABBIT_SIDE_IDLE_A = [...RABBIT_BASE]
 
 // Gentle blink — eye (K) closes, no position change so the idle never "trembles".
 export const RABBIT_SIDE_IDLE_B = pose([
-  [8, '..BBWWBBBBB.....'],
+  [8, '...BBB..BBBBBBBB........'],
 ])
 
 // ── 3-beat walk: A (right stride) → B (passing) → C (left stride) ──
 export const RABBIT_WALK_A = pose([
-  [19, '...BBB.BBB......'],
-  [20, '..BBB...BBB.....'],
-  [21, '.BBB......BB....'],
-  [22, 'BBB.......BBB...'],
-  [23, 'BB.........BB...'],
+  [16, '.BB.BBBBWWBBBB..........'],
+  [17, '.BB..BBBBBBBBB..........'],
+  [18, '..B...BBBBBBB...........'],
+  [19, '......BBB..BB...........'],
+  [20, '....BBBB....BBB.........'],
+  [21, '...BBB.......BB.........'],
+  [22, '..BBB........BBB........'],
+  [23, '..BB..........BB........'],
 ])
 
 export const RABBIT_WALK_B = pose([
-  [19, '...BBB.BBB......'],
-  [20, '...BBBBBB.......'],
-  [21, '...BBBBBB.......'],
-  [22, '..BBB..BB.......'],
-  [23, '..BB...BB.......'],
+  [16, '.BB.BBBBWWBBBB..........'],
+  [17, '..B..BBBBBBBB...........'],
+  [18, '......BBBBBBB...........'],
+  [19, '......BBBBBB............'],
+  [20, '.....BBB.BBB............'],
+  [21, '.....BB...BB............'],
+  [22, '....BBB...BBB...........'],
+  [23, '....BB.....BB...........'],
 ])
 
 export const RABBIT_WALK_C = pose([
-  [19, '...BBB.BBB......'],
-  [20, '..BBB...BBB.....'],
-  [21, '...BB......BBB..'],
-  [22, '..BBB.......BBB.'],
-  [23, '..BB.........BB.'],
+  [16, '.BB.BBBBWWBBBB..........'],
+  [17, '.BB..BBBBBBBBB..........'],
+  [18, '..B...BBBBBBB...........'],
+  [19, '......BB..BBB...........'],
+  [20, '.....BBB....BBBB........'],
+  [21, '.....BB.......BBB.......'],
+  [22, '....BBB........BBB......'],
+  [23, '....BB..........BB......'],
 ])
 
 export const RABBIT_JUMP = pose([
-  [0, '...BB..BB.......'],
-  [1, '...BB..BB.......'],
-  [2, '...BP..PB.......'],
-  [3, '...BP..PB.......'],
-  [4, '....BPPB.......'],
-  [19, '...BB...BB......'],
-  [20, '..BBB...BBB.....'],
-  [21, '..BB.....BB.....'],
-  [22, '...............'],
-  [23, '...............'],
+  [0, '.....BBBBBB.............'],
+  [1, '...BBBBBBBBBB...........'],
+  [2, '..BBBBPPPPBBBB..........'],
+  [3, '..BBB.PPPP.BBBB.........'],
+  [4, '...BBBPPPP.BBBBB........'],
+  [13, '.....BBBBBBBB...........'],
+  [14, '....BBBBBBBBB...........'],
+  [15, '...BBBBBWWBBBB..........'],
+  [16, '..BB.BBBBWWBBBB.........'],
+  [17, '..B...BBBBBBB...........'],
+  [18, '......BBBBBB............'],
+  [19, '.....BBB..BBB...........'],
+  [20, '....BBB....BBB..........'],
+  [21, '...BBB......BBB.........'],
+  [22, '........................'],
+  [23, '........................'],
 ])
 
 export const RABBIT_SHOOT = pose([
-  [13, '...BBBBBBBBB....'],
-  [14, '..BBBWWWWBB.BB..'],
+  [13, '....BBBBBBBBBBB.........'],
+  [14, '...BBBBBBBBBBBBBB.......'],
+  [15, '..BBBBBWWBBBB..BBB......'],
+  [16, '.BB.BBBBWWBBBB...BB.....'],
+  [17, '.BB..BBBBBBBBB..........'],
 ])
 
-// Crouch — its own compressed silhouette (ears flat, body low, feet on the
-// ground line at rows 21–23 so the rabbit doesn't float when crouching).
+// Crouch — its own compressed silhouette (ears flat, body low). The rabbit ducks
+// below its standing height, so the top rows are empty and the feet sit on the
+// ground line at the bottom rows (no float when crouching).
 export const RABBIT_CROUCH = [
-  '...............', // 0
-  '...............', // 1
-  '...............', // 2
-  '...............', // 3
-  '...............', // 4
-  '...............', // 5
-  '...............', // 6
-  '...............', // 7
-  '...............', // 8
-  '...............', // 9
-  '..BB.......BB..', // 10 flattened ears
-  '..BBBBBBBBBBB..', // 11 back
-  '.BBWWBBKBBBBBB.', // 12 cheek + eye
-  '.BBWWBBBBBBBBB.', // 13
-  '.BBBBBBBBBBBBB.', // 14
-  '.BBPPPPPPPPPBB.', // 15 skirt
-  '..BBPPPPPPPBB..', // 16
-  '..BBBBBBBBBBB..', // 17
-  '..BBB.....BBB..', // 18 legs
-  '.BBB.......BBB.', // 19
-  '.BB.........BB.', // 20
-  'BBB.........BBB', // 21 feet
-  'BB...........BB', // 22
-  'BB...........BB', // 23
+  '........................', // 0
+  '........................', // 1
+  '........................', // 2
+  '........................', // 3
+  '........................', // 4
+  '........................', // 5
+  '........................', // 6
+  '........................', // 7
+  '..BBBBBBBBBB............', // 8 flattened ears
+  '.BBBBPPPPBBBB...........', // 9
+  '.BBB.PPPP.BBBBB.........', // 10
+  '..BBBBBBBBBBBBB.........', // 11 head
+  '..BBB..BBBBKBBBB........', // 12
+  '..BB....BBBBBBBBP.......', // 13 nose
+  '...BBBBBBBBBBBB.........', // 14
+  '.BB..BBBBBBBBB..........', // 15 tail + back
+  'BBB...BBBBWWBBBB........', // 16 body low
+  '.BB...BBBBWWBBBB........', // 17
+  '..B....BBBBBBBB.........', // 18
+  '.......BBBBBBB..........', // 19
+  '......BBB...BBB.........', // 20 feet tucked
+  '.....BBB.....BBB........', // 21
+  '.....BB.......BB........', // 22
+  '........................', // 23
 ] as const
 
 // ─── Front poses (title screen — unchanged, normalized to 32 wide by the atlas) ─
@@ -228,24 +249,64 @@ export const SPIDER_CURLED = [
   '................',
 ] as const
 
-export const BAT_ENEMY = [
-  '........................',
-  '..XX................XX..',
-  '.XBBX..............XBBX.',
-  'XBBBBX....XXXX....XBBBBX',
-  'XBBBBBX..XBBBBX..XBBBBBX',
-  '.XBBBBBXXBBBBBBXXBBBBBX.',
-  '..XBBBBBBBBKBBBBBBBBBX..',
-  '...XBBBBBBK.KBBBBBBX...',
-  '....XBBBBBBBBBBBBX.....',
-  '......XXBBBBBBXX.......',
-  '........XXXXXX.........',
-  '........................',
+export const BAT_WINGS_UP = [
+  '..BB................BB..',
+  '.BBBB..............BBBB.',
+  'BB..BB............BB..BB',
+  'B....BB..........BB....B',
+  'B.....BB........BB.....B',
+  '......BBB..BB..BBB......',
+  '.......BBBBBBBBBB.......',
+  '........BBKKKKBB........',
+  '........BBBBBBBB........',
+  '.........BB..BB.........',
+  '........BB....BB........',
+  '.......BB......BB.......',
   '........................',
   '........................',
   '........................',
   '........................',
 ] as const
+
+export const BAT_WINGS_MID = [
+  '........................',
+  '..BB..............BB....',
+  '.BBBB............BBBB...',
+  'BB..BB..........BB..BB..',
+  'B....BBB......BBB....B..',
+  '.....BBBBBBBBBBBB.......',
+  '......BBBBKKBBBB........',
+  '.......BBBKKBBB.........',
+  '......BBBBBBBBBB........',
+  '.....BB..BBBB..BB.......',
+  '....BB..........BB......',
+  '...BB............BB.....',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+] as const
+
+export const BAT_WINGS_DOWN = [
+  '........................',
+  '........................',
+  '...BB............BB.....',
+  '..BBBB..........BBBB....',
+  '.BB..BB........BB..BB...',
+  'BB....BBBBBBBBBB....BB..',
+  'B......BBKKKKBB......B..',
+  '.......BBBBBBBB.........',
+  '........BBBBBB..........',
+  '.......BB....BB.........',
+  '......BB......BB........',
+  '.....BB........BB.......',
+  '....BB..........BB......',
+  '........................',
+  '........................',
+  '........................',
+] as const
+
+export const BAT_ENEMY = BAT_WINGS_MID
 
 // ─── Tiles ──────────────────────────────────────────────────────────────────
 

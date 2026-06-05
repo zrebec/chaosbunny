@@ -1,13 +1,14 @@
 # chaosBunny 🐰
 
 A cute-rabbit **vertical cave climber** for the browser, built on
-[zx-kit](https://www.npmjs.com/package/zx-kit) `^0.28.0` — ZX Spectrum looks
-(256×192, 15 colours, 8×8 dither), without the Speccy hardware limits.
+[zx-kit](https://www.npmjs.com/package/zx-kit) `^0.31.0` — a modern canvas game
+with an authentic ZX Spectrum feel: 256×192, hard pixels, 15-colour palette,
+8×8 dither, monochrome playfield mode, AY music and beeper SFX.
 
-A small blue rabbit is trapped deep underground. Climb the cave, **collect every
+A small rabbit is trapped deep underground. Climb the cave, **collect every
 carrot** to open the moon-lit exit, and escape to the surface — past spiders,
-bats, crumbling ledges and a ladder or two. Dark, atmospheric, *never cruel*:
-creatures retreat and curl, they are never killed.
+outline-wing bats, crumbling ledges and a ladder or two. Dark, atmospheric,
+*never cruel*: creatures retreat and curl, they are never killed.
 
 ## Play
 
@@ -30,6 +31,7 @@ deploys to GitHub Pages via `.github/workflows/ci-deploy.yml`.
 | `Z` / `Ctrl` | Throw a carrot |
 | `L` | **Toggle cave darkness on/off** |
 | `M` | Mute / unmute the background music |
+| `C` | **Toggle monochrome ZX playfield** (black silhouettes on pale paper — the no-clash retro look; default is full colour) |
 | `Ctrl+Shift+B` | Debug overlay (note: Firefox steals this shortcut) |
 
 The HUD shows carrots collected, floor reached and HP (hearts); the real running
@@ -60,6 +62,13 @@ to turn it on. We'll properly tune it — depth, `MAX_DARKNESS`,
   platform spacing, widths, spawn — so the sprite can be resized without
   re-tuning by hand.
 - **Pixel-perfect** pickups/hits via zx-kit mask overlap (never bounding boxes).
+- **ZX-authentic sprite direction** — text-art source rows compile into byte-aligned
+  bitmaps and pixel masks. The rabbit is now a compact 24×24 mono-first sprite
+  with folded ears, magenta ear/nose accents and cyan shade; the bat uses a
+  transparent-outline 24×16 wing-flap cycle whose current frame also drives the
+  collision mask.
+- **Concept references** live in `docs/concepts/`: `chaosbunny-rabbit-zx-concept.png`
+  and `chaosbunny-enemies-zx-concept.png`.
 - Crumbling platforms, ladders, a collect-to-open moon, and a Manic-Miner-style
   "gather then escape" loop.
 - **Cached rendering** — the parallax dungeon backdrop, the whole tile layer, and

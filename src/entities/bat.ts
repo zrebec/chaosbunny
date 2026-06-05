@@ -20,10 +20,26 @@ export interface Bat {
   active: boolean
 }
 
-const MASK: PixelMask = atlas.batEnemy.mask
-const BMP_R = atlas.batEnemy.bitmap
-const BMP_L: Bitmap = mirrorBitmap(BMP_R)
-const MASK_L: PixelMask = bitmapPixelMask(BMP_L)
+const FRAMES = [atlas.batWingsUp, atlas.batWingsMid, atlas.batWingsDown, atlas.batWingsMid] as const
+
+const FLIPPED = new Map<Bitmap, Bitmap>()
+const FLIPPED_MASK = new Map<Bitmap, PixelMask>()
+
+function frameFor(b: Bat) {
+  return FRAMES[Math.floor(b.t / 120) % FRAMES.length]!
+}
+
+function flippedBitmap(bitmap: Bitmap): Bitmap {
+  let out = FLIPPED.get(bitmap)
+  if (!out) { out = mirrorBitmap(bitmap); FLIPPED.set(bitmap, out) }
+  return out
+}
+
+function flippedMask(bitmap: Bitmap): PixelMask {
+  let out = FLIPPED_MASK.get(bitmap)
+  if (!out) { out = bitmapPixelMask(flippedBitmap(bitmap)); FLIPPED_MASK.set(bitmap, out) }
+  return out
+}
 
 export function makeBats(
   spawns: ReadonlyArray<{ baseX: number; baseY: number; rangeX: number }>,
@@ -78,7 +94,8 @@ export function updateBats(
 
     const bx = Math.round(b.x)
     const by = Math.round(b.y)
-    const mask = b.facing < 0 ? MASK_L : MASK
+    const frame = frameFor(b)
+    const mask = b.facing < 0 ? flippedMask(frame.bitmap) : frame.mask
 
     // Carrot spark → flee (pixel-perfect)
     let fled = false
@@ -105,7 +122,8 @@ export function updateBats(
 export function renderBats(paint: Painter, list: Bat[], camX: number, camY: number): void {
   for (const b of list) {
     if (!b.active) continue
-    const bmp = b.facing < 0 ? BMP_L : BMP_R
-    paint.bitmap(bmp, Math.round(b.x - camX), Math.round(b.y - camY), C.WHITE)
+    const frame = frameFor(b)
+    const bmp = b.facing < 0 ? flippedBitmap(frame.bitmap) : frame.bitmap
+    paint.bitmap(bmp, Math.round(b.x - camX), Math.round(b.y - camY), C.B_MAGENTA, undefined, true)
   }
 }

@@ -313,9 +313,10 @@ export function renderPlayer(paint: Painter, p: Player, camX: number, camY: numb
   const layer = (bitmap: Bitmap): Bitmap => p.facing < 0 ? flippedBitmap(bitmap) : bitmap
 
   // Four colour layers in the full-colour view. In mono they all collapse to one
-  // ink — a clean black rabbit silhouette, no clash.
-  paint.bitmap(layer(asset.layers.body), x, y, C.B_CYAN, undefined, true)
-  paint.bitmap(layer(asset.layers.belly), x, y, C.B_WHITE, undefined, true)
+  // ink — a clean rabbit silhouette, no clash. The authored sprite is mono-first:
+  // white body, cyan underside shade, magenta ear/nose accents, black eye.
+  paint.bitmap(layer(asset.layers.body), x, y, C.B_WHITE, undefined, true)
+  paint.bitmap(layer(asset.layers.belly), x, y, C.B_CYAN, undefined, true)
   paint.bitmap(layer(asset.layers.accent), x, y, C.B_MAGENTA, undefined, true)
   paint.bitmap(layer(asset.layers.eye), x, y, C.BLACK, undefined, true)
 }

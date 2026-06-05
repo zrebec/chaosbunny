@@ -69,6 +69,9 @@ export const atlas = {
   // enemies
   spiderDescend: buildAsset(S.SPIDER_DESCEND),
   spiderCurled: buildAsset(S.SPIDER_CURLED),
+  batWingsUp: buildAsset(S.BAT_WINGS_UP),
+  batWingsMid: buildAsset(S.BAT_WINGS_MID),
+  batWingsDown: buildAsset(S.BAT_WINGS_DOWN),
   batEnemy: buildAsset(S.BAT_ENEMY),
 
   // tiles

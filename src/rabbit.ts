@@ -1,7 +1,7 @@
 /**
  * Rabbit metrics — the single source of truth for the rabbit's size.
  *
- * Everything that used to hard-code "24×32" reads from here instead: the
+ * Everything that used to hard-code a rabbit size reads from here instead: the
  * collision box (below), the world generator's platform spacing/width
  * (`world/room.ts`), and the tests. Redraw the rabbit at any size and these
  * derive from the new bitmap automatically — the rules scale, not the numbers.
@@ -20,10 +20,11 @@ export const RABBIT_COLS = Math.ceil(RABBIT_W / CELL)
 export const RABBIT_ROWS = Math.ceil(RABBIT_H / CELL)
 
 // Collision box, derived from the sprite's actual pixels (its mask bounding box):
-//  • skip the top EAR_SKIP fraction — ears + crown never collide,
+//  • skip the top EAR_SKIP fraction — the bent ear tips never collide,
 //  • inset the sides by SIDE_INSET fraction — a forgiving, body-shaped fit.
-// Fractions (not pixels) so the box keeps the same proportions at any size.
-const EAR_SKIP = 0.26
+// The compact 24×24 art has cosmetic ear pixels in roughly the top four rows.
+// The box still covers head→feet, but platforms do not snag the ear silhouette.
+const EAR_SKIP = 0.17
 const SIDE_INSET = 0.12
 
 function bodyBox(): Rect {
