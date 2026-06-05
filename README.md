@@ -31,6 +31,7 @@ deploys to GitHub Pages via `.github/workflows/ci-deploy.yml`.
 | `Z` / `Ctrl` | Throw a carrot |
 | `L` | **Toggle cave darkness on/off** |
 | `M` | Mute / unmute the background music |
+| `N` | Switch to the next AY background loop |
 | `C` | **Toggle monochrome ZX playfield** (black silhouettes on pale paper — the no-clash retro look; default is full colour) |
 | `Ctrl+Shift+B` | Debug overlay (note: Firefox steals this shortcut) |
 
@@ -62,6 +63,9 @@ to turn it on. We'll properly tune it — depth, `MAX_DARKNESS`,
   platform spacing, widths, spawn — so the sprite can be resized without
   re-tuning by hand.
 - **Pixel-perfect** pickups/hits via zx-kit mask overlap (never bounding boxes).
+- **AY background loops** — the original Scarborough-inspired cave loop is kept,
+  with additional darker cave loops (`Crystal Drip`, `Deep Burrow`) selectable
+  in-game via `N`; beeper SFX stay separate.
 - **ZX-authentic sprite direction** — text-art source rows compile into byte-aligned
   bitmaps and pixel masks. The rabbit is now a compact 24×24 mono-first sprite
   with folded ears, magenta ear/nose accents and cyan shade; the bat uses a

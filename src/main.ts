@@ -4,7 +4,8 @@
  * Cave room (scrolling tilemap) + rabbit + carrot spark + pixel-perfect carrots,
  * spider and bat (every hit/pickup decided by `masksOverlap`, never bounding
  * boxes). Controls: ←/→ or A/D move, Space/↑ jump, ↓ crouch, Z/Ctrl shoot.
- * L lights, M music, C mono (monochrome playfield); Ctrl+Shift+B toggles the debug overlay.
+ * L lights, M music mute, N next music, C mono (monochrome playfield);
+ * Ctrl+Shift+B toggles the debug overlay.
  */
 import {
   setupCanvas,
@@ -51,7 +52,7 @@ import { makeCarrots, updateCarrots, renderCarrots } from './entities/pickup.js'
 import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
-import { startMusic, toggleMusic, stopMusic } from './audio/music.js'
+import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackName } from './audio/music.js'
 import { drawTiles, ctxPainter, monoPainter } from './world/clash.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
@@ -72,6 +73,7 @@ let clashOn = false // C: toggle authentic ZX colour clash (pilot)
 window.addEventListener('keydown', (e) => {
   if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
   if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
+  if (e.key === 'n' || e.key === 'N') nextMusicTrack() // next AY loop
   if (e.key === 'c' || e.key === 'C') clashOn = !clashOn
 })
 
@@ -313,6 +315,7 @@ function frame(now: number): void {
     ctx.lineWidth = 1
     ctx.strokeRect(Math.round(b.x - camX), Math.round(b.y - camY), b.w, b.h)
     drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
+    drawText(ctx, `music:${currentMusicTrackName()}`, 2, 22, C.B_MAGENTA)
   }
 
   // Result overlay — win/lose, above everything but the scanlines.
