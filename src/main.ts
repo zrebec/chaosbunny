@@ -4,7 +4,7 @@
  * Cave room (scrolling tilemap) + rabbit + carrot spark + pixel-perfect carrots,
  * spider and bat (every hit/pickup decided by `masksOverlap`, never bounding
  * boxes). Controls: ←/→ or A/D move, Space/↑ jump, ↓ crouch, Z/Ctrl shoot.
- * Ctrl+Shift+B toggles the debug overlay.
+ * L lights, M music, C mono (monochrome playfield); Ctrl+Shift+B toggles the debug overlay.
  */
 import {
   setupCanvas,
@@ -23,6 +23,9 @@ import {
   createLayerCache,
   refreshLayer,
   invalidateLayer,
+  createMonoScreen,
+  clearMonoScreen,
+  flushMonoScreen,
   initInput,
   consumeDebug,
   consumeAnyKey,
@@ -49,6 +52,7 @@ import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
 import { startMusic, toggleMusic, stopMusic } from './audio/music.js'
+import { drawTiles, ctxPainter, monoPainter } from './world/clash.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = setupCanvas(canvas, CANVAS_SCALE, GAME_WIDTH, GAME_HEIGHT)
@@ -64,9 +68,11 @@ window.addEventListener('pointerdown', unlockAudio)
 // Lighting toggle (L): play with the cave lit or dark. Darkness rendering lives
 // in zx-kit now; `lightsOn` just gates whether we draw it this frame.
 let lightsOn = LIGHTING_MODE !== 'none'
+let clashOn = false // C: toggle authentic ZX colour clash (pilot)
 window.addEventListener('keydown', (e) => {
   if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
   if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
+  if (e.key === 'c' || e.key === 'C') clashOn = !clashOn
 })
 
 let room = buildRoomFromLevel(LEVEL)
@@ -80,6 +86,12 @@ const tileCache = createLayerCache(world.width, world.height)
 // The CRT scanline overlay is fully static — pre-render it once at device
 // resolution and blit it each frame instead of ~384 `fillRect`s/frame.
 const scanlineCache = createLayerCache(canvas.width, canvas.height)
+// Clash/mono mode (C key): the whole playfield is drawn into a zx-kit MonoScreen —
+// one ink + one paper for everything (the classic ZX anti-clash trick). Colour
+// stays in the HUD on top. The default (clash-off) view is untouched full colour.
+const mono = createMonoScreen(GAME_WIDTH, GAME_HEIGHT, C.BLACK, C.B_CYAN)
+const paint = ctxPainter(ctx)        // full-colour painter (default view)
+const monoPaint = monoPainter(mono)  // monochrome painter (clash view)
 const cam = createCamera({
   viewW: GAME_WIDTH,
   viewH: GAME_HEIGHT,
@@ -224,34 +236,51 @@ function frame(now: number): void {
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
-  drawDungeonBackground(ctx, camX, camY) // deepest layer (parallax)
-  // Cached tile layer: render the whole map once, then blit the camera window.
-  const tiles = refreshLayer(tileCache, (lctx) => drawTileMapAt(lctx, room.map, 0, 0, world.width, world.height))
-  if (tiles) {
-    const sx = Math.max(0, Math.min(world.width - GAME_WIDTH, camX))
-    const sy = Math.max(0, Math.min(world.height - GAME_HEIGHT, camY))
-    ctx.drawImage(tiles, sx, sy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
-  }
-  renderCarrots(ctx, carrots, camX, camY)
-  renderSpiders(ctx, spiders, camX, camY)
-  renderBats(ctx, bats, camX, camY)
-  renderShots(ctx, shots, camX, camY)
-  renderTorches(ctx, torches, camX, camY)
-  renderPlayer(ctx, player, camX, camY)
-
-  // Lighting: dim the scene, then punch soft holes at each light source.
   const exitOpen = carrotCount >= TOTAL_CARROTS
-  const lights: Light[] = [
-    { x: player.x + 8 - camX, y: player.y + 16 - camY, radius: 72, intensity: 1.0 },
-    moonLight(moon, camX, camY, exitOpen ? 1 : 0.3), // dim until all carrots collected
-  ]
-  for (const l of torchLights(torches, camX, camY, now)) lights.push(l)
-  for (const s of shots) if (s.active) lights.push({ x: s.x - camX, y: s.y - camY, radius: 38, intensity: 0.9 })
-  if (lightsOn) renderDarkness(ctx, lights, camY, world.height)
 
-  // Light-emitting objects glow on top of the darkness.
-  renderMoon(ctx, moon, camX, camY, now, exitOpen)
-  renderParticles(ctx, fire, camX, camY)
+  if (clashOn) {
+    // Monochrome playfield: draw EVERYTHING — tiles, all entities, the spider
+    // thread, the rabbit — into one MonoScreen, then resolve to a single ink/paper
+    // in one putImageData + drawImage. No clash: white spider, green tile and cyan
+    // rabbit all become the same ink. Colour lives only in the HUD on top.
+    clearMonoScreen(mono)
+    drawTiles(monoPaint, room.map, camX, camY, GAME_WIDTH, GAME_HEIGHT)
+    renderCarrots(monoPaint, carrots, camX, camY)
+    renderSpiders(monoPaint, spiders, camX, camY)
+    renderBats(monoPaint, bats, camX, camY)
+    renderShots(monoPaint, shots, camX, camY)
+    renderTorches(monoPaint, torches, camX, camY)
+    renderPlayer(monoPaint, player, camX, camY)
+    flushMonoScreen(ctx, mono, 0, 0)
+    // The moon is the exit beacon (a light source) — keep it a colour glow on top.
+    renderMoon(ctx, moon, camX, camY, now, exitOpen)
+  } else {
+    drawDungeonBackground(ctx, camX, camY) // deepest layer (parallax)
+    // Cached tile layer: render the whole map once, then blit the camera window.
+    const tiles = refreshLayer(tileCache, (lctx) => drawTileMapAt(lctx, room.map, 0, 0, world.width, world.height))
+    if (tiles) {
+      const sx = Math.max(0, Math.min(world.width - GAME_WIDTH, camX))
+      const sy = Math.max(0, Math.min(world.height - GAME_HEIGHT, camY))
+      ctx.drawImage(tiles, sx, sy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
+    }
+    renderCarrots(paint, carrots, camX, camY)
+    renderSpiders(paint, spiders, camX, camY)
+    renderBats(paint, bats, camX, camY)
+    renderShots(paint, shots, camX, camY)
+    renderTorches(paint, torches, camX, camY)
+    renderPlayer(paint, player, camX, camY)
+
+    // Lighting + glow — full-colour view only (mono playfields have no soft light).
+    const lights: Light[] = [
+      { x: player.x + 8 - camX, y: player.y + 16 - camY, radius: 72, intensity: 1.0 },
+      moonLight(moon, camX, camY, exitOpen ? 1 : 0.3), // dim until all carrots collected
+    ]
+    for (const l of torchLights(torches, camX, camY, now)) lights.push(l)
+    for (const s of shots) if (s.active) lights.push({ x: s.x - camX, y: s.y - camY, radius: 38, intensity: 0.9 })
+    if (lightsOn) renderDarkness(ctx, lights, camY, world.height)
+    renderMoon(ctx, moon, camX, camY, now, exitOpen)
+    renderParticles(ctx, fire, camX, camY)
+  }
 
   // HUD — above the darkness so it stays readable.
   // HUD is inset one tile (CELL) past the stone border walls, and drawn on a

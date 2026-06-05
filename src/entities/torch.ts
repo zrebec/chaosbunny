@@ -6,9 +6,10 @@
  * drawn on top of it so they glow.
  */
 import {
-  drawBitmap, createBitmapFromRows, emitParticles, CELL, C,
+  createBitmapFromRows, emitParticles, CELL, C,
   type Bitmap, type ParticleSystem,
 } from 'zx-kit'
+import type { Painter } from '../world/clash.js'
 import type { Light } from '../world/lighting.js'
 
 const BRACKET: Bitmap = createBitmapFromRows([
@@ -64,8 +65,8 @@ export function torchLights(torches: readonly Torch[], camX: number, camY: numbe
   })
 }
 
-export function renderTorches(ctx: CanvasRenderingContext2D, torches: readonly Torch[], camX: number, camY: number): void {
+export function renderTorches(paint: Painter, torches: readonly Torch[], camX: number, camY: number): void {
   for (const t of torches) {
-    drawBitmap(ctx, BRACKET, Math.round(t.x - camX), Math.round(t.y - camY), C.WHITE)
+    paint.bitmap(BRACKET, Math.round(t.x - camX), Math.round(t.y - camY), C.WHITE)
   }
 }

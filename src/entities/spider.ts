@@ -5,7 +5,8 @@
  *  - it hurts the rabbit only when their masks overlap,
  *  - it curls only when a carrot spark's real pixels overlap its real pixels.
  */
-import { drawBitmap, masksOverlap, C, type PixelMask } from 'zx-kit'
+import { masksOverlap, C, type PixelMask } from 'zx-kit'
+import type { Painter } from '../world/clash.js'
 import { atlas } from '../art/atlas.js'
 import { shotMask, type Shot } from './projectile.js'
 
@@ -90,17 +91,17 @@ export function updateSpiders(
   return result
 }
 
-export function renderSpiders(ctx: CanvasRenderingContext2D, list: Spider[], camX: number, camY: number): void {
+export function renderSpiders(paint: Painter, list: Spider[], camX: number, camY: number): void {
   for (const s of list) {
     const sx = Math.round(s.x - camX)
     const sy = Math.round(s.y - camY)
     if (s.state !== 'curled') {
       // Thread from the ceiling anchor down to the spider's top.
-      ctx.fillStyle = C.WHITE
-      ctx.fillRect(sx + 7, Math.round(s.anchorY - camY), 1, Math.max(0, sy - Math.round(s.anchorY - camY)))
-      drawBitmap(ctx, BODY_BMP, sx, sy, C.WHITE)
+      const top = Math.round(s.anchorY - camY)
+      paint.rect(sx + 7, top, 1, Math.max(0, sy - top), C.WHITE)
+      paint.bitmap(BODY_BMP, sx, sy, C.WHITE)
     } else {
-      drawBitmap(ctx, CURLED_BMP, sx, sy, C.WHITE)
+      paint.bitmap(CURLED_BMP, sx, sy, C.WHITE)
     }
   }
 }

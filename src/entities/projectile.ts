@@ -6,9 +6,10 @@
  * uses a mirrored bitmap/mask so the 4 pixels lead on the left.
  */
 import {
-  drawBitmap, mirrorBitmap, bitmapPixelMask, pixelSolidCount,
+  mirrorBitmap, bitmapPixelMask, pixelSolidCount,
   type Bitmap, type PixelMask, type TileMap,
 } from 'zx-kit'
+import type { Painter } from '../world/clash.js'
 import { atlas } from '../art/atlas.js'
 import { CARROT_INK } from '../config.js'
 
@@ -51,10 +52,10 @@ export function updateShots(list: Shot[], map: TileMap, dt: number, worldW: numb
   for (let i = list.length - 1; i >= 0; i--) if (!list[i]!.active) list.splice(i, 1)
 }
 
-export function renderShots(ctx: CanvasRenderingContext2D, list: Shot[], camX: number, camY: number): void {
+export function renderShots(paint: Painter, list: Shot[], camX: number, camY: number): void {
   for (const s of list) {
     if (!s.active) continue
     const bmp = s.facing < 0 ? LEFT_BMP : RIGHT_BMP
-    drawBitmap(ctx, bmp, Math.round(s.x - camX), Math.round(s.y - camY), CARROT_INK)
+    paint.bitmap(bmp, Math.round(s.x - camX), Math.round(s.y - camY), CARROT_INK)
   }
 }

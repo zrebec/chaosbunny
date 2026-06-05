@@ -3,7 +3,8 @@
  * it flee upward and hide (it does not die). Pixel-perfect: it hurts the rabbit
  * only on real mask overlap; the carrot affects it only on real mask overlap.
  */
-import { drawBitmap, mirrorBitmap, masksOverlap, bitmapPixelMask, C, type Bitmap, type PixelMask } from 'zx-kit'
+import { mirrorBitmap, masksOverlap, bitmapPixelMask, C, type Bitmap, type PixelMask } from 'zx-kit'
+import type { Painter } from '../world/clash.js'
 import { atlas } from '../art/atlas.js'
 import { shotMask, type Shot } from './projectile.js'
 
@@ -101,10 +102,10 @@ export function updateBats(
   return result
 }
 
-export function renderBats(ctx: CanvasRenderingContext2D, list: Bat[], camX: number, camY: number): void {
+export function renderBats(paint: Painter, list: Bat[], camX: number, camY: number): void {
   for (const b of list) {
     if (!b.active) continue
     const bmp = b.facing < 0 ? BMP_L : BMP_R
-    drawBitmap(ctx, bmp, Math.round(b.x - camX), Math.round(b.y - camY), C.WHITE)
+    paint.bitmap(bmp, Math.round(b.x - camX), Math.round(b.y - camY), C.WHITE)
   }
 }

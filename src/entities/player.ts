@@ -12,10 +12,11 @@
  * `masksOverlap` elsewhere.
  */
 import {
-  drawBitmap, mirrorBitmap, bitmapPixelMask, resolveRectX, resolveRectY, isHeld, CELL,
+  mirrorBitmap, bitmapPixelMask, resolveRectX, resolveRectY, isHeld, CELL,
   type Rect, type Bitmap, type PixelMask, type TileMap,
   C,
 } from 'zx-kit'
+import type { Painter } from '../world/clash.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX } from '../rabbit.js'
 import { physics } from '../config.js'
@@ -303,7 +304,7 @@ export function playerMask(p: Player): PixelMask {
   return p.facing < 0 ? flippedMask(a) : a.mask
 }
 
-export function renderPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number, camY: number): void {
+export function renderPlayer(paint: Painter, p: Player, camX: number, camY: number): void {
   // Blink while invulnerable.
   if (p.invuln > 0 && Math.floor(p.invuln / 70) % 2 === 1) return
   const asset = frameAsset(p)
@@ -311,10 +312,12 @@ export function renderPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: num
   const y = Math.round(p.y - camY)
   const layer = (bitmap: Bitmap): Bitmap => p.facing < 0 ? flippedBitmap(bitmap) : bitmap
 
-  drawBitmap(ctx, layer(asset.layers.body), x, y, C.B_CYAN, undefined, true)
-  drawBitmap(ctx, layer(asset.layers.belly), x, y, C.B_WHITE, undefined, true)
-  drawBitmap(ctx, layer(asset.layers.accent), x, y, C.B_MAGENTA, undefined, true)
-  drawBitmap(ctx, layer(asset.layers.eye), x, y, C.BLACK, undefined, true)
+  // Four colour layers in the full-colour view. In mono they all collapse to one
+  // ink — a clean black rabbit silhouette, no clash.
+  paint.bitmap(layer(asset.layers.body), x, y, C.B_CYAN, undefined, true)
+  paint.bitmap(layer(asset.layers.belly), x, y, C.B_WHITE, undefined, true)
+  paint.bitmap(layer(asset.layers.accent), x, y, C.B_MAGENTA, undefined, true)
+  paint.bitmap(layer(asset.layers.eye), x, y, C.BLACK, undefined, true)
 }
 
 /** Current collision box in world pixels — for the debug overlay. */

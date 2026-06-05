@@ -3,7 +3,8 @@
  * rabbit's real pixels overlap the carrot's real pixels (`masksOverlap > 0`) —
  * never on bounding-box proximity alone.
  */
-import { drawBitmap, masksOverlap, C, type PixelMask } from 'zx-kit'
+import { masksOverlap, C, type PixelMask } from 'zx-kit'
+import type { Painter } from '../world/clash.js'
 import { atlas } from '../art/atlas.js'
 
 export interface Carrot {
@@ -35,9 +36,9 @@ export function updateCarrots(list: Carrot[], playerMask: PixelMask, px: number,
   return collected
 }
 
-export function renderCarrots(ctx: CanvasRenderingContext2D, list: Carrot[], camX: number, camY: number): void {
+export function renderCarrots(paint: Painter, list: Carrot[], camX: number, camY: number): void {
   for (const c of list) {
     if (c.collected) continue
-    drawBitmap(ctx, BMP, Math.round(c.x - camX), Math.round(c.y - camY), C.B_YELLOW)
+    paint.bitmap(BMP, Math.round(c.x - camX), Math.round(c.y - camY), C.B_YELLOW)
   }
 }
