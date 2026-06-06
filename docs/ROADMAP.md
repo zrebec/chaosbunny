@@ -23,12 +23,13 @@
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
 | 1 | **Carrot shot at ≥ 2 heights (crouch shot)** | **Fairness bug.** A bat flying low near the floor can't be neutralised today — the shot always leaves at one height, even when crouched. House rule: every threat must have counterplay. | S | 🔜 next |
-| 2 | **Background toggle: bricks → black** | Cheap visual variety; sprites pop on black (arcade/ZX feel) while keeping colour. Keep all three modes: bricks / black / mono. | XS–S | 🔲 |
-| 3 | **Opt-in dither lighting (re-enable + tune)** | Modern-ZX atmosphere; infra already exists (`LIGHTING_MODE`, zx-kit `lighting`). Real work = fairness in the dark — add a rabbit-centred light so you can always see around you. | S–M | 🔲 |
-| 4 | **`C` cycles 3 playfield modes: modern → mono → authentic clash** | Today `C` is a 2-state mono toggle; make it a 3-way cycle. Adds zx-kit's `attrscreen` (true per-cell attribute clash) the game currently skips — opt-in "museum" authenticity that shows off the engine. The 2×3-cell rabbit looks rough clashed (why mono is the default) — fine as opt-in. `clash.ts` already has the `Painter` abstraction (`ctxPainter`/`monoPainter`); add an `attrPainter`. | S–M | 🔲 |
-| 5 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
-| 6 | **In-game controls overlay (`?` / `H`)** | Keybindings keep growing; show them in-game. README table already exists. | S | 💭 |
-| 7 | **Testing push (targeted now, big later)** | Keep adding focused unit tests as features land; defer the 100% / headless-browser sweep until the game is structurally stable. Coverage floor ~75–80 % on logic modules, not 100 % on canvas. | ongoing / L | 💭 |
+| 2 | **Crouch-only low passages (crouch-gates)** | Gameplay depth — get the fixed level tip-top *before* biomes / 100 floors. A few lower overhangs you can only pass crouched. **Invariant:** a crouch-under overhang must be *narrower than its supporting platform* (a stand-up zone must protrude past it), because you can't jump from a crouch — otherwise it's a trap. Needs an un-crouch head-bump rule, jump disabled while crouched, and the reachability linter (`tests/level.tests.ts`) extended to model crouch height. Design note: [`docs/crouch-gates.md`](./crouch-gates.md). | M–L | 🔲 |
+| 3 | **Background toggle: bricks → black** | Cheap visual variety; sprites pop on black (arcade/ZX feel) while keeping colour. Keep all three modes: bricks / black / mono. | XS–S | 🔲 |
+| 4 | **Opt-in dither lighting (re-enable + tune)** | Modern-ZX atmosphere; infra already exists (`LIGHTING_MODE`, zx-kit `lighting`). Real work = fairness in the dark — add a rabbit-centred light so you can always see around you. | S–M | 🔲 |
+| 5 | **`C` cycles 3 playfield modes: modern → mono → authentic clash** | Today `C` is a 2-state mono toggle; make it a 3-way cycle. Adds zx-kit's `attrscreen` (true per-cell attribute clash) the game currently skips — opt-in "museum" authenticity that shows off the engine. The 2×3-cell rabbit looks rough clashed (why mono is the default) — fine as opt-in. `clash.ts` already has the `Painter` abstraction (`ctxPainter`/`monoPainter`); add an `attrPainter`. | S–M | 🔲 |
+| 6 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
+| 7 | **In-game controls overlay (`?` / `H`)** | Keybindings keep growing; show them in-game. README table already exists. | S | 💭 |
+| 8 | **Testing push (targeted now, big later)** | Keep adding focused unit tests as features land; defer the 100% / headless-browser sweep until the game is structurally stable. Coverage floor ~75–80 % on logic modules, not 100 % on canvas. | ongoing / L | 💭 |
 
 ## Parking lot / notes
 
