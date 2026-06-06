@@ -16,6 +16,14 @@ export const LANGUAGE_CODE = 'sk'
 export const FLOOR_TARGET = 11 as const
 
 /**
+ * Background music auto-rotation: how many times the current loop repeats before
+ * the game shuffles to another track (a shuffle-bag — every track plays once per
+ * cycle, never the same one twice in a row). Manual `N` still skips anytime.
+ * Set to 0 to disable auto-rotation (stay on the chosen track until `N`).
+ */
+export const MUSIC_LOOPS_PER_TRACK = 2 as const
+
+/**
  * Lighting starting mode (toggle on/off in-game with the `L` key):
  *  - 'none' — start with the cave fully lit (current default; revisit with biomes).
  *  - 'zx'   — dithered cave darkness (via zx-kit's `lighting` module).

@@ -5,9 +5,11 @@
  * The added tracks are original cave loops: slow minor/dorian motifs, low drones
  * and sparse AY noise drips. Beeper stays reserved for SFX.
  *
- * `M` mutes/unmutes. `N` switches to the next track.
+ * `M` mutes/unmutes. `N` skips to the next track. While playing, the game also
+ * auto-shuffles to another loop every `MUSIC_LOOPS_PER_TRACK` repeats.
  */
-import { seq, playAY, getAudioContext, type AYNote, type AYHandle } from 'zx-kit'
+import { seq, playAY, getAudioContext, createRng, type AYNote, type AYHandle, type Rng } from 'zx-kit'
+import { MUSIC_LOOPS_PER_TRACK } from '../config.js'
 
 // 8 bars × 1200 ms = 9600 ms; every channel sums to that for a clean loop.
 const SCARBOROUGH_MELODY = seq(
@@ -83,11 +85,31 @@ export const MUSIC_TRACKS: readonly MusicTrack[] = [
   { name: 'Deep Burrow', a: DEEP_BURROW_MELODY, b: DEEP_BURROW_BASS, c: DEEP_BURROW_NOISE },
 ] as const
 
-type Timer = ReturnType<typeof setInterval>
+type Timer = ReturnType<typeof setTimeout>
 
 let loopTimer: Timer | null = null
 let current: AYHandle | null = null
 let currentTrack = 0
+let loopsPlayed = 0 // how many times the current track has looped (drives auto-rotation)
+
+/**
+ * Shuffle-bag track picker: returns each track index once per cycle in a random
+ * (seeded → deterministic) order, never the same track twice in a row. Exported
+ * for tests; the running game uses the seeded instance below.
+ */
+export function makeTrackShuffler(rng: Rng): (current: number, count: number) => number {
+  let bag: number[] = []
+  return (current, count) => {
+    if (count <= 1) return current
+    if (bag.length === 0) {
+      bag = rng.shuffle(Array.from({ length: count }, (_, i) => i))
+      if (bag[0] === current) bag.push(bag.shift()!) // no repeat across the bag seam
+    }
+    return bag.shift()!
+  }
+}
+
+const nextShuffledTrack = makeTrackShuffler(createRng('chaosBunny-music'))
 
 function activeTrack(): MusicTrack {
   return MUSIC_TRACKS[currentTrack]!
@@ -99,23 +121,34 @@ function trackLength(t: MusicTrack): number {
 }
 
 function clearLoop(): void {
-  if (loopTimer) clearInterval(loopTimer)
+  if (loopTimer) clearTimeout(loopTimer)
   loopTimer = null
 }
 
-function playCurrentLoopNow(): void {
+/**
+ * Plays the current track once and schedules the next loop. After
+ * {@link MUSIC_LOOPS_PER_TRACK} repeats it shuffles to another track on the loop
+ * boundary (no stop needed — the old loop ends exactly as the new one starts).
+ * Self-reschedules with each track's own length, so tracks may differ in length.
+ */
+function playLoopAndScheduleNext(): void {
   const t = activeTrack()
   current = playAY({ a: t.a, b: t.b, c: t.c })
-  loopTimer = setInterval(() => {
-    const next = activeTrack()
-    current = playAY({ a: next.a, b: next.b, c: next.c })
+  loopTimer = setTimeout(() => {
+    loopsPlayed += 1
+    if (MUSIC_LOOPS_PER_TRACK > 0 && loopsPlayed >= MUSIC_LOOPS_PER_TRACK) {
+      currentTrack = nextShuffledTrack(currentTrack, MUSIC_TRACKS.length)
+      loopsPlayed = 0
+    }
+    playLoopAndScheduleNext()
   }, trackLength(t))
 }
 
 /** Starts the loop once audio is unlocked. Safe to call on every gesture. */
 export function startMusic(): void {
   if (loopTimer || !getAudioContext()) return
-  playCurrentLoopNow()
+  loopsPlayed = 0
+  playLoopAndScheduleNext()
 }
 
 /** Stops the music immediately (e.g. on game over or mute) — silences the
@@ -132,12 +165,14 @@ export function toggleMusic(): void {
   else startMusic()
 }
 
-/** Switches to the next loop. If music is playing, the new track starts immediately. */
+/** Manually skips to the next track (in order). If music is playing it starts
+ *  immediately; also resets the auto-rotation counter. */
 export function nextMusicTrack(): string {
   const wasPlaying = loopTimer !== null
   if (wasPlaying) stopMusic()                            // silence the current track now
   currentTrack = (currentTrack + 1) % MUSIC_TRACKS.length
-  if (wasPlaying) playCurrentLoopNow()                   // start the new one from the top
+  loopsPlayed = 0
+  if (wasPlaying) playLoopAndScheduleNext()              // start the new one from the top
   return activeTrack().name
 }
 
