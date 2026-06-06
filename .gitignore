@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.local
 .DS_Store
+
+# Slovak working copies of docs — local only, English versions are the source of truth
+*.sk.md

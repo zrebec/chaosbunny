@@ -161,7 +161,7 @@ function resetGame(): void {
 
 function frame(now: number): void {
   const rawDt = now - last
-  const dt = Math.min(rawDt, 50)
+  const dt = Math.max(0, Math.min(rawDt, 50)) // never negative — a backwards first-frame rAF timestamp would push animation indices below zero
   last = now
   frameMs += (rawDt - frameMs) * 0.08 // EMA of actual frame time
 

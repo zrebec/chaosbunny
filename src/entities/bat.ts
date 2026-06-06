@@ -26,7 +26,8 @@ const FLIPPED = new Map<Bitmap, Bitmap>()
 const FLIPPED_MASK = new Map<Bitmap, PixelMask>()
 
 function frameFor(b: Bat) {
-  return FRAMES[Math.floor(b.t / 120) % FRAMES.length]!
+  const i = Math.floor(Math.max(0, b.t) / 120) % FRAMES.length // clamp: a negative t must never index FRAMES[-1] (→ undefined.bitmap)
+  return FRAMES[i]!
 }
 
 function flippedBitmap(bitmap: Bitmap): Bitmap {
