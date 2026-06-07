@@ -44,6 +44,12 @@ export interface LevelData {
   /** Platforms: left-top corner `(x,y)` + width `w` (tiles). `kind:'crumble'`
    *  collapses a moment after you stand on it, then respawns. */
   platforms: ReadonlyArray<{ x: number; y: number; w: number; kind?: 'moss' | 'crumble' }>
+  /** Low overhangs the rabbit can only pass **crouched** — the bottom lip sits below
+   *  standing height but above crouch height. `h` rows tall (default 1): the bottom
+   *  row is the "duck here" lip, rows above are solid stone cap (so a gate `h` rows
+   *  tall can't be jumped over). Must be narrower than the platform beneath (leaving
+   *  a stand-up zone), since you can't jump from a crouch; the linter enforces it. */
+  overhangs: ReadonlyArray<{ x: number; y: number; w: number; h?: number }>
   /** Ladders: column `x`, top row `y`, height `h` rows (climb mechanic: next step). */
   ladders: ReadonlyArray<{ x: number; y: number; h: number }>
   carrots: ReadonlyArray<{ x: number; y: number }>
@@ -301,6 +307,17 @@ export function buildRoomFromLevel(level: LevelData): Room {
   for (let c = level.exit.x; c < level.exit.x + level.exit.w; c++) map.clearTile(c, 0)
 
   for (const p of level.platforms) map.fillRect(p.x, p.y, p.w, 1, p.kind === 'crumble' ? crumble() : moss())
+
+  // Low overhangs — only the crouched (shorter) box fits under the bottom lip. A
+  // taller block (h > 1) caps the gate with solid stone so it can't be jumped over;
+  // the bottom row is the cyan "duck here" lip.
+  const overhangLip = () => tile('overhangTile', C.B_CYAN, C.BLACK, true, 'overhang')
+  for (const o of level.overhangs) {
+    const h = o.h ?? 1
+    for (let r = 0; r < h; r++) {
+      map.fillRect(o.x, o.y + r, o.w, 1, r === h - 1 ? overhangLip() : stone())
+    }
+  }
 
   // Ladders — non-solid climbable tiles (id 'ladder'); the player detects them.
   // A 1-tile gap punched into a platform doesn't drop the rabbit (neighbours hold).

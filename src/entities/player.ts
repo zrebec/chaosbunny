@@ -18,7 +18,7 @@ import {
 } from 'zx-kit'
 import type { Painter } from '../world/clash.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
-import { RABBIT_BOX } from '../rabbit.js'
+import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
 import { physics } from '../config.js'
 
 export type PlayerState = 'idle' | 'walk' | 'jump' | 'crouch' | 'shoot' | 'climb'
@@ -30,6 +30,8 @@ export interface Player {
   vy: number
   facing: 1 | -1
   onGround: boolean
+  /** True while ducked: shorter collision box, can crawl, cannot jump. */
+  crouching: boolean
   state: PlayerState
   animTime: number
   shootLock: number
@@ -68,8 +70,23 @@ const BOX: Rect = RABBIT_BOX
 export const PLAYER_HEIGHT = BOX.y + BOX.h
 
 function box(p: Player): Rect {
+  const b = p.crouching ? CROUCH_BOX : BOX
+  const bx = p.facing < 0 ? SPRITE_W - (b.x + b.w) : b.x
+  return { x: p.x + bx, y: p.y + b.y, w: b.w, h: b.h }
+}
+
+/** True when the rabbit can stand up here — no solid in the headroom the standing
+ *  box needs above the crouch box. Keeps it crouched under a low overhang. */
+function canStand(p: Player, map: TileMap): boolean {
   const bx = p.facing < 0 ? SPRITE_W - (BOX.x + BOX.w) : BOX.x
-  return { x: p.x + bx, y: p.y + BOX.y, w: BOX.w, h: BOX.h }
+  const x0 = Math.floor((p.x + bx) / CELL)
+  const x1 = Math.floor((p.x + bx + BOX.w - 1) / CELL)
+  const ty0 = Math.floor((p.y + BOX.y) / CELL)            // standing box top
+  const ty1 = Math.floor((p.y + CROUCH_BOX.y - 1) / CELL) // just above the crouch box top
+  for (let ty = ty0; ty <= ty1; ty++)
+    for (let tx = x0; tx <= x1; tx++)
+      if (map.isSolid(tx, ty)) return false
+  return true
 }
 
 /** True when a solid tile sits directly beneath the box bottom (with 1px tolerance). */
@@ -96,7 +113,7 @@ function ladderColAt(b: Rect, map: TileMap): number {
 export function createPlayer(spawnX: number, spawnY: number): Player {
   return {
     x: spawnX, y: spawnY, vx: 0, vy: 0,
-    facing: 1, onGround: false, state: 'idle',
+    facing: 1, onGround: false, crouching: false, state: 'idle',
     animTime: 0, shootLock: 0, coyote: 0, jumpBuffer: 0,
     jumpHeld: false, fireHeld: false, onLadder: false,
     hp: 3, invuln: 0, knockback: 0,
@@ -159,17 +176,19 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
     }
   }
 
-  const crouching = down && p.onGround
+  // Crouch: duck on purpose (Down on the ground), and stay ducked while a low
+  // ceiling blocks standing up. You can crawl crouched — but you cannot jump.
+  const wantCrouch = down && p.onGround
+  p.crouching = p.onGround && (wantCrouch || (p.crouching && !canStand(p, map)))
 
   // ── Horizontal: accelerate on the ground, preserve momentum in the air ──
   // This is what makes a running jump arc forward like a thrown projectile —
   // vx carries through the whole parabola instead of snapping to 0.
   let dir = (right ? 1 : 0) - (left ? 1 : 0)
-  if (crouching) dir = 0
   if (p.knockback > 0) { p.knockback -= dt; dir = 0 } // no control mid-knockback
   if (dir !== 0) {
     p.facing = dir > 0 ? 1 : -1
-    const target = dir * physics.maxSpeed
+    const target = dir * (p.crouching ? physics.crouchSpeed : physics.maxSpeed) // crawl when ducked
     const a = (p.onGround ? physics.accelGround : physics.accelAir) * dt
     if (p.vx < target) p.vx = Math.min(target, p.vx + a)
     else if (p.vx > target) p.vx = Math.max(target, p.vx - a)
@@ -183,7 +202,7 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
   // ── Jump: buffer the press, allow within coyote window ──
   p.jumpBuffer = jumpPressed ? physics.jumpBufferMs : Math.max(0, p.jumpBuffer - dt)
   p.coyote = p.onGround ? physics.coyoteMs : Math.max(0, p.coyote - dt)
-  if (p.jumpBuffer > 0 && p.coyote > 0) {
+  if (p.jumpBuffer > 0 && p.coyote > 0 && !p.crouching) { // no jump straight from a crouch
     p.vy = physics.jumpVelocity
     p.onGround = false
     p.coyote = 0
@@ -259,7 +278,7 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
   p.animTime += dt
   if (p.shootLock > 0) p.state = 'shoot'
   else if (!p.onGround) p.state = 'jump'
-  else if (crouching) p.state = 'crouch'
+  else if (p.crouching) p.state = 'crouch'
   else if (Math.abs(p.vx) > 0.01) p.state = 'walk'
   else p.state = 'idle'
 

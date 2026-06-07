@@ -21,10 +21,10 @@ export const LEVEL: LevelData = {
   // (head clearance) and beside it with a 1–2 tile air gap (within jump reach).
   platforms: [
     { x: 4, y: 47, w: 5 },  // 1
-    { x: 11, y: 43, w: 5 }, // 2
+    { x: 11, y: 43, w: 10 }, // 2  (widened for a second crouch-gate stand-up zone)
     { x: 18, y: 39, w: 5 }, // 3
     { x: 24, y: 35, w: 4 }, // 4
-    { x: 18, y: 31, w: 5 }, // 5  (turn left)
+    { x: 16, y: 31, w: 7 }, // 5  (turn left; widened so a crouch-gate has a stand-up zone)
     { x: 11, y: 27, w: 5 }, // 6
     { x: 4, y: 23, w: 5 },  // 7
     { x: 11, y: 19, w: 5, kind: 'crumble' }, // 8 crumbles — cross it before it goes!
@@ -35,6 +35,17 @@ export const LEVEL: LevelData = {
     // Bonus stash directly above platform 6 — stacked, so a jump head-bonks.
     // The ONLY way up is the ladder: a second route, not a crutch.
     { x: 11, y: 23, w: 5 }, // 6b (over 6; ladder-only)
+  ],
+
+  // Mandatory crouch-gates. Each: bottom lip 3 rows above its platform (16px =
+  // crouch-only), 5-row stone cap (too tall to jump over), narrower than the platform
+  // (a stand-up zone protrudes). `level.tests.ts` enforces clearance + stand-up zone.
+  overhangs: [
+    // Gate 1 over platform 2 (cols 11–17): land left (from P1), crawl right past the
+    // carrot to the right stand-up zone, jump to platform 3.
+    { x: 13, y: 36, w: 3, h: 5 },
+    // Gate 2 over platform 5 (cols 16–22): land right (from P4), crawl left, jump to P6.
+    { x: 18, y: 24, w: 3, h: 5 },
   ],
 
   // Ladder joining platform 6 (row 27) ↔ the stacked bonus 6b (row 23).

@@ -367,6 +367,19 @@ export const CRUMBLE_TILE = [
   '.X.X.X.X',
 ] as const
 
+// Overhang lip — a low ceiling you can only pass crouched. Solid like stone, but
+// the art hangs from the top with downward prongs so it reads as "duck here".
+export const OVERHANG_TILE = [
+  'XXXXXXXX',
+  'XXXXXXXX',
+  'XXXXXXXX',
+  'X.XXXX.X',
+  '.X.XX.X.',
+  '..X..X..',
+  '..X..X..',
+  '...XX...',
+] as const
+
 // Heart — HP indicator (raw 8×8 sprite, drawn via zx-kit `drawSprite`).
 export const HEART = new Uint8Array([
   0x00, // ........

@@ -80,6 +80,7 @@ export const atlas = {
   oneWayPlatformTile: buildAsset(S.ONE_WAY_PLATFORM_TILE),
   ladderTile: buildAsset(S.LADDER_TILE),
   crumbleTile: buildAsset(S.CRUMBLE_TILE),
+  overhangTile: buildAsset(S.OVERHANG_TILE),
 } as const
 
 export type AtlasKey = keyof typeof atlas

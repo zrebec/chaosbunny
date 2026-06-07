@@ -6,7 +6,7 @@
  * (`world/room.ts`), and the tests. Redraw the rabbit at any size and these
  * derive from the new bitmap automatically — the rules scale, not the numbers.
  */
-import { CELL, type Rect } from 'zx-kit'
+import { CELL, type Rect, type PixelMask } from 'zx-kit'
 import { atlas } from './art/atlas.js'
 
 const ref = atlas.rabbitSideIdleA
@@ -27,8 +27,7 @@ export const RABBIT_ROWS = Math.ceil(RABBIT_H / CELL)
 const EAR_SKIP = 0.17
 const SIDE_INSET = 0.12
 
-function bodyBox(): Rect {
-  const m = ref.mask
+function bodyBox(m: PixelMask): Rect {
   let minR = m.height, maxR = -1, minC = m.width, maxC = -1
   for (let r = 0; r < m.height; r++) {
     const cols = m.rows[r]
@@ -46,4 +45,21 @@ function bodyBox(): Rect {
 }
 
 /** Body collision box relative to the sprite's top-left (skips ears, forgiving). */
-export const RABBIT_BOX: Rect = bodyBox()
+export const RABBIT_BOX: Rect = bodyBox(ref.mask)
+
+// Crouch box — the rabbit's ducked silhouette. Same horizontal footprint as the
+// standing box, but shorter and bottom-aligned to the standing feet, so ducking
+// never sinks or floats. Its reduced height is what lets the rabbit pass under a
+// low overhang it can't clear standing. Derived from the crouch art (which is
+// authored feet-on-the-ground), so a redraw rescales it; the crouch-gate clearance
+// window is [CROUCH_BOX.h, RABBIT_BOX.h).
+const crouchBody = bodyBox(atlas.rabbitCrouch.mask)
+const standFeet = RABBIT_BOX.y + RABBIT_BOX.h
+
+/** Ducked collision box — shorter than {@link RABBIT_BOX}, same feet and footprint. */
+export const CROUCH_BOX: Rect = {
+  x: RABBIT_BOX.x,
+  y: standFeet - crouchBody.h,
+  w: RABBIT_BOX.w,
+  h: crouchBody.h,
+}

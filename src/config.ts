@@ -79,6 +79,8 @@ export const physics = {
   jumpBufferMs: 120,
   /** Ladder climb speed (px/ms) — a touch slower than running. */
   climbSpeed: 0.06,
+  /** Crouch crawl speed (px/ms) — slow and deliberate; you can't jump from a crouch. */
+  crouchSpeed: 0.05,
 } as const
 
 /**
