@@ -7,12 +7,13 @@ vi.mock('zx-kit', async (importOriginal) => {
   return { ...actual, isHeld: (k: string) => HELD.has(k) }
 })
 
-import { createTileMap, CELL, C, type Tile, type TileMap } from 'zx-kit'
-import { createPlayer, updatePlayer } from '../src/entities/player.js'
+import { createTileMap, CELL, C, masksOverlap, type Tile, type TileMap } from 'zx-kit'
+import { createPlayer, updatePlayer, muzzle } from '../src/entities/player.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../src/rabbit.js'
 import { atlas } from '../src/art/atlas.js'
 import { buildRoomFromLevel } from '../src/world/room.js'
 import { LEVEL } from '../src/world/level.js'
+import { spawnShot, shotMask, type Shot } from '../src/entities/projectile.js'
 import type { Player } from '../src/entities/player.js'
 
 function stone(): Tile {
@@ -133,5 +134,47 @@ describe('buildRoomFromLevel — overhangs', () => {
         expect(room.map.isSolid(c, r), `cell ${c},${r}`).toBe(true)
     expect(room.map.getTile(3, 7)?.id).toBe('overhang') // bottom row = duck-here lip
     expect(room.map.getTile(3, 5)?.id).toBe('stone')    // rows above = solid cap
+  })
+})
+
+// ── Carrot shot has two heights (crouch shoots low) ───────────────────────────
+
+describe('carrot shot — two fire heights', () => {
+  it('the crouch shot leaves clearly lower than the standing shot', () => {
+    const p = createPlayer(0, 0)
+    p.crouching = false
+    const hi = muzzle(p).y
+    p.crouching = true
+    const lo = muzzle(p).y
+    expect(lo).toBeGreaterThan(hi)
+    expect(lo - hi).toBeGreaterThanOrEqual(6) // a meaningful gap (the old incidental one was ~5px)
+  })
+
+  it('a low bat is hit only from a crouch (the standing shot passes over it)', () => {
+    const p = createPlayer(0, 0)
+    p.crouching = false
+    const hi = muzzle(p)
+    p.crouching = true
+    const lo = muzzle(p)
+    expect(hi.x).toBe(lo.x) // same horizontal muzzle; only the height differs
+
+    // Place a bat so its top-most solid pixel sits exactly on the low (crouch) shot.
+    const batMask = atlas.batWingsUp.mask
+    let brow = -1, bcol = -1
+    for (let r = 0; r < batMask.height && brow < 0; r++) {
+      const cols = batMask.rows[r]
+      if (cols && cols.length) { brow = r; bcol = cols[0]! }
+    }
+    const bx = Math.round(lo.x) - bcol
+    const by = Math.round(lo.y) - brow // the bat's top solid lands on the crouch-shot row
+
+    const shots: Shot[] = []
+    spawnShot(shots, lo.x, lo.y, 1) // crouch shot
+    spawnShot(shots, hi.x, hi.y, 1) // standing shot
+    const [loShot, hiShot] = shots
+
+    // Crouch shot overlaps the bat; the standing shot is above the whole bat → misses.
+    expect(masksOverlap(shotMask(loShot!), Math.round(loShot!.x), Math.round(loShot!.y), batMask, bx, by)).toBeGreaterThan(0)
+    expect(masksOverlap(shotMask(hiShot!), Math.round(hiShot!.x), Math.round(hiShot!.y), batMask, bx, by)).toBe(0)
   })
 })

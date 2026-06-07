@@ -276,9 +276,9 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
 
   // ── Animation state ──
   p.animTime += dt
-  if (p.shootLock > 0) p.state = 'shoot'
+  if (p.crouching) p.state = 'crouch'         // crouch-shoot keeps the low pose (shot leaves low)
+  else if (p.shootLock > 0) p.state = 'shoot'
   else if (!p.onGround) p.state = 'jump'
-  else if (p.crouching) p.state = 'crouch'
   else if (Math.abs(p.vx) > 0.01) p.state = 'walk'
   else p.state = 'idle'
 
@@ -345,11 +345,15 @@ export function playerBox(p: Player): Rect {
   return box(p)
 }
 
-/** Muzzle point (world px) for spawning a carrot shot, in the facing direction. */
+/** Muzzle point (world px) for spawning a carrot shot, in the facing direction.
+ *  Two distinct heights for feel: standing fires from shoulder/arm height; crouching
+ *  fires low, skimming the ground — so a low bat is only hittable from a crouch (and a
+ *  higher one only standing). The box is already crouch-aware, so the feet line is shared. */
 export function muzzle(p: Player): { x: number; y: number } {
   const b = box(p)
+  const y = p.crouching ? b.y + b.h - 4 : b.y + Math.round(b.h * 0.4)
   return {
     x: p.facing > 0 ? b.x + b.w : b.x - 8,
-    y: b.y + Math.floor(b.h * 0.32),
+    y,
   }
 }
