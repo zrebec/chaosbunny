@@ -53,7 +53,7 @@ import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
 import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackName } from './audio/music.js'
-import { drawTiles, ctxPainter, monoPainter } from './world/clash.js'
+import { drawTiles, ctxPainter, monoPainter, nextViewMode, type ViewMode } from './world/clash.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = setupCanvas(canvas, CANVAS_SCALE, GAME_WIDTH, GAME_HEIGHT)
@@ -69,12 +69,12 @@ window.addEventListener('pointerdown', unlockAudio)
 // Lighting toggle (L): play with the cave lit or dark. Darkness rendering lives
 // in zx-kit now; `lightsOn` just gates whether we draw it this frame.
 let lightsOn = LIGHTING_MODE !== 'none'
-let clashOn = false // C: toggle authentic ZX colour clash (pilot)
+let viewMode: ViewMode = 'bricks' // C cycles the playfield look: bricks → black → mono
 window.addEventListener('keydown', (e) => {
   if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
   if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
   if (e.key === 'n' || e.key === 'N') nextMusicTrack() // next AY loop
-  if (e.key === 'c' || e.key === 'C') clashOn = !clashOn
+  if (e.key === 'c' || e.key === 'C') viewMode = nextViewMode(viewMode) // cycle playfield look
 })
 
 let room = buildRoomFromLevel(LEVEL)
@@ -240,7 +240,7 @@ function frame(now: number): void {
 
   const exitOpen = carrotCount >= TOTAL_CARROTS
 
-  if (clashOn) {
+  if (viewMode === 'mono') {
     // Monochrome playfield: draw EVERYTHING — tiles, all entities, the spider
     // thread, the rabbit — into one MonoScreen, then resolve to a single ink/paper
     // in one putImageData + drawImage. No clash: white spider, green tile and cyan
@@ -257,7 +257,7 @@ function frame(now: number): void {
     // The moon is the exit beacon (a light source) — keep it a colour glow on top.
     renderMoon(ctx, moon, camX, camY, now, exitOpen)
   } else {
-    drawDungeonBackground(ctx, camX, camY) // deepest layer (parallax)
+    if (viewMode === 'bricks') drawDungeonBackground(ctx, camX, camY) // bricks look only; 'black' lets the cleared black show
     // Cached tile layer: render the whole map once, then blit the camera window.
     const tiles = refreshLayer(tileCache, (lctx) => drawTileMapAt(lctx, room.map, 0, 0, world.width, world.height))
     if (tiles) {

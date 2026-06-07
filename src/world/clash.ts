@@ -16,6 +16,17 @@ import {
   type Bitmap, type MonoScreen, type SpectrumColor, type TileMap,
 } from 'zx-kit'
 
+/** Playfield look, cycled with the `C` key. (Authentic `attrscreen` clash is a
+ *  planned next mode; it slots into the cycle before wrapping back to 'bricks'.) */
+export type ViewMode = 'bricks' | 'black' | 'mono'
+
+const VIEW_CYCLE: readonly ViewMode[] = ['bricks', 'black', 'mono']
+
+/** Next playfield look in the `C` cycle: bricks → black → mono → bricks. */
+export function nextViewMode(m: ViewMode): ViewMode {
+  return VIEW_CYCLE[(VIEW_CYCLE.indexOf(m) + 1) % VIEW_CYCLE.length]!
+}
+
 /** A drawing target: a monochrome bitmap and a filled rectangle (lines/blocks). */
 export interface Painter {
   bitmap(bmp: Bitmap, x: number, y: number, ink: SpectrumColor, paper?: SpectrumColor, inkOnly?: boolean): void
