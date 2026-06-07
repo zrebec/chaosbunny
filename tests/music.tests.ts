@@ -7,6 +7,7 @@ import {
   toggleMusic,
   nextMusicTrack,
   currentMusicTrackName,
+  isMusicPlaying,
   MUSIC_TRACKS,
 } from '../src/audio/music.js'
 
@@ -111,6 +112,33 @@ describe('background music auto-rotation', () => {
     const muted = currentMusicTrackName()
     vi.advanceTimersByTime(5 * LOOP_MS)                   // nothing scheduled → no rotation
     expect(currentMusicTrackName()).toBe(muted)
+    vi.useRealTimers()
+  })
+})
+
+// ── Mute stays muted across audio-unlock gestures (bug fix) ───────────────────
+
+describe('mute is not undone by a later startMusic() (M then move)', () => {
+  beforeAll(() => {
+    vi.stubGlobal('AudioContext', MockAudioContext)
+    initAudio()
+  })
+  afterAll(() => { vi.unstubAllGlobals() })
+  afterEach(() => { stopMusic() })
+
+  it('startMusic() after pressing M does NOT restart the music', () => {
+    vi.useFakeTimers()
+    if (!isMusicPlaying()) toggleMusic() // ensure a clean, unmuted, playing start
+    expect(isMusicPlaying()).toBe(true)
+
+    toggleMusic()                        // press M → mute
+    expect(isMusicPlaying()).toBe(false)
+
+    startMusic()                         // a later keydown fires the audio-unlock handler
+    expect(isMusicPlaying()).toBe(false) // stays muted (was the bug: it restarted)
+
+    toggleMusic()                        // press M again → unmute
+    expect(isMusicPlaying()).toBe(true)
     vi.useRealTimers()
   })
 })

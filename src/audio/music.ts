@@ -91,6 +91,7 @@ let loopTimer: Timer | null = null
 let current: AYHandle | null = null
 let currentTrack = 0
 let loopsPlayed = 0 // how many times the current track has looped (drives auto-rotation)
+let muted = false   // user pressed M — keep music off across audio-unlock gestures
 
 /**
  * Shuffle-bag track picker: returns each track index once per cycle in a random
@@ -146,7 +147,7 @@ function playLoopAndScheduleNext(): void {
 
 /** Starts the loop once audio is unlocked. Safe to call on every gesture. */
 export function startMusic(): void {
-  if (loopTimer || !getAudioContext()) return
+  if (loopTimer || muted || !getAudioContext()) return // `muted` keeps it off on every gesture
   loopsPlayed = 0
   playLoopAndScheduleNext()
 }
@@ -159,10 +160,22 @@ export function stopMusic(): void {
   current = null
 }
 
-/** Mutes / unmutes — muting silences the music instantly. */
+/** Mutes / unmutes. Muting silences the music instantly and *keeps* it off, so a
+ *  later gesture-driven `startMusic()` (the audio-unlock handler fires on every
+ *  keydown) can't sneak it back on — press M again to unmute. */
 export function toggleMusic(): void {
-  if (loopTimer) stopMusic()
-  else startMusic()
+  if (loopTimer) {
+    muted = true
+    stopMusic()
+  } else {
+    muted = false
+    startMusic()
+  }
+}
+
+/** True while a background loop is scheduled (not muted / not stopped). */
+export function isMusicPlaying(): boolean {
+  return loopTimer !== null
 }
 
 /** Manually skips to the next track (in order). If music is playing it starts
