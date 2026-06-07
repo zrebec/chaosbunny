@@ -27,6 +27,9 @@ import {
   createMonoScreen,
   clearMonoScreen,
   flushMonoScreen,
+  createAttrScreen,
+  clearAttrScreen,
+  flushAttrScreen,
   initInput,
   consumeDebug,
   consumeAnyKey,
@@ -53,7 +56,7 @@ import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
 import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackName } from './audio/music.js'
-import { drawTiles, ctxPainter, monoPainter, nextViewMode, type ViewMode } from './world/clash.js'
+import { drawTiles, ctxPainter, monoPainter, attrPainter, nextViewMode, type ViewMode } from './world/clash.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = setupCanvas(canvas, CANVAS_SCALE, GAME_WIDTH, GAME_HEIGHT)
@@ -93,7 +96,10 @@ const scanlineCache = createLayerCache(canvas.width, canvas.height)
 // stays in the HUD on top. The default (clash-off) view is untouched full colour.
 const mono = createMonoScreen(GAME_WIDTH, GAME_HEIGHT, C.BLACK, C.B_CYAN)
 const paint = ctxPainter(ctx)        // full-colour painter (default view)
-const monoPaint = monoPainter(mono)  // monochrome painter (clash view)
+const monoPaint = monoPainter(mono)  // monochrome painter (mono view)
+// Authentic ZX attribute clash (C → 'clash'): each 8×8 cell snaps to one ink + paper.
+const attr = createAttrScreen(GAME_WIDTH / CELL, GAME_HEIGHT / CELL)
+const attrPaint = attrPainter(attr, C.BLACK)
 const cam = createCamera({
   viewW: GAME_WIDTH,
   viewH: GAME_HEIGHT,
@@ -255,6 +261,20 @@ function frame(now: number): void {
     renderPlayer(monoPaint, player, camX, camY)
     flushMonoScreen(ctx, mono, 0, 0)
     // The moon is the exit beacon (a light source) — keep it a colour glow on top.
+    renderMoon(ctx, moon, camX, camY, now, exitOpen)
+  } else if (viewMode === 'clash') {
+    // Authentic ZX attribute clash: stamp EVERYTHING into the AttrScreen so each 8×8
+    // cell snaps to one ink + one paper (the famous colour bleed), then flush once.
+    clearAttrScreen(attr, C.BLACK)
+    drawTiles(attrPaint, room.map, camX, camY, GAME_WIDTH, GAME_HEIGHT)
+    renderCarrots(attrPaint, carrots, camX, camY)
+    renderSpiders(attrPaint, spiders, camX, camY)
+    renderBats(attrPaint, bats, camX, camY)
+    renderShots(attrPaint, shots, camX, camY)
+    renderTorches(attrPaint, torches, camX, camY)
+    renderPlayer(attrPaint, player, camX, camY)
+    flushAttrScreen(ctx, attr)
+    // Moon stays a colour glow on top (same as mono).
     renderMoon(ctx, moon, camX, camY, now, exitOpen)
   } else {
     if (viewMode === 'bricks') drawDungeonBackground(ctx, camX, camY) // bricks look only; 'black' lets the cleared black show

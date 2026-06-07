@@ -12,17 +12,17 @@
  * `drawBitmap` / `fillRect`.
  */
 import {
-  CELL, drawBitmap, drawMonoBitmap, fillMono,
-  type Bitmap, type MonoScreen, type SpectrumColor, type TileMap,
+  CELL, drawBitmap, drawMonoBitmap, fillMono, stampMono,
+  type Bitmap, type MonoScreen, type SpectrumColor, type TileMap, type AttrScreen, type AttrPolicy,
 } from 'zx-kit'
 
-/** Playfield look, cycled with the `C` key. (Authentic `attrscreen` clash is a
- *  planned next mode; it slots into the cycle before wrapping back to 'bricks'.) */
-export type ViewMode = 'bricks' | 'black' | 'mono'
+/** Playfield look, cycled with the `C` key:
+ *  full-colour bricks → black background → mono (no-clash) → authentic clash. */
+export type ViewMode = 'bricks' | 'black' | 'mono' | 'clash'
 
-const VIEW_CYCLE: readonly ViewMode[] = ['bricks', 'black', 'mono']
+const VIEW_CYCLE: readonly ViewMode[] = ['bricks', 'black', 'mono', 'clash']
 
-/** Next playfield look in the `C` cycle: bricks → black → mono → bricks. */
+/** Next playfield look in the `C` cycle: bricks → black → mono → clash → bricks. */
 export function nextViewMode(m: ViewMode): ViewMode {
   return VIEW_CYCLE[(VIEW_CYCLE.indexOf(m) + 1) % VIEW_CYCLE.length]!
 }
@@ -46,6 +46,43 @@ export function monoPainter(scr: MonoScreen): Painter {
   return {
     bitmap: (b, x, y) => drawMonoBitmap(scr, b, x, y),
     rect: (x, y, w, h) => fillMono(scr, x, y, w, h),
+  }
+}
+
+/** Authentic-clash painter — stamps each draw into a zx-kit {@link AttrScreen}, so
+ *  every 8×8 cell snaps to one ink + one paper (the real ZX colour bleed). Unlike
+ *  mono, the ink colour is kept. `paper` is the fallback for draws that pass none. */
+export function attrPainter(scr: AttrScreen, paper: SpectrumColor, policy: AttrPolicy = 'both'): Painter {
+  return {
+    bitmap: (b, x, y, ink, p) => stampMono(scr, b, x, y, ink, p ?? paper, policy),
+    rect: (x, y, w, h, ink) => fillAttr(scr, x, y, w, h, ink),
+  }
+}
+
+/** Packs `#RRGGBB` into a little-endian RGBA word (matches attrscreen's own packing). */
+function packRGBA(hex: SpectrumColor): number {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0
+}
+
+/** Fills a screen-space rect into the AttrScreen — lights its pixels and re-inks the
+ *  cells it touches (paper kept). zx-kit has no fill helper; used for the thin spider
+ *  thread (`stampMono` can't draw a sub-8px-wide line). */
+function fillAttr(scr: AttrScreen, x: number, y: number, w: number, h: number, ink: SpectrumColor): void {
+  const inkU32 = packRGBA(ink)
+  const x0 = Math.round(x)
+  const y0 = Math.round(y)
+  for (let yy = y0; yy < y0 + h; yy++) {
+    if (yy < 0 || yy >= scr.height) continue
+    const rowBase = yy * scr.width
+    const cellRow = (yy >> 3) * scr.cols
+    for (let xx = x0; xx < x0 + w; xx++) {
+      if (xx < 0 || xx >= scr.width) continue
+      scr.pixels[rowBase + xx] = 1
+      scr.cellInk[cellRow + (xx >> 3)] = inkU32
+    }
   }
 }
 

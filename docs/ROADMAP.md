@@ -26,12 +26,17 @@
   height standing and low along the ground crouched, so a low bat is only neutralisable
   from a crouch (a higher one only standing); crouch-shoot keeps the low pose. Tests pin
   the gap + "low bat hit only from a crouch". Resolves the gate bat fairness from #2.
+- ✅ **2026-06-07 — `C` playfield-look cycle.** `C` now cycles four looks: full-colour
+  bricks → black background → mono (no-clash) → authentic ZX attribute clash (zx-kit
+  `attrscreen` via a new `attrPainter`; per-8×8-cell colour bleed). Black-bg is a free
+  render-skip; clash stamps everything into an AttrScreen and flushes once. Tests: cycle
+  order + `attrPainter` stamps/re-inks a cell + thread fill.
 
 ## Order of work (next → later)
 
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
-| 1 | **`C` cycles playfield looks: bricks → black → mono → authentic clash** | The cheap black-background effect + a unified `C` toggle through every colour/clash look. Today `C` is a 2-state mono toggle; make it cycle: full-colour bricks → **black background** (sprites pop, arcade/ZX feel — the XS quick first slice) → mono (no-clash silhouettes, exists) → **authentic clash** (zx-kit `attrscreen`, opt-in "museum" mode). `clash.ts` already has the `Painter` abstraction; add a black-bg gate + an `attrPainter`. Can land in slices. | S–M | 🔜 next |
+| 1 | **Clash polish: single-colour rabbit** | In `clash` mode the rabbit's 4 colour layers self-clash cell-by-cell (it "jumps" between colours). Like real ZX authors: draw the rabbit as **one ink** in clash so it doesn't clash with *itself* — but it still clashes with obstacles per cell (an ear in an obstacle cell → that 8×8 snaps to one colour). Reuse the existing union silhouette `asset.bitmap`: **no sprite rewrite, no zx-kit change** (renderPlayer gets a solo-ink path used only in clash). | XS–S | 🔜 next |
 | 2 | **Opt-in dither lighting (re-enable + tune)** | Modern-ZX atmosphere; infra exists (`LIGHTING_MODE`, zx-kit `lighting`). Real work = fairness in the dark — add a rabbit-centred light so you can always see around you. | S–M | 🔲 |
 | 3 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
 | 4 | **In-game controls overlay (`?` / `H`)** | Keybindings keep growing; show them in-game. README table already exists. | S | 💭 |

@@ -32,7 +32,7 @@ deploys to GitHub Pages via `.github/workflows/ci-deploy.yml`.
 | `L` | **Toggle cave darkness on/off** |
 | `M` | Mute / unmute the background music |
 | `N` | Skip to the next AY loop (tracks also auto-shuffle while playing) |
-| `C` | **Cycle playfield look:** bricks → black background → monochrome (no-clash silhouettes) |
+| `C` | **Cycle playfield look:** bricks → black background → monochrome → authentic ZX colour clash |
 | `Ctrl+Shift+B` | Debug overlay (note: Firefox steals this shortcut) |
 
 The HUD shows carrots collected, floor reached and HP (hearts); the real running
