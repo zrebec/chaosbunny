@@ -3,7 +3,8 @@
 A cute-rabbit **vertical cave climber** for the browser, built on
 [zx-kit](https://www.npmjs.com/package/zx-kit) `^0.31.0` — a modern canvas game
 with an authentic ZX Spectrum feel: 256×192, hard pixels, 15-colour palette,
-8×8 dither, monochrome playfield mode, AY music and beeper SFX.
+8×8 dither, four switchable playfield looks (bricks / black / mono / authentic
+colour-clash), AY music and beeper SFX.
 
 A small rabbit is trapped deep underground. Climb the cave, **collect every
 carrot** to open the moon-lit exit, and escape to the surface — past spiders,

@@ -31,12 +31,16 @@
   `attrscreen` via a new `attrPainter`; per-8×8-cell colour bleed). Black-bg is a free
   render-skip; clash stamps everything into an AttrScreen and flushes once. Tests: cycle
   order + `attrPainter` stamps/re-inks a cell + thread fill.
+- ✅ **2026-06-07 — Clash polish: single-colour rabbit.** In `clash` the rabbit is drawn
+  as one ink (the union silhouette `asset.bitmap`) so it no longer self-clashes, but still
+  clashes with obstacles per cell. Colour is `CLASH_RABBIT_INK` (palette, in `config.ts`).
+  No sprite rewrite, no zx-kit change. Tests: single ink across the rabbit's cells.
 
 ## Order of work (next → later)
 
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
-| 1 | **Clash polish: single-colour rabbit** | In `clash` mode the rabbit's 4 colour layers self-clash cell-by-cell (it "jumps" between colours). Like real ZX authors: draw the rabbit as **one ink** in clash so it doesn't clash with *itself* — but it still clashes with obstacles per cell (an ear in an obstacle cell → that 8×8 snaps to one colour). Reuse the existing union silhouette `asset.bitmap`: **no sprite rewrite, no zx-kit change** (renderPlayer gets a solo-ink path used only in clash). | XS–S | 🔜 next |
+| 1 | **Lighten chaosBunny (config + dead-code cleanup)** | The codebase is accreting cruft. Biggest win: remove the **dead procedural generator** (`generateCaveRoom`, `buildCaveRoom`, the staircase constants `STEP_UP`/`PLAT_W_*`/`EDGE_GAP_*`/`LEDGE_*`, and `tests/generate.tests.ts`) — unused since fixed levels won; `room.ts` ~halves. Colours from the palette, not hex (`CARROT_INK` → `C.B_YELLOW`). Drop `CANVAS_SCALE` (duplicates zx-kit `SCALE`). Keep `GAME_WIDTH/HEIGHT` (the game's own screen size — zx-kit doesn't own it). | S | 🔜 next |
 | 2 | **Opt-in dither lighting (re-enable + tune)** | Modern-ZX atmosphere; infra exists (`LIGHTING_MODE`, zx-kit `lighting`). Real work = fairness in the dark — add a rabbit-centred light so you can always see around you. | S–M | 🔲 |
 | 3 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
 | 4 | **In-game controls overlay (`?` / `H`)** | Keybindings keep growing; show them in-game. README table already exists. | S | 💭 |
@@ -44,9 +48,10 @@
 
 ## Parking lot / notes
 
-- 💭 **Resolution bump — under review.** Should chaosBunny leave 256×192? Detailed
-  cost/identity analysis + decision in `docs/resolution.sk.md` (local, Slovak).
-  Current lean: **keep 256×192** (it's the last strong ZX signifier).
+- ✅ **Resolution — decided: keep 256×192** (a future hi-res *remaster* only, never this
+  engine). Full cost/identity analysis in `docs/resolution.sk.md` (local, Slovak).
+- 💭 **Mono vs clash:** keep both — mono = clean no-clash readability, clash = authentic
+  bleed; together they show zx-kit's range. Not redundant.
 - More music arrives with more levels → the shuffle-bag scales automatically (N tracks).
 - Earlier perf & colour-clash history and rationale: `CLAUDE.md`, `docs/retrospective-2026-06-01.md`.
 - Each item is its own small, checkpointed commit (playtest between steps).

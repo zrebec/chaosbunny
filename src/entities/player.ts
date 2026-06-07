@@ -13,7 +13,7 @@
  */
 import {
   mirrorBitmap, bitmapPixelMask, resolveRectX, resolveRectY, isHeld, CELL,
-  type Rect, type Bitmap, type PixelMask, type TileMap,
+  type Rect, type Bitmap, type PixelMask, type TileMap, type SpectrumColor,
   C,
 } from 'zx-kit'
 import type { Painter } from '../world/clash.js'
@@ -323,13 +323,22 @@ export function playerMask(p: Player): PixelMask {
   return p.facing < 0 ? flippedMask(a) : a.mask
 }
 
-export function renderPlayer(paint: Painter, p: Player, camX: number, camY: number): void {
+export function renderPlayer(paint: Painter, p: Player, camX: number, camY: number, soloInk?: SpectrumColor): void {
   // Blink while invulnerable.
   if (p.invuln > 0 && Math.floor(p.invuln / 70) % 2 === 1) return
   const asset = frameAsset(p)
   const x = Math.round(p.x - camX)
   const y = Math.round(p.y - camY)
   const layer = (bitmap: Bitmap): Bitmap => p.facing < 0 ? flippedBitmap(bitmap) : bitmap
+
+  // Clash view: draw the whole silhouette in ONE ink, so the rabbit doesn't clash
+  // with itself (its colour layers would each re-attribute the cells they touch). It
+  // still clashes with obstacles per cell — the rabbit is stamped last, so a shared
+  // 8×8 cell snaps to the rabbit's ink.
+  if (soloInk) {
+    paint.bitmap(layer(asset.bitmap), x, y, soloInk, undefined, true)
+    return
+  }
 
   // Four colour layers in the full-colour view. In mono they all collapse to one
   // ink — a clean rabbit silhouette, no clash. The authored sprite is mono-first:

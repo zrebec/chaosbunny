@@ -1,4 +1,5 @@
 /** Global game constants. */
+import { C, type SpectrumColor } from 'zx-kit'
 
 export const GAME_WIDTH = 256
 export const GAME_HEIGHT = 192
@@ -95,8 +96,10 @@ export const physics = {
 export const JUMP_APEX_PX = (physics.jumpVelocity ** 2) / (2 * physics.gravity)
 export const JUMP_REACH_PX = physics.maxSpeed * (Math.abs(physics.jumpVelocity) / physics.gravity)
 
-/** Ink colour for the (monochrome-first) rabbit — bright ZX blue/cyan. */
-export const RABBIT_INK = '#00FFFF' as const
+/** Ink for the rabbit's silhouette in the authentic-clash view (`C` → clash): one
+ *  flat colour so the rabbit doesn't clash with itself. Pick any palette colour;
+ *  bright cyan keeps the cute identity and pops on the cave. */
+export const CLASH_RABBIT_INK: SpectrumColor = C.B_CYAN
 
 /** Ink colour for the carrot spark projectile. */
 export const CARROT_INK = '#FFFF00' as const

@@ -38,7 +38,7 @@ import {
   tickParticles,
   renderParticles,
 } from 'zx-kit'
-import { GAME_WIDTH, GAME_HEIGHT, CANVAS_SCALE, LIGHTING_MODE, FLOOR_TARGET } from './config.js'
+import { GAME_WIDTH, GAME_HEIGHT, CANVAS_SCALE, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
 import { LEVEL } from './world/level.js'
 import { HEART } from './art/sprites.js'
@@ -272,7 +272,7 @@ function frame(now: number): void {
     renderBats(attrPaint, bats, camX, camY)
     renderShots(attrPaint, shots, camX, camY)
     renderTorches(attrPaint, torches, camX, camY)
-    renderPlayer(attrPaint, player, camX, camY)
+    renderPlayer(attrPaint, player, camX, camY, CLASH_RABBIT_INK) // one ink → no self-clash
     flushAttrScreen(ctx, attr)
     // Moon stays a colour glow on top (same as mono).
     renderMoon(ctx, moon, camX, camY, now, exitOpen)

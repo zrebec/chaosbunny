@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { createAttrScreen, clearAttrScreen, createBitmapFromRows, C } from 'zx-kit'
+import { createAttrScreen, clearAttrScreen, createBitmapFromRows, C, type AttrScreen } from 'zx-kit'
 import { nextViewMode, attrPainter, type ViewMode } from '../src/world/clash.js'
+import { createPlayer, renderPlayer } from '../src/entities/player.js'
 
 describe('nextViewMode — the C playfield cycle', () => {
   it('cycles bricks → black → mono → clash → bricks', () => {
@@ -39,5 +40,36 @@ describe('attrPainter — authentic clash glue', () => {
     expect(scr.pixels[3]).toBe(1)             // (3,0) lit
     expect(scr.pixels[3 + scr.width]).toBe(1) // (3,1) lit — column continues down
     expect(scr.pixels[4]).toBe(0)             // (4,0) untouched (only 1px wide)
+  })
+})
+
+describe('clash rabbit — single ink (no self-clash)', () => {
+  /** Distinct inks across every cell that received a lit pixel. */
+  function litCellInks(scr: AttrScreen): Set<number> {
+    const inks = new Set<number>()
+    for (let cy = 0; cy < scr.rows; cy++) {
+      for (let cx = 0; cx < scr.cols; cx++) {
+        let lit = false
+        for (let yy = 0; yy < 8 && !lit; yy++)
+          for (let xx = 0; xx < 8; xx++)
+            if (scr.pixels[(cy * 8 + yy) * scr.width + (cx * 8 + xx)]) { lit = true; break }
+        if (lit) inks.add(scr.cellInk[cy * scr.cols + cx]!)
+      }
+    }
+    return inks
+  }
+
+  it('solo-ink: the whole rabbit is one ink across its cells', () => {
+    const scr = createAttrScreen(8, 8) // 64×64, room for the 24×24 rabbit
+    clearAttrScreen(scr, C.BLACK)
+    renderPlayer(attrPainter(scr, C.BLACK), createPlayer(8, 8), 0, 0, C.B_CYAN)
+    expect(litCellInks(scr).size).toBe(1) // no self-clash — one colour everywhere
+  })
+
+  it('without solo-ink the 4 colour layers self-clash (≥ 2 inks)', () => {
+    const scr = createAttrScreen(8, 8)
+    clearAttrScreen(scr, C.BLACK)
+    renderPlayer(attrPainter(scr, C.BLACK), createPlayer(8, 8), 0, 0) // full colour layers
+    expect(litCellInks(scr).size).toBeGreaterThanOrEqual(2)
   })
 })
