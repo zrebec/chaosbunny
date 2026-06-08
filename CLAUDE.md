@@ -1165,6 +1165,19 @@ The debug overlay must make it obvious when AABB overlaps but pixel masks do not
 
 The doc above is the original design brief. Reality has moved on; this section is the source of truth for *where the game is now*.
 
+## Latest — 2026-06-07 (what's shipped since)
+
+Live backlog is **`docs/ROADMAP.md`** (read it first). Since the 2026-05-31 notes:
+
+- **Audio:** instant `M`/`N` (zx-kit `AYHandle`), seeded shuffle-bag auto-rotation (`MUSIC_LOOPS_PER_TRACK`), mute that *stays* muted.
+- **Crouch is a real verb:** shorter crouch box, crawl-only **crouch-gates** (overhangs), can't stand under a low ceiling, no jump from a crouch; a reachability **linter** (`tests/level.tests.ts`) rejects unfair gates. See `docs/crouch-gates.md`.
+- **Carrot shot at two heights** (`muzzle()`): standing high, crouch low — a low bat is only hittable crouched.
+- **`C` cycles four playfield looks:** bricks → black bg → mono → **authentic ZX attribute clash** (zx-kit `attrscreen` via `attrPainter` in `world/clash.ts`); the clash rabbit is one ink (`CLASH_RABBIT_INK`) so it doesn't self-clash.
+
+**Decisions:** stay at **256×192** (hi-res only as a future remaster — see `docs/resolution.sk.md`); keep **both** mono and clash (they show zx-kit's range).
+
+**Direction — keep it lean:** what zx-kit owns, let zx-kit own (`SCALE`, `CELL`, palette `C` — use `C.*`, never raw hex). Next is a cleanup pass: drop the **dead procedural generator** (`generateCaveRoom`/`buildCaveRoom` + staircase consts + `generate.tests.ts`) now that the game is fixed-level. See ROADMAP #1.
+
 ## What the game is
 
 A cute-rabbit **vertical cave climber**. Loop: **collect all carrots → the moon (the exit) opens → escape to the moonlit surface.** Chosen feel = **Manic Miner spine, de-cruelled** (collect-then-exit, hazards you avoid, gentle 3-HP + respawn — never instant death). Mantra: *reviving the ZX Spectrum without the Speccy HW limits.*
