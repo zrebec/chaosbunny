@@ -102,4 +102,4 @@ export const JUMP_REACH_PX = physics.maxSpeed * (Math.abs(physics.jumpVelocity) 
 export const CLASH_RABBIT_INK: SpectrumColor = C.B_CYAN
 
 /** Ink colour for the carrot spark projectile. */
-export const CARROT_INK = '#FFFF00' as const
+export const CARROT_INK: SpectrumColor = C.B_YELLOW
