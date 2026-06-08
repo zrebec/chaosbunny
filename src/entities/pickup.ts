@@ -4,7 +4,7 @@
  * never on bounding-box proximity alone.
  */
 import { masksOverlap, C, type PixelMask } from 'zx-kit'
-import type { Painter } from '../world/clash.js'
+import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
 
 export interface Carrot {

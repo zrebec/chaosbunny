@@ -6,7 +6,7 @@
  *  - it curls only when a carrot spark's real pixels overlap its real pixels.
  */
 import { masksOverlap, C, type PixelMask } from 'zx-kit'
-import type { Painter } from '../world/clash.js'
+import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
 import { shotMask, type Shot } from './projectile.js'
 

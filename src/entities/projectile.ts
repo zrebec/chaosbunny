@@ -9,7 +9,7 @@ import {
   mirrorBitmap, bitmapPixelMask, pixelSolidCount,
   type Bitmap, type PixelMask, type TileMap,
 } from 'zx-kit'
-import type { Painter } from '../world/clash.js'
+import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
 import { CARROT_INK } from '../config.js'
 

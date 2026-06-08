@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createAttrScreen, clearAttrScreen, createBitmapFromRows, C, type AttrScreen } from 'zx-kit'
-import { nextViewMode, attrPainter, type ViewMode } from '../src/world/clash.js'
+import { nextViewMode, attrPainter, type ViewMode } from '../src/world/playfield.js'
 import { createPlayer, renderPlayer } from '../src/entities/player.js'
 
 describe('nextViewMode — the C playfield cycle', () => {

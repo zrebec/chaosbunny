@@ -1,15 +1,17 @@
 /**
- * Clash/mono rendering glue (chaosBunny-local).
+ * Playfield rendering glue (chaosBunny-local): the `C`-cycle view modes plus the
+ * render-target adapters they use.
  *
- * A {@link Painter} is "where to draw" — it lets every entity render the same way
- * in both modes without knowing which:
- *  - {@link ctxPainter} draws full colour straight to the canvas (default game).
- *  - {@link monoPainter} draws into a zx-kit {@link MonoScreen} (clash mode), so
- *    everything — tiles, rabbit, spiders, the spider thread, shots — collapses to
- *    one ink + one paper. No clash, ever; the white-spider-on-cyan problem is gone.
+ * A {@link Painter} is "where to draw" — every entity renders through the same
+ * `bitmap()`/`rect()` interface without knowing the target:
+ *  - {@link ctxPainter} draws full colour straight to the canvas (fantasy default).
+ *  - {@link monoPainter} draws into a zx-kit {@link MonoScreen} — everything collapses
+ *    to one ink + one paper (the classic anti-clash playfield).
+ *  - {@link attrPainter} stamps into a zx-kit {@link AttrScreen} — authentic per-8×8-cell
+ *    colour clash.
  *
- * The default (clash-off) view is byte-identical to before: `ctxPainter` is just
- * `drawBitmap` / `fillRect`.
+ * {@link nextViewMode} cycles the four looks (bricks → black → mono → clash). The
+ * default full-colour view is byte-identical to direct `drawBitmap` / `fillRect`.
  */
 import {
   CELL, drawBitmap, drawMonoBitmap, fillMono, stampMono,

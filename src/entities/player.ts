@@ -16,7 +16,7 @@ import {
   type Rect, type Bitmap, type PixelMask, type TileMap, type SpectrumColor,
   C,
 } from 'zx-kit'
-import type { Painter } from '../world/clash.js'
+import type { Painter } from '../world/playfield.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
 import { physics } from '../config.js'

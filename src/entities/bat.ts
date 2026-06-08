@@ -4,7 +4,7 @@
  * only on real mask overlap; the carrot affects it only on real mask overlap.
  */
 import { mirrorBitmap, masksOverlap, bitmapPixelMask, C, type Bitmap, type PixelMask } from 'zx-kit'
-import type { Painter } from '../world/clash.js'
+import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
 import { shotMask, type Shot } from './projectile.js'
 

@@ -9,7 +9,7 @@ import {
   createBitmapFromRows, emitParticles, CELL, C,
   type Bitmap, type ParticleSystem,
 } from 'zx-kit'
-import type { Painter } from '../world/clash.js'
+import type { Painter } from '../world/playfield.js'
 import type { Light } from '../world/lighting.js'
 
 const BRACKET: Bitmap = createBitmapFromRows([

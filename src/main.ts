@@ -56,7 +56,7 @@ import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
 import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackName } from './audio/music.js'
-import { drawTiles, ctxPainter, monoPainter, attrPainter, nextViewMode, type ViewMode } from './world/clash.js'
+import { drawTiles, ctxPainter, monoPainter, attrPainter, nextViewMode, type ViewMode } from './world/playfield.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = setupCanvas(canvas, CANVAS_SCALE, GAME_WIDTH, GAME_HEIGHT)
