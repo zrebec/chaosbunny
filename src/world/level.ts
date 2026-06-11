@@ -8,6 +8,7 @@
  * floors. Ladders are wired in the format (`ladders`) but unused until the climb
  * mechanic lands — then they can connect tighter, stacked sections.
  */
+import { C } from 'zx-kit'
 import type { LevelData } from './room.js'
 
 export const LEVEL: LevelData = {
@@ -16,6 +17,16 @@ export const LEVEL: LevelData = {
 
   spawn: { x: 4, y: 51 },
   exit: { x: 18, y: 1, w: 4, h: 6 }, // ceiling hole above the top platform
+
+  // Depth strata — fake biomes (build-time tile inks; see LevelStratum). The
+  // climb gets colder toward the moon: deep green cave → fungal mid-cave →
+  // moon-touched frost. Mechanic tiles (crumble, overhang lip, ladder) keep
+  // their global signal colours in every stratum.
+  strata: [
+    { fromRow: 0, stoneInk: C.B_WHITE, mossInk: C.B_CYAN },  // frost (platforms 9–11)
+    { fromRow: 20, stoneInk: C.CYAN, mossInk: C.B_MAGENTA }, // fungal (platforms 4–8)
+    { fromRow: 36 },                                         // deep cave — global theme
+  ],
 
   // Zig-zag staircase, bottom → top. Each platform is 4 rows above the previous
   // (head clearance) and beside it with a 1–2 tile air gap (within jump reach).

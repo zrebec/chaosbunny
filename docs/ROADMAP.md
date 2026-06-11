@@ -35,6 +35,14 @@
   as one ink (the union silhouette `asset.bitmap`) so it no longer self-clashes, but still
   clashes with obstacles per cell. Colour is `CLASH_RABBIT_INK` (palette, in `config.ts`).
   No sprite rewrite, no zx-kit change. Tests: single ink across the rabbit's cells.
+- ✅ **2026-06-11 — Fake biomes v1: depth strata.** `LEVEL.strata` colours ambient
+  tiles (stone, moss) per depth band at build time — deep green cave → fungal
+  mid-cave → moon-touched frost; colder toward the moon. Mechanic tiles (crumble,
+  overhang lip, ladder) keep global signal inks in every stratum (readability rule).
+  No runtime switching — inks are stamped into tiles by `buildRoomFromLevel`
+  (strata are level data, defaults stay `THEME_*` constants). Tests guard per-stratum
+  inks + that strata visibly differ. Real biomes (music, darkness moods, 50 floors)
+  remain B14.
 - ✅ **2026-06-10 — Smooth cave lighting (torches + moon).** Darkness is on by default
   with a smooth ambient overlay cut out around wall torches and the moon (dim until the
   exit opens — a goal signal). Rabbit and carrot shots don't illuminate the cave (the

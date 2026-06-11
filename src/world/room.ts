@@ -54,6 +54,20 @@ export interface LevelData {
   /** Bat patrols around `(x,y)` over a horizontal `range` (tiles). */
   bats: ReadonlyArray<{ x: number; y: number; range: number }>
   torches: ReadonlyArray<{ x: number; y: number }>
+  /** Depth strata — fake biomes, applied at build time (no runtime switching).
+   *  Each stratum starts at `fromRow` (y-down) and reaches down to the next
+   *  stratum's `fromRow - 1` (the last one reaches the floor). Only the ambient
+   *  inks (stone, moss) vary; mechanic tiles (crumble, overhang lip, ladder)
+   *  keep their global THEME signal colours so the player can read them in
+   *  every biome. Omitted inks fall back to the global theme. */
+  strata?: ReadonlyArray<LevelStratum>
+}
+
+export interface LevelStratum {
+  /** Topmost row of this stratum (tiles, y-down). */
+  fromRow: number
+  stoneInk?: SpectrumColor
+  mossInk?: SpectrumColor
 }
 
 function tile(key: AtlasKey, ink: SpectrumColor, paper: SpectrumColor, solid: boolean, id: string): Tile {
@@ -71,20 +85,32 @@ export function buildRoomFromLevel(level: LevelData): Room {
   const floorRow = rows - 1
   const map = createTileMap(cols, rows)
 
-  const stone = () => tile('caveStoneTile', THEME_STONE_INK, C.BLACK, true, 'stone')
-  const moss = () => tile('mossPlatformTile', THEME_MOSS_INK, C.BLACK, true, 'moss')
+  // Depth strata (fake biomes): pick the ambient ink for a row at build time.
+  const strata = [...(level.strata ?? [])].sort((a, b) => a.fromRow - b.fromRow)
+  const stratumAt = (row: number): LevelStratum | undefined => {
+    let hit: LevelStratum | undefined
+    for (const s of strata) if (row >= s.fromRow) hit = s
+    return hit
+  }
+
+  const stone = (row: number) =>
+    tile('caveStoneTile', stratumAt(row)?.stoneInk ?? THEME_STONE_INK, C.BLACK, true, 'stone')
+  const moss = (row: number) =>
+    tile('mossPlatformTile', stratumAt(row)?.mossInk ?? THEME_MOSS_INK, C.BLACK, true, 'moss')
   const crumble = () => tile('crumbleTile', THEME_CRUMBLE_INK, C.BLACK, true, 'crumble')
 
-  // Solid border: ceiling, floor, both walls.
-  map.fillRect(0, 0, cols, 1, stone())
-  map.fillRect(0, floorRow, cols, 1, stone())
-  map.fillRect(0, 0, 1, rows, stone())
-  map.fillRect(cols - 1, 0, 1, rows, stone())
+  // Solid border: ceiling, floor, both walls (walls per row — they cross strata).
+  map.fillRect(0, 0, cols, 1, stone(0))
+  map.fillRect(0, floorRow, cols, 1, stone(floorRow))
+  for (let r = 0; r < rows; r++) {
+    map.setTile(0, r, stone(r))
+    map.setTile(cols - 1, r, stone(r))
+  }
 
   // Carve the ceiling at the exit hole.
   for (let c = level.exit.x; c < level.exit.x + level.exit.w; c++) map.clearTile(c, 0)
 
-  for (const p of level.platforms) map.fillRect(p.x, p.y, p.w, 1, p.kind === 'crumble' ? crumble() : moss())
+  for (const p of level.platforms) map.fillRect(p.x, p.y, p.w, 1, p.kind === 'crumble' ? crumble() : moss(p.y))
 
   // Low overhangs — only the crouched (shorter) box fits under the bottom lip. A
   // taller block (h > 1) caps the gate with solid stone so it can't be jumped over;
@@ -93,7 +119,7 @@ export function buildRoomFromLevel(level: LevelData): Room {
   for (const o of level.overhangs) {
     const h = o.h ?? 1
     for (let r = 0; r < h; r++) {
-      map.fillRect(o.x, o.y + r, o.w, 1, r === h - 1 ? overhangLip() : stone())
+      map.fillRect(o.x, o.y + r, o.w, 1, r === h - 1 ? overhangLip() : stone(o.y + r))
     }
   }
 
