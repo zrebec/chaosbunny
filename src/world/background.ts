@@ -8,8 +8,11 @@
  * Pure visual: the tiles are monochrome bitmaps (X/.), drawn with a transparent
  * background in a dim blue, so the black cave shows through the mortar lines.
  */
-import { createBitmapFromRows, drawBitmap, createRng, CELL, C, type Bitmap, type SpectrumColor } from 'zx-kit'
-import { GAME_WIDTH, GAME_HEIGHT } from '../config.js'
+import { createBitmapFromRows, drawBitmap, createRng, CELL, type Bitmap, type SpectrumColor } from 'zx-kit'
+import {
+  GAME_WIDTH, GAME_HEIGHT,
+  BG_BRICK_INK, BG_DECO_INK, BG_PARALLAX, BG_DECO_DENSITY, BG_GRIT,
+} from '../config.js'
 
 const BRICK = [
   '.XXXXXXX',
@@ -95,13 +98,9 @@ const SKULL = [
 
 interface Deco { bmp: Bitmap; ink: SpectrumColor }
 const DECOS: Deco[] = [
-  { bmp: createBitmapFromRows(CHAIN), ink: C.WHITE }, // rusty chain
-  { bmp: createBitmapFromRows(SKULL), ink: C.WHITE }, // skull
+  { bmp: createBitmapFromRows(CHAIN), ink: BG_DECO_INK }, // rusty chain
+  { bmp: createBitmapFromRows(SKULL), ink: BG_DECO_INK }, // skull
 ]
-
-/** Fraction of camera movement the backdrop scrolls at (0 = static, 1 = locked). */
-const PARALLAX = 0.5
-const INK = C.BLUE
 
 /** Stable per-cell tile choice — same cell always picks the same variant. */
 function bgIndex(col: number, row: number): number {
@@ -126,14 +125,14 @@ let bgH = 0
 export function initBackground(worldW: number, worldH: number, seed = 'chaosBunny-dungeon'): void {
   const rng = createRng(seed)
   // Cover the whole parallax window the camera can ever show, plus a tile margin.
-  bgW = GAME_WIDTH + Math.ceil(worldW * PARALLAX) + CELL
-  bgH = GAME_HEIGHT + Math.ceil(worldH * PARALLAX) + CELL
+  bgW = GAME_WIDTH + Math.ceil(worldW * BG_PARALLAX) + CELL
+  bgH = GAME_HEIGHT + Math.ceil(worldH * BG_PARALLAX) + CELL
   const cols = Math.ceil(bgW / CELL)
   const rows = Math.ceil(bgH / CELL)
 
   // Scatter decorations across the grid (deterministic).
   const decoMap = new Map<string, number>()
-  const count = Math.max(1, Math.floor(cols * rows * 0.04))
+  const count = Math.max(1, Math.floor(cols * rows * BG_DECO_DENSITY))
   for (let i = 0; i < count; i++) {
     decoMap.set(`${rng.int(cols)},${rng.int(rows)}`, rng.int(DECOS.length))
   }
@@ -148,10 +147,28 @@ export function initBackground(worldW: number, worldH: number, seed = 'chaosBunn
     for (let tx = 0; tx < cols; tx++) {
       const x = tx * CELL
       const y = ty * CELL
-      drawBitmap(bctx, BG_TILES[bgIndex(tx, ty)]!, x, y, INK)
-      const d = decoMap.get(`${tx},${ty}`)
-      if (d !== undefined) drawBitmap(bctx, DECOS[d]!.bmp, x, y, DECOS[d]!.ink)
+      drawBitmap(bctx, BG_TILES[bgIndex(tx, ty)]!, x, y, BG_BRICK_INK)
     }
+  }
+
+  // Grit: knock single pixels out of the brick faces so the wall reads worn and
+  // broken — no sprite redraw needed. Per-pixel hash, so the erosion is stable
+  // across runs and camera moves. One-time cost at init (the wall is cached).
+  if (BG_GRIT > 0) {
+    bctx.fillStyle = '#000'
+    for (let y = 0; y < bgH; y++) {
+      for (let x = 0; x < bgW; x++) {
+        let h = (Math.imul(x, 2246822519) + Math.imul(y, 3266489917)) >>> 0
+        h = (h ^ (h >>> 15)) >>> 0
+        if ((h & 0xff) < BG_GRIT * 256) bctx.fillRect(x, y, 1, 1)
+      }
+    }
+  }
+
+  // Decorations go on top of the grit so chains and skulls stay readable.
+  for (const [key, d] of decoMap) {
+    const [tx, ty] = key.split(',').map(Number) as [number, number]
+    drawBitmap(bctx, DECOS[d]!.bmp, tx * CELL, ty * CELL, DECOS[d]!.ink)
   }
 }
 
@@ -161,7 +178,7 @@ export function initBackground(worldW: number, worldH: number, seed = 'chaosBunn
  */
 export function drawDungeonBackground(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
   if (!bgCanvas) return
-  const ox = Math.max(0, Math.min(bgW - GAME_WIDTH, Math.round(camX * PARALLAX)))
-  const oy = Math.max(0, Math.min(bgH - GAME_HEIGHT, Math.round(camY * PARALLAX)))
+  const ox = Math.max(0, Math.min(bgW - GAME_WIDTH, Math.round(camX * BG_PARALLAX)))
+  const oy = Math.max(0, Math.min(bgH - GAME_HEIGHT, Math.round(camY * BG_PARALLAX)))
   ctx.drawImage(bgCanvas, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
 }

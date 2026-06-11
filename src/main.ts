@@ -3,8 +3,9 @@
  *
  * Cave room (scrolling tilemap) + rabbit + carrot spark + pixel-perfect carrots,
  * spider and bat (every hit/pickup decided by `masksOverlap`, never bounding
- * boxes). Controls: ←/→ or A/D move, Space/↑ jump, ↓ crouch, Z/Ctrl shoot.
- * L lights, M music mute, N next music, C mono (monochrome playfield);
+ * boxes). Controls: ←/→ or A/D move, Space/W jump, ↑/↓ climb, ↓/S crouch,
+ * Z/Ctrl shoot. B (or P / gamepad Start) pauses — freezes everything and shows
+ * the key help. L lights, M music mute, N next music, C playfield look;
  * Ctrl+Shift+B toggles the debug overlay.
  */
 import {
@@ -32,6 +33,7 @@ import {
   flushAttrScreen,
   initInput,
   consumeDebug,
+  consumePause,
   consumeAnyKey,
   rectsOverlap,
   createParticleSystem,
@@ -43,7 +45,7 @@ import { buildRoomFromLevel } from './world/room.js'
 import { LEVEL } from './world/level.js'
 import { HEART } from './art/sprites.js'
 import { drawDungeonBackground, initBackground } from './world/background.js'
-import { initLighting, renderDarkness, type Light } from './world/lighting.js'
+import { initLighting, renderDarkness } from './world/lighting.js'
 import { makeMoon, moonLight, renderMoon } from './world/moon.js'
 import { makeCrumblers, updateCrumblers } from './world/crumble.js'
 import { makeTorches, emitTorchFire, torchLights, renderTorches } from './entities/torch.js'
@@ -65,20 +67,48 @@ canvas.style.height = ''
 
 initInput()
 // First gesture unlocks audio and kicks off the background music loop.
-const unlockAudio = () => { ensureAudio(); startMusic() }
+// (Gated on pause — a key press while paused must not restart the music.)
+const unlockAudio = () => { ensureAudio(); if (!paused) startMusic() }
 window.addEventListener('keydown', unlockAudio)
 window.addEventListener('pointerdown', unlockAudio)
+
+// Pause (B, or zx-kit's P / gamepad Start): freezes the whole game — updates,
+// music, particle time, torch pulse — and shows the key help over the scene.
+let paused = false
+function togglePause(): void {
+  if (state !== 'playing') return // result screens have their own "any key" flow
+  paused = !paused
+  if (paused) stopMusic()
+  else startMusic() // respects the M mute flag
+}
 
 // Lighting toggle (L): play with the cave lit or dark. Darkness rendering lives
 // in zx-kit now; `lightsOn` just gates whether we draw it this frame.
 let lightsOn = LIGHTING_MODE !== 'none'
 let viewMode: ViewMode = 'bricks' // C cycles the playfield look: bricks → black → mono
 window.addEventListener('keydown', (e) => {
+  // Plain B only — Ctrl+Shift+B is the debug toggle.
+  if ((e.key === 'b' || e.key === 'B') && !e.ctrlKey && !e.metaKey && !e.altKey) togglePause()
+  if (paused) return // paused means paused: every other toggle waits
   if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
   if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
   if (e.key === 'n' || e.key === 'N') nextMusicTrack() // next AY loop
   if (e.key === 'c' || e.key === 'C') viewMode = nextViewMode(viewMode) // cycle playfield look
 })
+
+// Key help shown while paused (B10) — mirrors the README controls table.
+const PAUSE_HELP: ReadonlyArray<readonly [string, string]> = [
+  ['ARROWS A D', 'MOVE'],
+  ['SPACE W', 'JUMP'],
+  ['UP DOWN', 'CLIMB LADDER'],
+  ['DOWN S', 'CROUCH'],
+  ['Z CTRL', 'THROW CARROT'],
+  ['L', 'LIGHTS'],
+  ['M', 'MUSIC ON/OFF'],
+  ['N', 'NEXT TRACK'],
+  ['C', 'PLAYFIELD LOOK'],
+  ['B P', 'PAUSE'],
+]
 
 let room = buildRoomFromLevel(LEVEL)
 const world = tileMapWorldSize(room.map)
@@ -125,6 +155,10 @@ const TOTAL_CARROTS = LEVEL.carrots.length // collect them all to open the moon 
 let debug = false
 let last = performance.now()
 let frameMs = 16 // smoothed real frame time (debug FPS readout)
+// Game clock for time-driven visuals (torch pulse, moon breathing). Unlike
+// `now` it stops while paused, so a pause freezes the flames mid-flicker —
+// and any future timer derives from it instead of wall time.
+let gameTime = 0
 
 // ── Goal: climb to the escape hatch ───────────────────────────────────────────
 // Floor 0 at spawn → FLOOR_TARGET at the top ledge under the exit. The counter
@@ -172,8 +206,10 @@ function frame(now: number): void {
   frameMs += (rawDt - frameMs) * 0.08 // EMA of actual frame time
 
   if (consumeDebug()) debug = !debug
+  if (consumePause()) togglePause() // P / gamepad Start (B handled on keydown)
+  if (!paused) gameTime += dt // freeze flames, moon and future timers while paused
 
-  if (state === 'playing') {
+  if (state === 'playing' && !paused) {
     const ev = updatePlayer(player, room.map, dt)
     if (ev.jumped) SFX.jump()
     if (ev.landed) SFX.land()
@@ -229,7 +265,7 @@ function frame(now: number): void {
 
     setCameraTarget(cam, player.x + 8, player.y + 16)
     tickCamera(cam, dt)
-  } else {
+  } else if (state !== 'playing') {
     // Result screen: drain input every frame (ignore the keys that ended the
     // run / are still held), then a fresh press after a short delay restarts.
     endTimer += dt
@@ -261,7 +297,7 @@ function frame(now: number): void {
     renderPlayer(monoPaint, player, camX, camY)
     flushMonoScreen(ctx, mono, 0, 0)
     // The moon is the exit beacon (a light source) — keep it a colour glow on top.
-    renderMoon(ctx, moon, camX, camY, now, exitOpen)
+    renderMoon(ctx, moon, camX, camY, gameTime, exitOpen)
   } else if (viewMode === 'clash') {
     // Authentic ZX attribute clash: stamp EVERYTHING into the AttrScreen so each 8×8
     // cell snaps to one ink + one paper (the famous colour bleed), then flush once.
@@ -275,7 +311,7 @@ function frame(now: number): void {
     renderPlayer(attrPaint, player, camX, camY, CLASH_RABBIT_INK) // one ink → no self-clash
     flushAttrScreen(ctx, attr)
     // Moon stays a colour glow on top (same as mono).
-    renderMoon(ctx, moon, camX, camY, now, exitOpen)
+    renderMoon(ctx, moon, camX, camY, gameTime, exitOpen)
   } else {
     if (viewMode === 'bricks') drawDungeonBackground(ctx, camX, camY) // bricks look only; 'black' lets the cleared black show
     // Cached tile layer: render the whole map once, then blit the camera window.
@@ -292,15 +328,15 @@ function frame(now: number): void {
     renderTorches(paint, torches, camX, camY)
     renderPlayer(paint, player, camX, camY)
 
-    // Lighting + glow — full-colour view only (mono playfields have no soft light).
-    const lights: Light[] = [
-      { x: player.x + 8 - camX, y: player.y + 16 - camY, radius: 72, intensity: 1.0 },
-      moonLight(moon, camX, camY, exitOpen ? 1 : 0.3), // dim until all carrots collected
-    ]
-    for (const l of torchLights(torches, camX, camY, now)) lights.push(l)
-    for (const s of shots) if (s.active) lights.push({ x: s.x - camX, y: s.y - camY, radius: 38, intensity: 0.9 })
-    if (lightsOn) renderDarkness(ctx, lights, camY, world.height)
-    renderMoon(ctx, moon, camX, camY, now, exitOpen)
+    // Wall torches and the moon illuminate the cave — the rabbit and shots do
+    // not (the planned lantern tool will light the rabbit, the carrot stays dark).
+    // The moon glows dim until every carrot is collected: a "not yet" signal.
+    if (lightsOn) {
+      const lights = torchLights(torches, camX, camY, gameTime)
+      lights.push(moonLight(moon, camX, camY, exitOpen ? 1 : 0.3))
+      renderDarkness(ctx, lights)
+    }
+    renderMoon(ctx, moon, camX, camY, gameTime, exitOpen)
     renderParticles(ctx, fire, camX, camY)
   }
 
@@ -338,6 +374,21 @@ function frame(now: number): void {
     drawText(ctx, `music:${currentMusicTrackName()}`, 2, 22, C.B_MAGENTA)
   }
 
+  // Pause overlay — frozen scene below, blinking PAUSED + key help on top.
+  // Blink runs on real `now` (gameTime is frozen while paused by design).
+  if (paused) {
+    ctx.fillStyle = 'rgba(0,0,0,0.62)'
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
+    const cols = GAME_WIDTH / CELL
+    if (Math.floor(now / 450) % 2 === 0) drawTextCentered(ctx, 'PAUSED', 26, cols, C.B_YELLOW)
+    let y = 52
+    for (const [key, action] of PAUSE_HELP) {
+      drawText(ctx, key, 3 * CELL, y, C.B_CYAN)
+      drawText(ctx, action, 15 * CELL, y, C.B_WHITE)
+      y += 12
+    }
+  }
+
   // Result overlay — win/lose, above everything but the scanlines.
   if (state !== 'playing') {
     ctx.fillStyle = 'rgba(0,0,0,0.62)'
@@ -361,6 +412,7 @@ function frame(now: number): void {
     ctx.drawImage(scan, 0, 0)
     ctx.restore()
   }
+
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)

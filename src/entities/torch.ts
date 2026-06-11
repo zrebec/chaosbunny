@@ -9,6 +9,10 @@ import {
   createBitmapFromRows, emitParticles, CELL, C,
   type Bitmap, type ParticleSystem,
 } from 'zx-kit'
+import {
+  TORCH_LIGHT_INTENSITY, TORCH_LIGHT_RADIUS,
+  TORCH_PULSE_INTENSITY, TORCH_PULSE_RADIUS, TORCH_PULSE_SPEED,
+} from '../config.js'
 import type { Painter } from '../world/playfield.js'
 import type { Light } from '../world/lighting.js'
 
@@ -52,15 +56,25 @@ export function emitTorchFire(torches: readonly Torch[], fire: ParticleSystem, _
   }
 }
 
-/** Flickering torch lights in screen space (camera already applied). */
+/**
+ * Flame pulse in [-1, 1] — two incommensurate sine waves (≈480 ms and ≈1340 ms
+ * periods at TORCH_PULSE_SPEED = 1) whose sum never exactly repeats, so the
+ * flicker reads as living fire while remaining a pure function of (time, phase).
+ */
+export function torchPulse(time: number, phase: number): number {
+  const t = time * TORCH_PULSE_SPEED
+  return (Math.sin(t * 0.013 + phase) + Math.sin(t * 0.0047 + phase * 1.7)) / 2
+}
+
+/** Pulsing torch lights in screen space (camera already applied). */
 export function torchLights(torches: readonly Torch[], camX: number, camY: number, time: number): Light[] {
   return torches.map((t) => {
-    const flicker = 1 + Math.sin(time * 0.013 + t.phase) * 0.12 + (Math.random() - 0.5) * 0.08
+    const pulse = torchPulse(time, t.phase)
     return {
       x: t.x + CELL / 2 - camX,
       y: t.y + 2 - camY,
-      radius: 42 * flicker,
-      intensity: 0.92,
+      radius: TORCH_LIGHT_RADIUS * (1 + TORCH_PULSE_RADIUS * pulse),
+      intensity: TORCH_LIGHT_INTENSITY * (1 - TORCH_PULSE_INTENSITY * (1 - pulse)),
     }
   })
 }

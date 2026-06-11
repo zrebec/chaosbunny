@@ -1,7 +1,7 @@
 # chaosBunny 🐰
 
 A cute-rabbit **vertical cave climber** for the browser, built on
-[zx-kit](https://www.npmjs.com/package/zx-kit) `^0.31.0` — a modern canvas game
+[zx-kit](https://www.npmjs.com/package/zx-kit) `^0.32.0` — a modern canvas game
 with an authentic ZX Spectrum feel: 256×192, hard pixels, 15-colour palette,
 8×8 dither, four switchable playfield looks (bricks / black / mono / authentic
 colour-clash), AY music and beeper SFX.
@@ -34,23 +34,29 @@ deploys to GitHub Pages via `.github/workflows/ci-deploy.yml`.
 | `M` | Mute / unmute the background music |
 | `N` | Skip to the next AY loop (tracks also auto-shuffle while playing) |
 | `C` | **Cycle playfield look:** bricks → black background → monochrome → authentic ZX colour clash |
+| `B` / `P` / gamepad Start | **Pause** — freezes everything (music, enemies, flames) and shows this key help in-game |
 | `Ctrl+Shift+B` | Debug overlay (note: Firefox steals this shortcut) |
 
 The HUD shows carrots collected, floor reached and HP (hearts); the real running
 zx-kit version sits bottom-left and the FPS bottom-right.
 
-## Lighting (read me)
+## Lighting
 
-The cave can render **dithered darkness** — hard 8×8 light pools with an ordered
-(Bayer) dither edge, *brightest near the moon, darkest at the floor* (a depth
-gradient). It's drawn by zx-kit's [`lighting`](https://www.npmjs.com/package/zx-kit)
-module (pre-baked dither tiles + a per-cell dirty buffer + one blit per frame —
-no per-frame `putImageData`).
+Darkness is **on by default**. A reusable offscreen canvas draws a dim ambient
+overlay, then soft radial cut-outs reveal the cave around wall torches. Each
+torch light **pulses like a living flame** — radius and intensity breathe
+together on two incommensurate sine waves (never exactly repeating, yet fully
+deterministic and tested). The **moon glows too**: dim while carrots remain, full
+once the exit opens — a readable goal signal in the dark. The rabbit and carrot
+shots emit no light, so torch placement controls what the player can read (a
+planned *lantern tool* will give the rabbit its own pulsing light, traded against
+shooting). Press **`L`** to compare the dark and fully lit views.
 
-**Right now darkness is OFF by default** (`LIGHTING_MODE = 'none'` in
-`src/config.ts`) so the level reads clearly while we build content. Press **`L`**
-to turn it on. We'll properly tune it — depth, `MAX_DARKNESS`,
-`SURFACE_LIGHT_FACTOR`, and per-area moods — when we get to **biomes**.
+The main tuning constants live in `src/config.ts`: `CAVE_AMBIENT_DARKNESS`,
+`TORCH_LIGHT_RADIUS`, `TORCH_LIGHT_INTENSITY` and the `TORCH_PULSE_*` pair. The
+removed ZX-dither mode (zx-kit `lighting` + depth gradient) lives in git history
+on `master`; `docs/lighting-archive.md` keeps an older 2026-05-31 snapshot of the
+pre-zx-kit dither plus the design notes.
 
 ## How it's built
 

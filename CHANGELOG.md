@@ -6,22 +6,64 @@ the project aims at [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-06-11
+
 ### Added
+
+**Smooth torch lighting — complete, but OFF by default** (reviewed + extended
+Codex smooth-lighting branch):
+
+- Smooth radial darkness (offscreen canvas + destination-out gradients); only
+  wall torches and the moon emit light — the rabbit and carrot shots stay dark
+  (rabbit light is reserved for the planned lantern tool).
+- Organic torch pulse: two incommensurate sine waves drive radius and intensity
+  together (`torchPulse`); tempo via `TORCH_PULSE_SPEED`.
+- Light falloff as a pure curve (`lightFalloff`) with optional posterised rings
+  (`TORCH_LIGHT_BANDS`) — the modern-vs-retro dial.
+- Moon glow restored as the goal signal (dim until all carrots collected, full
+  once the exit opens).
+- Backdrop feel: worn-brick grit (`BG_GRIT`) + brick/deco inks, parallax and
+  deco density extracted to config (`BG_*`).
+
+> **NOTE:** the final cave look is an open question (smooth vs banded vs
+> BRIGHT-bit — see `docs/new_feel.md`). Lighting ships complete but OFF by
+> default (`LIGHTING_MODE = 'none'`); the `L` key turns it on in-game anytime.
+
+**Pause + controls overlay:**
+
+- `B` (or `P` / gamepad Start) freezes the whole game: music stops (resume
+  respects the `M` mute), all updates skip, and the new `gameTime` clock halts
+  torch pulse, moon breathing and particles mid-flicker.
+- Blinking PAUSED + full key help (`PAUSE_HELP`) over the frozen scene; other
+  toggles (`L`/`M`/`N`/`C`) are locked while paused.
+
+**Shipped since 0.2.0 without a changelog entry (catch-up):**
+
 - **Background music** — a looping arrangement of the traditional **Scarborough
-  Fair** (A-Dorian, ~9.6 s): melody + low bass drone + a heavy kick drum per bar,
-  built on zx-kit's new `music` helpers (note-name composing + a looping player).
-  Press **`M`** to mute / unmute.
-- In-game **version readout** now shows the game version too: `vX.Y.Z/<zx-kit>`.
+  Fair** (A-Dorian, ~9.6 s) plus two original cave loops (*Crystal Drip*, *Deep
+  Burrow*), built on zx-kit's `music` helpers. **`M`** mutes instantly and
+  *stays* muted; **`N`** skips tracks; a seeded shuffle-bag auto-rotates after
+  `MUSIC_LOOPS_PER_TRACK` loops.
+- **Crouch as a real verb** — shorter crouch box, crawl-only crouch-gates, no
+  standing under low ceilings, no jump from a crouch; fairness enforced by the
+  reachability linter (see `docs/crouch-gates.md`).
+- **Carrot shot at two heights** (`muzzle()`) — standing high, crouching low.
+- **`C` cycles four playfield looks** — bricks → black → monochrome → authentic
+  ZX attribute clash; the clash rabbit is a single ink so it never self-clashes.
+- In-game **version readout** shows the game version too: `vX.Y.Z/<zx-kit>`.
 - **CI deploy gate** — GitHub Pages deploys only on releasable commits
   (`feat` / `fix` / `perf` / breaking); docs, refactor, chore… are skipped.
 
 ### Changed
+
 - **Cached offscreen rendering (perf)** — the tile layer and the static CRT
-  scanline overlay now each render once to an offscreen canvas and blit per frame
-  (via zx-kit's new `createLayerCache`); the tile cache is invalidated only when a
-  platform crumbles/respawns or the level resets. Replaces per-frame, per-pixel
-  `fillRect` drawing — the main remaining GPU cost. Requires a `zx-kit` build with
-  the `cache` module.
+  scanline overlay each render once to an offscreen canvas and blit per frame
+  (zx-kit `createLayerCache`); the tile cache is invalidated only when a
+  platform crumbles/respawns or the level resets.
+- **Dead procedural generator removed** — fixed hand-authored levels won;
+  `world/clash.ts` renamed to `world/playfield.ts`.
+- `index.html`: canvas scales to the monitor (drops the 1024px cap).
+- zx-kit `^0.32.0`; torch pulse + light falloff covered by tests.
 - CI deploys from the `master` branch.
 
 ## [0.2.0] — 2026-06-01

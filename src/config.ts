@@ -26,28 +26,67 @@ export const MUSIC_LOOPS_PER_TRACK = 2 as const
 
 /**
  * Lighting starting mode (toggle on/off in-game with the `L` key):
- *  - 'none' — start with the cave fully lit (current default; revisit with biomes).
- *  - 'zx'   — dithered cave darkness (via zx-kit's `lighting` module).
- * Darkness is OFF by default for now while we build levels; `L` turns it on.
+ *  - 'none'   — start with the cave fully lit.
+ *  - 'smooth' — dim ambient cave with soft radial light around torches.
  */
-export const LIGHTING_MODE: 'zx' | 'none' = 'none'
+export const LIGHTING_MODE: 'smooth' | 'none' = 'none'
 
 /**
- * Darkest the cave ever gets — applied at the very **bottom** (deepest) of the
- * world. A fraction of full black (0 = no darkness, 1 = pure black outside every
- * light). Below 1 the unlit cave stays a *dim stipple* — silhouettes remain
- * faintly visible instead of vanishing. Dial up toward 1.0 for a darker deep.
+ * Ambient darkness outside torch light. Keep this below 1 so the cave remains
+ * visible even where no torch reaches.
  */
-export const MAX_DARKNESS = 0.9 as const
+export const CAVE_AMBIENT_DARKNESS = 0.8 as const
+
+/** Soft torch-light reach in screen pixels. Tune this to change the lit area. */
+export const TORCH_LIGHT_RADIUS = 56 as const
+
+/** Maximum amount of ambient darkness removed at the centre of a torch. */
+export const TORCH_LIGHT_INTENSITY = 0.95 as const
 
 /**
- * Depth-based lighting: how dark it stays near the **surface** (the moon), as a
- * fraction of {@link MAX_DARKNESS}. The baseline darkness lerps from
- * `MAX_DARKNESS × SURFACE_LIGHT_FACTOR` at the top to `MAX_DARKNESS` at the
- * bottom — so the deep cave keeps its murk while the climb brightens toward the
- * moonlit exit. 0.12 ≈ "the surface is basically lit". 1.0 disables the gradient.
+ * Organic torch pulse — two incommensurate sine waves (per-torch phase) make the
+ * flame light breathe without ever exactly repeating, while staying a pure
+ * function of time (deterministic, testable). Fractions of the base values:
+ * radius swings ±TORCH_PULSE_RADIUS, intensity dips up to 2×TORCH_PULSE_INTENSITY.
  */
-export const SURFACE_LIGHT_FACTOR = 0.12 as const
+export const TORCH_PULSE_RADIUS = 0.6 as const
+export const TORCH_PULSE_INTENSITY = 0.09 as const
+
+/**
+ * Tempo of the torch pulse — multiplies both sine frequencies, so the flicker
+ * character stays identical, only faster/slower. 1 = the original tempo
+ * (periods ≈ 480 ms + 1340 ms), 0.5 = half speed (calm embers), 2 = frantic.
+ */
+export const TORCH_PULSE_SPEED = 0.6 as const
+
+/**
+ * Posterise the torch/moon light falloff into N hard concentric rings instead of
+ * a continuous gradient — banding reads 8-bit/arcade, smooth reads modern.
+ *  - 0     — smooth gradient (modern, the current look)
+ *  - 3–6   — visible rings (posterized, retro; 4 is a good start)
+ *  - 8+    — approaches smooth again
+ */
+export const TORCH_LIGHT_BANDS = 0 as const
+
+/**
+ * Parallax dungeon backdrop (`world/background.ts`) — the distant brick wall
+ * behind the playfield. Pure visual; rebuilt once per level, so changes here
+ * cost nothing per frame.
+ */
+/** Ink for the backdrop bricks (mortar stays black — the cave shows through). */
+export const BG_BRICK_INK: SpectrumColor = C.BLUE
+/** Ink for wall decorations (chains, skulls). */
+export const BG_DECO_INK: SpectrumColor = C.WHITE
+/** Fraction of camera movement the backdrop scrolls at (0 = static, 1 = locked). */
+export const BG_PARALLAX = 0.5 as const
+/** Fraction of backdrop cells that get a decoration. */
+export const BG_DECO_DENSITY = 0.04 as const
+/**
+ * Worn-brick grit: fraction of backdrop pixels knocked out to black, so the
+ * bricks read broken/eroded without redrawing the sprites. 0 = clean wall,
+ * ~0.33 ≈ "every third pixel gone". Deterministic — the same wall every run.
+ */
+export const BG_GRIT = 0.25 as const
 
 /**
  * Platformer physics in pixel/millisecond units (frame-rate independent —
@@ -75,7 +114,7 @@ export const physics = {
   /** Terminal fall speed clamp (px/ms). */
   maxFallSpeed: 0.7,
   /** Grace window after leaving a ledge during which a jump still fires (ms). */
-  coyoteMs: 100,
+  coyoteMs: 200,
   /** Window before landing during which a jump press is remembered (ms). */
   jumpBufferMs: 120,
   /** Ladder climb speed (px/ms) — a touch slower than running. */

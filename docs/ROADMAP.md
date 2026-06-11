@@ -35,16 +35,22 @@
   as one ink (the union silhouette `asset.bitmap`) so it no longer self-clashes, but still
   clashes with obstacles per cell. Colour is `CLASH_RABBIT_INK` (palette, in `config.ts`).
   No sprite rewrite, no zx-kit change. Tests: single ink across the rabbit's cells.
+- ✅ **2026-06-10 — Smooth cave lighting (torches + moon).** Darkness is on by default
+  with a smooth ambient overlay cut out around wall torches and the moon (dim until the
+  exit opens — a goal signal). Rabbit and carrot shots don't illuminate the cave (the
+  rabbit's light is reserved for the planned lantern tool). Torch light **pulses
+  organically** — radius + intensity on two incommensurate sines, deterministic and
+  covered by tests (`tests/lighting.tests.ts`).
 
 ## Order of work (next → later)
 
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
 | 1 | **Lighten chaosBunny (config + dead-code cleanup)** | The codebase is accreting cruft. Biggest win: remove the **dead procedural generator** (`generateCaveRoom`, `buildCaveRoom`, the staircase constants `STEP_UP`/`PLAT_W_*`/`EDGE_GAP_*`/`LEDGE_*`, and `tests/generate.tests.ts`) — unused since fixed levels won; `room.ts` ~halves. Colours from the palette, not hex (`CARROT_INK` → `C.B_YELLOW`). Drop `CANVAS_SCALE` (duplicates zx-kit `SCALE`). Keep `GAME_WIDTH/HEIGHT` (the game's own screen size — zx-kit doesn't own it). | S | 🔜 next |
-| 2 | **Opt-in dither lighting (re-enable + tune)** | Modern-ZX atmosphere; infra exists (`LIGHTING_MODE`, zx-kit `lighting`). Real work = fairness in the dark — add a rabbit-centred light so you can always see around you. | S–M | 🔲 |
-| 3 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
-| 4 | **In-game controls overlay (`?` / `H`)** | Keybindings keep growing; show them in-game. README table already exists. | S | 💭 |
-| 5 | **Testing push (targeted now, big later)** | Keep adding focused unit tests as features land; defer the 100% / headless-browser sweep until structurally stable. Coverage floor ~75–80 % on logic modules, not 100 % on canvas. | ongoing / L | 💭 |
+| 2 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
+| 3 | **In-game controls overlay** | ✅ **Done 2026-06-11 as part of pause:** `B` (or `P` / gamepad Start) pauses the game — music stops, every update and time-driven visual freezes (`gameTime` clock, separate from wall time) — and a blinking PAUSED + the full key help renders over the frozen scene. | S | ✅ |
+| 4 | **Testing push (targeted now, big later)** | Keep adding focused unit tests as features land; defer the 100% / headless-browser sweep until structurally stable. Coverage floor ~75–80 % on logic modules, not 100 % on canvas. | ongoing / L | 💭 |
+| 5 | **ZX dither lighting (opt-in, restore + tune)** | The `'zx'` mode was removed 2026-06-10 when smooth won as default. Last implementation (zx-kit `lighting` + depth gradient `MAX_DARKNESS`/`SURFACE_LIGHT_FACTOR`) lives in git history on `master`; `docs/lighting-archive.md` only has the older pre-zx-kit snapshot. Restore behind `LIGHTING_MODE` if a biome wants the authentic blocky look. | S–M | 💭 |
 
 ## Parking lot / notes
 
