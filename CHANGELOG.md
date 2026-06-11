@@ -1,37 +1,3 @@
-# 1.0.0 (2026-06-11)
-
-
-### Bug Fixes
-
-* **audio:** keep music muted across audio-unlock gestures ([0cce11e](https://github.com/zrebec/chaosbunny/commit/0cce11e939eca8b397b2956fbb2e8e32d49f4736))
-* **audio:** switch and mute AY music instantly via zx-kit AYHandle ([efeda80](https://github.com/zrebec/chaosbunny/commit/efeda80b8114b019f449cb72d053068c34208b12))
-* guard against a negative first-frame dt (black-screen crash) ([4cc9c6b](https://github.com/zrebec/chaosbunny/commit/4cc9c6b84661112009797c0dff386c270c95c42f))
-* **release:** valid GitHub repository URL in package.json ([725ffc3](https://github.com/zrebec/chaosbunny/commit/725ffc3ea62bd5dbc44a515293d93a8db274ba0f))
-
-
-### Features
-
-* **audio:** auto-shuffle background music every 2 loops ([5690468](https://github.com/zrebec/chaosbunny/commit/56904686bea4911628606a5bb15f09c5b42a4f31))
-* authentic ZX attribute clash as a 4th C-cycle mode ([6f6e07e](https://github.com/zrebec/chaosbunny/commit/6f6e07ef1297d7e67f394560958aa813eede4b8e))
-* C cycles the playfield look (adds a black-background mode) ([e448bb4](https://github.com/zrebec/chaosbunny/commit/e448bb43c2ea20a626be804f6969ae06607d2bcc))
-* carrot shot fires at two heights (crouch shoots low) ([8818e87](https://github.com/zrebec/chaosbunny/commit/8818e87218b05cb18fbe99a5758a34931964296b))
-* collect-to-escape loop, crumbling platforms, zx-kit lighting + perf ([521cf8c](https://github.com/zrebec/chaosbunny/commit/521cf8c6fe823f9f880a3dd3311e1d3011a59bdc))
-* crouch-gates — crouch-only low passages ([377dfbe](https://github.com/zrebec/chaosbunny/commit/377dfbedd6128ed655279b00c8616e99fa99748a))
-* first commit ([d76709c](https://github.com/zrebec/chaosbunny/commit/d76709c44ded48b66a4b08f9be4ef7fcf9ffd897))
-* **mono:** route the whole playfield through zx-kit MonoScreen in clash mode ([a6f6220](https://github.com/zrebec/chaosbunny/commit/a6f622089846c136fe09a9d06f97abb64c3dcd5e))
-* **music:** added background music ([2b6bf7a](https://github.com/zrebec/chaosbunny/commit/2b6bf7acf3ceb80befabe0eb0269babdbd738dab))
-* redesigned levels, added ledders ([a553d89](https://github.com/zrebec/chaosbunny/commit/a553d89fe7085ce75ff281b672ef1de4cecfb542))
-* refresh chaosBunny ZX sprite direction ([b14833a](https://github.com/zrebec/chaosbunny/commit/b14833ae3c6df03eeeb307cab3f2d9887b34e3cc))
-* single-colour rabbit in clash mode (no self-clash) ([5ad419b](https://github.com/zrebec/chaosbunny/commit/5ad419baf941a5d981a7292063f88d2da122a762))
-* smooth torch lighting (off by default) + pause; release 0.3.0 ([d3c0193](https://github.com/zrebec/chaosbunny/commit/d3c0193c2ddfe9be60e0556c95b45359fe1092a5))
-* **theme:** playfield colours from config — fake biomes ([1c036c5](https://github.com/zrebec/chaosbunny/commit/1c036c5d069412c941f4a72f2cc66434ce01b3dc))
-
-
-### Performance Improvements
-
-* **render:** cache the static scanline overlay offscreen ([cab7326](https://github.com/zrebec/chaosbunny/commit/cab7326f0812b50caf70c9aa5947f27a48e342ab))
-* **render:** cache the tile layer offscreen (zx-kit createLayerCache) ([a9391aa](https://github.com/zrebec/chaosbunny/commit/a9391aa2f0d2df974632a8457633f41f72227274))
-
 ## [0.3.0] — 2026-06-11
 
 ### Added
