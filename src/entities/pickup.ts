@@ -3,9 +3,10 @@
  * rabbit's real pixels overlap the carrot's real pixels (`masksOverlap > 0`) —
  * never on bounding-box proximity alone.
  */
-import { masksOverlap, C, type PixelMask } from 'zx-kit'
+import { masksOverlap, type PixelMask } from 'zx-kit'
 import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
+import { THEME_CARROT_INK } from '../config.js'
 
 export interface Carrot {
   x: number
@@ -39,6 +40,6 @@ export function updateCarrots(list: Carrot[], playerMask: PixelMask, px: number,
 export function renderCarrots(paint: Painter, list: Carrot[], camX: number, camY: number): void {
   for (const c of list) {
     if (c.collected) continue
-    paint.bitmap(BMP, Math.round(c.x - camX), Math.round(c.y - camY), C.B_YELLOW)
+    paint.bitmap(BMP, Math.round(c.x - camX), Math.round(c.y - camY), THEME_CARROT_INK)
   }
 }

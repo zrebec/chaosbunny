@@ -6,6 +6,9 @@
  */
 import { createTileMap, CELL, C, type Tile, type TileMap, type SpectrumColor, type Rect } from 'zx-kit'
 import { atlas, type AtlasKey } from '../art/atlas.js'
+import {
+  THEME_STONE_INK, THEME_MOSS_INK, THEME_CRUMBLE_INK, THEME_OVERHANG_INK, THEME_LADDER_INK,
+} from '../config.js'
 import { RABBIT_H } from '../rabbit.js'
 
 export interface Room {
@@ -68,9 +71,9 @@ export function buildRoomFromLevel(level: LevelData): Room {
   const floorRow = rows - 1
   const map = createTileMap(cols, rows)
 
-  const stone = () => tile('caveStoneTile', C.WHITE, C.BLACK, true, 'stone')
-  const moss = () => tile('mossPlatformTile', C.B_GREEN, C.BLACK, true, 'moss')
-  const crumble = () => tile('crumbleTile', C.B_YELLOW, C.BLACK, true, 'crumble')
+  const stone = () => tile('caveStoneTile', THEME_STONE_INK, C.BLACK, true, 'stone')
+  const moss = () => tile('mossPlatformTile', THEME_MOSS_INK, C.BLACK, true, 'moss')
+  const crumble = () => tile('crumbleTile', THEME_CRUMBLE_INK, C.BLACK, true, 'crumble')
 
   // Solid border: ceiling, floor, both walls.
   map.fillRect(0, 0, cols, 1, stone())
@@ -86,7 +89,7 @@ export function buildRoomFromLevel(level: LevelData): Room {
   // Low overhangs — only the crouched (shorter) box fits under the bottom lip. A
   // taller block (h > 1) caps the gate with solid stone so it can't be jumped over;
   // the bottom row is the cyan "duck here" lip.
-  const overhangLip = () => tile('overhangTile', C.B_CYAN, C.BLACK, true, 'overhang')
+  const overhangLip = () => tile('overhangTile', THEME_OVERHANG_INK, C.BLACK, true, 'overhang')
   for (const o of level.overhangs) {
     const h = o.h ?? 1
     for (let r = 0; r < h; r++) {
@@ -96,7 +99,7 @@ export function buildRoomFromLevel(level: LevelData): Room {
 
   // Ladders — non-solid climbable tiles (id 'ladder'); the player detects them.
   // A 1-tile gap punched into a platform doesn't drop the rabbit (neighbours hold).
-  const ladder = () => tile('ladderTile', C.B_GREEN, C.BLACK, false, 'ladder')
+  const ladder = () => tile('ladderTile', THEME_LADDER_INK, C.BLACK, false, 'ladder')
   for (const l of level.ladders) {
     for (let r = l.y; r < l.y + l.h; r++) map.setTile(l.x, r, ladder())
   }

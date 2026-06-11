@@ -5,9 +5,10 @@
  *  - it hurts the rabbit only when their masks overlap,
  *  - it curls only when a carrot spark's real pixels overlap its real pixels.
  */
-import { masksOverlap, C, type PixelMask } from 'zx-kit'
+import { masksOverlap, type PixelMask } from 'zx-kit'
 import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
+import { THEME_SPIDER_INK } from '../config.js'
 import { shotMask, type Shot } from './projectile.js'
 
 type SpiderState = 'descending' | 'hanging' | 'retracting' | 'curled'
@@ -98,10 +99,10 @@ export function renderSpiders(paint: Painter, list: Spider[], camX: number, camY
     if (s.state !== 'curled') {
       // Thread from the ceiling anchor down to the spider's top.
       const top = Math.round(s.anchorY - camY)
-      paint.rect(sx + 7, top, 1, Math.max(0, sy - top), C.WHITE)
-      paint.bitmap(BODY_BMP, sx, sy, C.WHITE)
+      paint.rect(sx + 7, top, 1, Math.max(0, sy - top), THEME_SPIDER_INK)
+      paint.bitmap(BODY_BMP, sx, sy, THEME_SPIDER_INK)
     } else {
-      paint.bitmap(CURLED_BMP, sx, sy, C.WHITE)
+      paint.bitmap(CURLED_BMP, sx, sy, THEME_SPIDER_INK)
     }
   }
 }

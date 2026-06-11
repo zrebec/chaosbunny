@@ -6,12 +6,13 @@
  * drawn on top of it so they glow.
  */
 import {
-  createBitmapFromRows, emitParticles, CELL, C,
+  createBitmapFromRows, emitParticles, CELL,
   type Bitmap, type ParticleSystem,
 } from 'zx-kit'
 import {
   TORCH_LIGHT_INTENSITY, TORCH_LIGHT_RADIUS,
   TORCH_PULSE_INTENSITY, TORCH_PULSE_RADIUS, TORCH_PULSE_SPEED,
+  THEME_TORCH_BRACKET_INK, THEME_FLAME_INKS,
 } from '../config.js'
 import type { Painter } from '../world/playfield.js'
 import type { Light } from '../world/lighting.js'
@@ -27,7 +28,7 @@ const BRACKET: Bitmap = createBitmapFromRows([
   '........',
 ])
 
-const FLAME_COLORS = [C.B_YELLOW, C.B_RED, C.B_WHITE]
+const FLAME_COLORS = [...THEME_FLAME_INKS]
 
 export interface Torch {
   x: number
@@ -81,6 +82,6 @@ export function torchLights(torches: readonly Torch[], camX: number, camY: numbe
 
 export function renderTorches(paint: Painter, torches: readonly Torch[], camX: number, camY: number): void {
   for (const t of torches) {
-    paint.bitmap(BRACKET, Math.round(t.x - camX), Math.round(t.y - camY), C.WHITE)
+    paint.bitmap(BRACKET, Math.round(t.x - camX), Math.round(t.y - camY), THEME_TORCH_BRACKET_INK)
   }
 }

@@ -14,12 +14,14 @@
 import {
   mirrorBitmap, bitmapPixelMask, resolveRectX, resolveRectY, isHeld, CELL,
   type Rect, type Bitmap, type PixelMask, type TileMap, type SpectrumColor,
-  C,
 } from 'zx-kit'
 import type { Painter } from '../world/playfield.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
-import { physics } from '../config.js'
+import {
+  physics,
+  THEME_RABBIT_BODY_INK, THEME_RABBIT_BELLY_INK, THEME_RABBIT_ACCENT_INK, THEME_RABBIT_EYE_INK,
+} from '../config.js'
 
 export type PlayerState = 'idle' | 'walk' | 'jump' | 'crouch' | 'shoot' | 'climb'
 
@@ -343,10 +345,10 @@ export function renderPlayer(paint: Painter, p: Player, camX: number, camY: numb
   // Four colour layers in the full-colour view. In mono they all collapse to one
   // ink — a clean rabbit silhouette, no clash. The authored sprite is mono-first:
   // white body, cyan underside shade, magenta ear/nose accents, black eye.
-  paint.bitmap(layer(asset.layers.body), x, y, C.B_WHITE, undefined, true)
-  paint.bitmap(layer(asset.layers.belly), x, y, C.B_CYAN, undefined, true)
-  paint.bitmap(layer(asset.layers.accent), x, y, C.B_MAGENTA, undefined, true)
-  paint.bitmap(layer(asset.layers.eye), x, y, C.BLACK, undefined, true)
+  paint.bitmap(layer(asset.layers.body), x, y, THEME_RABBIT_BODY_INK, undefined, true)
+  paint.bitmap(layer(asset.layers.belly), x, y, THEME_RABBIT_BELLY_INK, undefined, true)
+  paint.bitmap(layer(asset.layers.accent), x, y, THEME_RABBIT_ACCENT_INK, undefined, true)
+  paint.bitmap(layer(asset.layers.eye), x, y, THEME_RABBIT_EYE_INK, undefined, true)
 }
 
 /** Current collision box in world pixels — for the debug overlay. */

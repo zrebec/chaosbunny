@@ -11,7 +11,7 @@ import {
 } from 'zx-kit'
 import type { Painter } from '../world/playfield.js'
 import { atlas } from '../art/atlas.js'
-import { CARROT_INK } from '../config.js'
+import { THEME_CARROT_SHOT_INK } from '../config.js'
 
 const SPEED = 0.26 // px/ms
 
@@ -56,6 +56,6 @@ export function renderShots(paint: Painter, list: Shot[], camX: number, camY: nu
   for (const s of list) {
     if (!s.active) continue
     const bmp = s.facing < 0 ? LEFT_BMP : RIGHT_BMP
-    paint.bitmap(bmp, Math.round(s.x - camX), Math.round(s.y - camY), CARROT_INK)
+    paint.bitmap(bmp, Math.round(s.x - camX), Math.round(s.y - camY), THEME_CARROT_SHOT_INK)
   }
 }

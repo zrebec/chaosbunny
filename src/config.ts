@@ -138,7 +138,30 @@ export const JUMP_REACH_PX = physics.maxSpeed * (Math.abs(physics.jumpVelocity) 
 /** Ink for the rabbit's silhouette in the authentic-clash view (`C` → clash): one
  *  flat colour so the rabbit doesn't clash with itself. Pick any palette colour;
  *  bright cyan keeps the cute identity and pops on the cave. */
-export const CLASH_RABBIT_INK: SpectrumColor = C.B_CYAN
+export const CLASH_RABBIT_INK: SpectrumColor = C.CYAN
 
-/** Ink colour for the carrot spark projectile. */
-export const CARROT_INK: SpectrumColor = C.B_YELLOW
+/**
+ * Theme — every playfield ink in one place (fake biomes by editing values).
+ * Always palette colours (`C.*`), never raw hex. When B14 brings runtime biome
+ * switching these constants get wrapped into per-biome themes — not before.
+ */
+/** Tiles (paper stays black everywhere — the cave shows through). */
+export const THEME_STONE_INK: SpectrumColor = C.WHITE
+export const THEME_MOSS_INK: SpectrumColor = C.B_GREEN
+export const THEME_CRUMBLE_INK: SpectrumColor = C.B_YELLOW
+export const THEME_OVERHANG_INK: SpectrumColor = C.B_CYAN
+export const THEME_LADDER_INK: SpectrumColor = C.B_GREEN
+/** Enemies. */
+export const THEME_SPIDER_INK: SpectrumColor = C.WHITE
+export const THEME_BAT_INK: SpectrumColor = C.B_MAGENTA
+/** Carrots: the pickup and the thrown spark. */
+export const THEME_CARROT_INK: SpectrumColor = C.B_YELLOW
+export const THEME_CARROT_SHOT_INK: SpectrumColor = C.B_YELLOW
+/** Torches: wall bracket + the fire particle colours. */
+export const THEME_TORCH_BRACKET_INK: SpectrumColor = C.WHITE
+export const THEME_FLAME_INKS: readonly SpectrumColor[] = [C.B_YELLOW, C.B_RED, C.B_WHITE]
+/** Rabbit sprite layers (full-colour view; the clash view uses CLASH_RABBIT_INK). */
+export const THEME_RABBIT_BODY_INK: SpectrumColor = C.WHITE
+export const THEME_RABBIT_BELLY_INK: SpectrumColor = C.MAGENTA
+export const THEME_RABBIT_ACCENT_INK: SpectrumColor = C.MAGENTA
+export const THEME_RABBIT_EYE_INK: SpectrumColor = C.BLACK
