@@ -1,6 +1,6 @@
 {
   "name": "chaosbunny",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "chaosBunny — a dark-but-cute ZX Spectrum-style cave-escape platformer. A small blue rabbit with a white belly hops up out of dark caves toward the moonlit surface. Built on zx-kit.",
   "keywords": [

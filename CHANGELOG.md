@@ -1,3 +1,21 @@
+# [0.4.0](https://github.com/zrebec/chaosbunny/compare/v0.3.0...v0.4.0) (2026-06-11)
+
+
+### Bug Fixes
+
+* **release:** valid GitHub repository URL in package.json ([725ffc3](https://github.com/zrebec/chaosbunny/commit/725ffc3ea62bd5dbc44a515293d93a8db274ba0f))
+
+
+### Features
+
+* **biomes:** depth strata — build-time tile inks per cave layer ([01cc61b](https://github.com/zrebec/chaosbunny/commit/01cc61bf5c4f37c09071dbe34af106142bcd65ac))
+* **theme:** playfield colours from config — fake biomes ([1c036c5](https://github.com/zrebec/chaosbunny/commit/1c036c5d069412c941f4a72f2cc66434ce01b3dc))
+
+
+### Reverts
+
+* chore(release) 1.0.0 — the version was accidental [skip ci] ([a4a1bbf](https://github.com/zrebec/chaosbunny/commit/a4a1bbfe4df04e5b9457e99f00eb4870976687c3))
+
 ## [0.3.0] — 2026-06-11
 
 ### Added
