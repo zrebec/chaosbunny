@@ -1,11 +1,3 @@
-# Changelog
-
-All notable changes to **chaosBunny** are documented here.
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-the project aims at [Semantic Versioning](https://semver.org/).
-
-## [Unreleased]
-
 ## [0.3.0] — 2026-06-11
 
 ### Added
@@ -108,3 +100,13 @@ Codex smooth-lighting branch):
   [zx-kit](https://www.npmjs.com/package/zx-kit) — hand-authored fixed levels,
   ladders, jump / crouch / carrot-shot, spiders & bats, pixel-perfect collisions,
   and a win/lose flow.
+
+---
+
+*Entries up to **0.3.0** were written by hand in the
+[Keep a Changelog](https://keepachangelog.com/) style. From the next release on,
+entries are generated automatically by
+[semantic-release](https://github.com/semantic-release/semantic-release) from
+Conventional Commits (`feat` → minor, `fix`/`perf` → patch; `chore`, `refactor`,
+`docs`, `style`, `test`, `ci` → no release) and prepended above — newest first,
+no title line (semantic-release owns the top of this file).*

@@ -18,8 +18,16 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-Build for production: `npm run build` (output in `dist/`). Pushing to `main`
+Build for production: `npm run build` (output in `dist/`). Pushing to `master`
 deploys to GitHub Pages via `.github/workflows/ci-deploy.yml`.
+
+**Releases are automatic** (semantic-release, same setup as zx-kit): a `feat:`
+push releases a minor (0.4.0), `fix:`/`perf:` a patch (0.3.1); `chore`,
+`refactor`, `docs`, `style`, `test`, `ci` release nothing and don't deploy. CI
+bumps `package.json`, prepends `CHANGELOG.md`, tags `vX.Y.Z` and pushes a
+`chore(release)` commit — so **always `git pull` after a releasable push**
+before committing more. The deploy builds the post-release tip, so the in-game
+version readout matches the new release immediately.
 
 ## Controls
 
