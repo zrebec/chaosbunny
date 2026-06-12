@@ -45,8 +45,11 @@ version readout matches the new release immediately.
 | `B` / `P` / gamepad Start | **Pause** — freezes everything (music, enemies, flames) and shows this key help in-game |
 | `Ctrl+Shift+B` | Debug overlay (note: Firefox steals this shortcut) |
 
-The HUD shows carrots collected, floor reached and HP (hearts); the real running
-zx-kit version sits bottom-left and the FPS bottom-right.
+The HUD lives in a **framed sidebar on the left** (the classic ZX status-panel
+layout): lives, carrots collected, floor reached, versions and FPS — all outside
+the 176×192 playfield, nothing overlaps the game. Watch out for **mice**: stomp
+one from above (it bolts off-screen — nothing in this game dies) for a little
+bounce; touch it from the side and it hurts.
 
 ## Lighting
 

@@ -5,3 +5,7 @@ dist/
 
 # Slovak working copies of docs — local only, English versions are the source of truth
 *.sk.md
+
+# Design mockups / playtest screenshots — local references, not shipped
+rebuild/
+docs/Screenshot*.png

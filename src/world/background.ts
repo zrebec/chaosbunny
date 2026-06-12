@@ -10,7 +10,7 @@
  */
 import { createBitmapFromRows, drawBitmap, createRng, CELL, type Bitmap, type SpectrumColor } from 'zx-kit'
 import {
-  GAME_WIDTH, GAME_HEIGHT,
+  PLAYFIELD_W, PLAYFIELD_H,
   BG_BRICK_INK, BG_DECO_INK, BG_PARALLAX, BG_DECO_DENSITY, BG_GRIT,
 } from '../config.js'
 
@@ -125,8 +125,8 @@ let bgH = 0
 export function initBackground(worldW: number, worldH: number, seed = 'chaosBunny-dungeon'): void {
   const rng = createRng(seed)
   // Cover the whole parallax window the camera can ever show, plus a tile margin.
-  bgW = GAME_WIDTH + Math.ceil(worldW * BG_PARALLAX) + CELL
-  bgH = GAME_HEIGHT + Math.ceil(worldH * BG_PARALLAX) + CELL
+  bgW = PLAYFIELD_W + Math.ceil(worldW * BG_PARALLAX) + CELL
+  bgH = PLAYFIELD_H + Math.ceil(worldH * BG_PARALLAX) + CELL
   const cols = Math.ceil(bgW / CELL)
   const rows = Math.ceil(bgH / CELL)
 
@@ -178,7 +178,7 @@ export function initBackground(worldW: number, worldH: number, seed = 'chaosBunn
  */
 export function drawDungeonBackground(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
   if (!bgCanvas) return
-  const ox = Math.max(0, Math.min(bgW - GAME_WIDTH, Math.round(camX * BG_PARALLAX)))
-  const oy = Math.max(0, Math.min(bgH - GAME_HEIGHT, Math.round(camY * BG_PARALLAX)))
-  ctx.drawImage(bgCanvas, ox, oy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
+  const ox = Math.max(0, Math.min(bgW - PLAYFIELD_W, Math.round(camX * BG_PARALLAX)))
+  const oy = Math.max(0, Math.min(bgH - PLAYFIELD_H, Math.round(camY * BG_PARALLAX)))
+  ctx.drawImage(bgCanvas, ox, oy, PLAYFIELD_W, PLAYFIELD_H, 0, 0, PLAYFIELD_W, PLAYFIELD_H)
 }

@@ -1,6 +1,6 @@
 /** Smooth cave darkness with soft radial cut-outs for screen-space lights. */
 import type { Light } from 'zx-kit'
-import { CAVE_AMBIENT_DARKNESS, GAME_HEIGHT, GAME_WIDTH, TORCH_LIGHT_BANDS } from '../config.js'
+import { CAVE_AMBIENT_DARKNESS, PLAYFIELD_H, PLAYFIELD_W, TORCH_LIGHT_BANDS } from '../config.js'
 
 export type { Light } // re-export so torch.ts / main keep importing from here
 
@@ -33,8 +33,8 @@ let darknessCtx: CanvasRenderingContext2D | null = null
 /** Creates the reusable offscreen darkness buffer. Call once at startup. */
 export function initLighting(): void {
   darknessCanvas = document.createElement('canvas')
-  darknessCanvas.width = GAME_WIDTH
-  darknessCanvas.height = GAME_HEIGHT
+  darknessCanvas.width = PLAYFIELD_W
+  darknessCanvas.height = PLAYFIELD_H
   darknessCtx = darknessCanvas.getContext('2d')
 }
 
@@ -45,9 +45,9 @@ export function renderDarkness(
   if (!darknessCanvas || !darknessCtx) return
 
   darknessCtx.globalCompositeOperation = 'source-over'
-  darknessCtx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
+  darknessCtx.clearRect(0, 0, PLAYFIELD_W, PLAYFIELD_H)
   darknessCtx.fillStyle = `rgba(0, 0, 0, ${CAVE_AMBIENT_DARKNESS})`
-  darknessCtx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
+  darknessCtx.fillRect(0, 0, PLAYFIELD_W, PLAYFIELD_H)
 
   darknessCtx.globalCompositeOperation = 'destination-out'
   for (const light of lights) {

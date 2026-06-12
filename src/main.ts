@@ -14,6 +14,7 @@ import {
   drawText,
   drawTextCentered,
   drawSprite,
+  drawBitmap,
   flashBorder,
   C,
   CELL,
@@ -39,11 +40,16 @@ import {
   createParticleSystem,
   tickParticles,
   renderParticles,
+  type SpectrumColor,
 } from 'zx-kit'
-import { GAME_WIDTH, GAME_HEIGHT, CANVAS_SCALE, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK } from './config.js'
+import {
+  GAME_WIDTH, GAME_HEIGHT, CANVAS_SCALE, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK,
+  SIDEBAR_W, PLAYFIELD_X, PLAYFIELD_W, PLAYFIELD_H, physics,
+} from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
 import { LEVEL } from './world/level.js'
 import { HEART } from './art/sprites.js'
+import { atlas } from './art/atlas.js'
 import { drawDungeonBackground, initBackground } from './world/background.js'
 import { initLighting, renderDarkness } from './world/lighting.js'
 import { makeMoon, moonLight, renderMoon } from './world/moon.js'
@@ -56,6 +62,7 @@ import { spawnShot, updateShots, renderShots, type Shot } from './entities/proje
 import { makeCarrots, updateCarrots, renderCarrots } from './entities/pickup.js'
 import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
+import { makeMice, updateMice, renderMice } from './entities/mouse.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
 import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackName } from './audio/music.js'
 import { drawTiles, ctxPainter, monoPainter, attrPainter, nextViewMode, type ViewMode } from './world/playfield.js'
@@ -97,17 +104,18 @@ window.addEventListener('keydown', (e) => {
 })
 
 // Key help shown while paused (B10) — mirrors the README controls table.
-const PAUSE_HELP: ReadonlyArray<readonly [string, string]> = [
-  ['ARROWS A D', 'MOVE'],
-  ['SPACE W', 'JUMP'],
-  ['UP DOWN', 'CLIMB LADDER'],
-  ['DOWN S', 'CROUCH'],
-  ['Z CTRL', 'THROW CARROT'],
-  ['L', 'LIGHTS'],
-  ['M', 'MUSIC ON/OFF'],
-  ['N', 'NEXT TRACK'],
-  ['C', 'PLAYFIELD LOOK'],
-  ['B P', 'PAUSE'],
+// Single centred lines: the 22-cell playfield is too narrow for two columns.
+const PAUSE_HELP: readonly string[] = [
+  'ARROWS A D - MOVE',
+  'SPACE W - JUMP',
+  'UP DOWN - CLIMB',
+  'DOWN S - CROUCH',
+  'Z CTRL - SHOOT',
+  'L - LIGHTS',
+  'M - MUSIC ON/OFF',
+  'N - NEXT TRACK',
+  'C - PLAYFIELD LOOK',
+  'B P - PAUSE',
 ]
 
 let room = buildRoomFromLevel(LEVEL)
@@ -124,15 +132,15 @@ const scanlineCache = createLayerCache(canvas.width, canvas.height)
 // Clash/mono mode (C key): the whole playfield is drawn into a zx-kit MonoScreen —
 // one ink + one paper for everything (the classic ZX anti-clash trick). Colour
 // stays in the HUD on top. The default (clash-off) view is untouched full colour.
-const mono = createMonoScreen(GAME_WIDTH, GAME_HEIGHT, C.BLACK, C.B_CYAN)
+const mono = createMonoScreen(PLAYFIELD_W, PLAYFIELD_H, C.BLACK, C.B_CYAN)
 const paint = ctxPainter(ctx)        // full-colour painter (default view)
 const monoPaint = monoPainter(mono)  // monochrome painter (mono view)
 // Authentic ZX attribute clash (C → 'clash'): each 8×8 cell snaps to one ink + paper.
-const attr = createAttrScreen(GAME_WIDTH / CELL, GAME_HEIGHT / CELL)
+const attr = createAttrScreen(PLAYFIELD_W / CELL, PLAYFIELD_H / CELL)
 const attrPaint = attrPainter(attr, C.BLACK)
 const cam = createCamera({
-  viewW: GAME_WIDTH,
-  viewH: GAME_HEIGHT,
+  viewW: PLAYFIELD_W,
+  viewH: PLAYFIELD_H,
   worldW: world.width,
   worldH: world.height,
   lerp: 0.2,
@@ -145,6 +153,7 @@ const shots: Shot[] = []
 let carrots = makeCarrots(room.carrots)
 let spiders = makeSpiders(room.spiders)
 let bats = makeBats(room.bats)
+let mice = makeMice(room.mice)
 let torches = makeTorches(room.torches)
 const fire = createParticleSystem(600)
 let moon = makeMoon(room.exit)
@@ -188,15 +197,73 @@ function resetGame(): void {
   carrots = makeCarrots(room.carrots)
   spiders = makeSpiders(room.spiders)
   bats = makeBats(room.bats)
+  mice = makeMice(room.mice)
   torches = makeTorches(room.torches)
   carrotCount = 0
   highestFloor = 0
   endTimer = 0
   // Snap the camera to the new spawn so the view doesn't slide up from the old cave.
   cam.x = 0
-  cam.y = Math.max(0, Math.min(world.height - GAME_HEIGHT, room.spawnY - GAME_HEIGHT / 2))
+  cam.y = Math.max(0, Math.min(world.height - PLAYFIELD_H, room.spawnY - PLAYFIELD_H / 2))
   startMusic() // resume music for the new run (stopped on game over)
   state = 'playing'
+}
+
+// ── Sidebar HUD (left panel, docs/screen-redesign.sk.md) ─────────────────────
+// The carrot frame + static labels render ONCE into a layer cache; only live
+// values (hearts, carrot count, floor, FPS) are drawn on top each frame.
+const sidebarCache = createLayerCache(SIDEBAR_W, GAME_HEIGHT)
+const APP_VER = import.meta.env.VITE_APP_VERSION ?? '?'
+const ZX_KIT_VER = import.meta.env.VITE_ZX_KIT_VERSION ?? '?'
+
+/** Centres a text line within the sidebar width. */
+function sideCentered(c: CanvasRenderingContext2D, text: string, y: number, ink: SpectrumColor): void {
+  drawText(c, text, Math.round((SIDEBAR_W - text.length * CELL) / 2), y, ink)
+}
+
+/** The decorative frame: a small two-layer carrot tiled around the panel. */
+function drawSidebarFrame(c: CanvasRenderingContext2D): void {
+  const stamp = (x: number, y: number) => {
+    drawBitmap(c, atlas.sidebarCarrotBody.bitmap, x, y, C.B_YELLOW)
+    drawBitmap(c, atlas.sidebarCarrotLeaf.bitmap, x, y, C.B_GREEN)
+  }
+  for (let x = 0; x < SIDEBAR_W; x += CELL) {
+    stamp(x, 0)
+    stamp(x, GAME_HEIGHT - CELL)
+  }
+  for (let y = CELL; y < GAME_HEIGHT - CELL; y += CELL) {
+    stamp(0, y)
+    stamp(SIDEBAR_W - CELL, y)
+  }
+}
+
+function renderSidebar(
+  c: CanvasRenderingContext2D,
+  hp: number, got: number, total: number, floor: number, exitOpen: boolean, fps: number,
+): void {
+  const panel = refreshLayer(sidebarCache, (lctx) => {
+    lctx.fillStyle = C.BLACK
+    lctx.fillRect(0, 0, SIDEBAR_W, GAME_HEIGHT)
+    drawSidebarFrame(lctx)
+    sideCentered(lctx, 'LIVES', 14, C.B_RED)
+    sideCentered(lctx, 'CARROTS', 44, C.B_YELLOW)
+    sideCentered(lctx, 'FLOOR', 78, C.CYAN)
+    sideCentered(lctx, 'VERSION', 108, C.WHITE)
+    sideCentered(lctx, APP_VER, 118, C.WHITE)
+    sideCentered(lctx, 'ZX-KIT', 136, C.WHITE)
+    sideCentered(lctx, ZX_KIT_VER, 146, C.WHITE)
+  })
+  if (panel) c.drawImage(panel, 0, 0)
+
+  // Live values, over the cached panel.
+  for (let i = 0; i < Math.max(0, hp); i++) {
+    drawSprite(c, HEART, 26 + i * 10, 24, C.B_RED, C.BLACK)
+  }
+  drawBitmap(c, atlas.carrotPickup.bitmap, 16, 50, C.B_YELLOW)
+  drawText(c, `${got}/${total}`, 38, 56, exitOpen ? C.B_GREEN : C.B_WHITE, C.BLACK)
+  sideCentered(c, `${floor} OF ${FLOOR_TARGET}`, 88, C.CYAN)
+  const fpsInk = fps >= 55 ? C.B_GREEN : fps >= 30 ? C.B_YELLOW : C.B_RED
+  sideCentered(c, `${fps} FPS`, 168, fpsInk)
 }
 
 function frame(now: number): void {
@@ -245,7 +312,18 @@ function frame(now: number): void {
     const batRes = updateBats(bats, pMask, px, py, shots, dt)
     if (spiderRes.curled) SFX.shoot()
 
-    const hitX = spiderRes.hitX ?? batRes.hitX
+    // Mice: stomp from above → the mouse bolts and the rabbit gets a little
+    // Mario bounce; side contact hurts like any other enemy.
+    const pBox = playerBox(player)
+    const mouseRes = updateMice(
+      mice, pMask, px, py, player.vy, pBox.y + pBox.h, shots, dt, world.width,
+    )
+    if (mouseRes.stomped) {
+      player.vy = physics.jumpVelocity * 0.55
+      SFX.jump()
+    }
+
+    const hitX = spiderRes.hitX ?? batRes.hitX ?? mouseRes.hitX
     if (hitX !== null && damagePlayer(player, hitX)) {
       SFX.hurt()
       flashBorder(C.B_RED, 1, 90)
@@ -282,16 +360,25 @@ function frame(now: number): void {
 
   const exitOpen = carrotCount >= TOTAL_CARROTS
 
+  // ── playfield — translated right of the sidebar and clipped to its rect, so
+  //    every draw below keeps working in playfield-local coordinates. ──
+  ctx.save()
+  ctx.translate(PLAYFIELD_X, 0)
+  ctx.beginPath()
+  ctx.rect(0, 0, PLAYFIELD_W, PLAYFIELD_H)
+  ctx.clip()
+
   if (viewMode === 'mono') {
     // Monochrome playfield: draw EVERYTHING — tiles, all entities, the spider
     // thread, the rabbit — into one MonoScreen, then resolve to a single ink/paper
     // in one putImageData + drawImage. No clash: white spider, green tile and cyan
     // rabbit all become the same ink. Colour lives only in the HUD on top.
     clearMonoScreen(mono)
-    drawTiles(monoPaint, room.map, camX, camY, GAME_WIDTH, GAME_HEIGHT)
+    drawTiles(monoPaint, room.map, camX, camY, PLAYFIELD_W, PLAYFIELD_H)
     renderCarrots(monoPaint, carrots, camX, camY)
     renderSpiders(monoPaint, spiders, camX, camY)
     renderBats(monoPaint, bats, camX, camY)
+    renderMice(monoPaint, mice, camX, camY)
     renderShots(monoPaint, shots, camX, camY)
     renderTorches(monoPaint, torches, camX, camY)
     renderPlayer(monoPaint, player, camX, camY)
@@ -302,10 +389,11 @@ function frame(now: number): void {
     // Authentic ZX attribute clash: stamp EVERYTHING into the AttrScreen so each 8×8
     // cell snaps to one ink + one paper (the famous colour bleed), then flush once.
     clearAttrScreen(attr, C.BLACK)
-    drawTiles(attrPaint, room.map, camX, camY, GAME_WIDTH, GAME_HEIGHT)
+    drawTiles(attrPaint, room.map, camX, camY, PLAYFIELD_W, PLAYFIELD_H)
     renderCarrots(attrPaint, carrots, camX, camY)
     renderSpiders(attrPaint, spiders, camX, camY)
     renderBats(attrPaint, bats, camX, camY)
+    renderMice(attrPaint, mice, camX, camY)
     renderShots(attrPaint, shots, camX, camY)
     renderTorches(attrPaint, torches, camX, camY)
     renderPlayer(attrPaint, player, camX, camY, CLASH_RABBIT_INK) // one ink → no self-clash
@@ -317,13 +405,14 @@ function frame(now: number): void {
     // Cached tile layer: render the whole map once, then blit the camera window.
     const tiles = refreshLayer(tileCache, (lctx) => drawTileMapAt(lctx, room.map, 0, 0, world.width, world.height))
     if (tiles) {
-      const sx = Math.max(0, Math.min(world.width - GAME_WIDTH, camX))
-      const sy = Math.max(0, Math.min(world.height - GAME_HEIGHT, camY))
-      ctx.drawImage(tiles, sx, sy, GAME_WIDTH, GAME_HEIGHT, 0, 0, GAME_WIDTH, GAME_HEIGHT)
+      const sx = Math.max(0, Math.min(world.width - PLAYFIELD_W, camX))
+      const sy = Math.max(0, Math.min(world.height - PLAYFIELD_H, camY))
+      ctx.drawImage(tiles, sx, sy, PLAYFIELD_W, PLAYFIELD_H, 0, 0, PLAYFIELD_W, PLAYFIELD_H)
     }
     renderCarrots(paint, carrots, camX, camY)
     renderSpiders(paint, spiders, camX, camY)
     renderBats(paint, bats, camX, camY)
+    renderMice(paint, mice, camX, camY)
     renderShots(paint, shots, camX, camY)
     renderTorches(paint, torches, camX, camY)
     renderPlayer(paint, player, camX, camY)
@@ -340,31 +429,6 @@ function frame(now: number): void {
     renderParticles(ctx, fire, camX, camY)
   }
 
-  // HUD — above the darkness so it stays readable.
-  // HUD is inset one tile (CELL) past the stone border walls, and drawn on a
-  // black paper so it stays readable over the bricks / stone.
-  drawText(ctx, `CARROTS:${carrotCount}/${TOTAL_CARROTS}`, CELL, 2, exitOpen ? C.B_GREEN : C.B_YELLOW, C.BLACK)
-  drawText(ctx, `FLOOR ${highestFloor}/${FLOOR_TARGET}`, 13 * CELL, 2, C.B_WHITE, C.BLACK)
-  // HP as little hearts, right-aligned inside the right border wall.
-  for (let i = 0; i < Math.max(0, player.hp); i++) {
-    drawSprite(ctx, HEART, GAME_WIDTH - CELL - (i + 1) * CELL, 2, C.B_RED, C.BLACK)
-  }
-
-  // Permanent FPS readout, bottom-right (Firefox eats Ctrl+Shift+B, so the
-  // debug overlay can't be the only place to see it).
-  // Bottom row: inset one tile up from the floor border and past the side walls,
-  // on black paper. Version bottom-left, FPS bottom-right.
-  const bottomY = GAME_HEIGHT - 2 * CELL
-  const fps = Math.round(1000 / frameMs)
-  const fpsText = `${fps} FPS`
-  const fpsInk = fps >= 55 ? C.B_GREEN : fps >= 30 ? C.B_YELLOW : C.B_RED
-  drawText(ctx, fpsText, GAME_WIDTH - CELL - fpsText.length * CELL, bottomY, fpsInk, C.BLACK)
-
-  // Versions, bottom-left: game version / real running zx-kit version.
-  const appVer = import.meta.env.VITE_APP_VERSION ?? '?'
-  const zxKit = import.meta.env.VITE_ZX_KIT_VERSION ?? '?'
-  drawText(ctx, `v${appVer}/${zxKit}`, CELL, bottomY, C.BLUE, C.BLACK)
-
   if (debug) {
     const b = playerBox(player)
     ctx.strokeStyle = C.B_GREEN
@@ -378,13 +442,12 @@ function frame(now: number): void {
   // Blink runs on real `now` (gameTime is frozen while paused by design).
   if (paused) {
     ctx.fillStyle = 'rgba(0,0,0,0.62)'
-    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-    const cols = GAME_WIDTH / CELL
+    ctx.fillRect(0, 0, PLAYFIELD_W, PLAYFIELD_H)
+    const cols = PLAYFIELD_W / CELL
     if (Math.floor(now / 450) % 2 === 0) drawTextCentered(ctx, 'PAUSED', 26, cols, C.B_YELLOW)
-    let y = 52
-    for (const [key, action] of PAUSE_HELP) {
-      drawText(ctx, key, 3 * CELL, y, C.B_CYAN)
-      drawText(ctx, action, 15 * CELL, y, C.B_WHITE)
+    let y = 50
+    for (const line of PAUSE_HELP) {
+      drawTextCentered(ctx, line, y, cols, C.B_WHITE)
       y += 12
     }
   }
@@ -392,16 +455,20 @@ function frame(now: number): void {
   // Result overlay — win/lose, above everything but the scanlines.
   if (state !== 'playing') {
     ctx.fillStyle = 'rgba(0,0,0,0.62)'
-    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-    const cols = GAME_WIDTH / CELL
+    ctx.fillRect(0, 0, PLAYFIELD_W, PLAYFIELD_H)
+    const cols = PLAYFIELD_W / CELL
     if (state === 'won') {
       drawTextCentered(ctx, 'YOU ESCAPED!', 72, cols, C.B_GREEN)
-      drawTextCentered(ctx, 'RABBIT FOUND THE WAY OUT', 88, cols, C.B_WHITE)
+      drawTextCentered(ctx, 'THE MOON AWAITS', 88, cols, C.B_WHITE)
     } else {
       drawTextCentered(ctx, 'GAME OVER', 80, cols, C.B_RED)
     }
     if (endTimer > 700) drawTextCentered(ctx, 'PRESS ANY KEY', 110, cols, C.B_YELLOW)
   }
+
+  ctx.restore() // end of the translated + clipped playfield
+
+  renderSidebar(ctx, player.hp, carrotCount, TOTAL_CARROTS, highestFloor, exitOpen, Math.round(1000 / frameMs))
 
   // CRT scanlines: rendered once into an offscreen at device resolution, then
   // blitted in physical pixels (reset the ×SCALE transform for a 1:1 copy).

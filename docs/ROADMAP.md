@@ -35,6 +35,15 @@
   as one ink (the union silhouette `asset.bitmap`) so it no longer self-clashes, but still
   clashes with obstacles per cell. Colour is `CLASH_RABBIT_INK` (palette, in `config.ts`).
   No sprite rewrite, no zx-kit change. Tests: single ink across the rabbit's cells.
+- ✅ **2026-06-12 — Screen redesign: sidebar HUD + narrow playfield.** Classic ZX
+  layout: framed sidebar (80px, carrot border, LIVES/CARROTS/FLOOR/versions/FPS)
+  + 176×192 playfield (22×24 cells), everything inside 256×192. Level rebuilt for
+  20 playable columns with the **long-crawl centrepiece** (ladder-only entry,
+  13-tile crouch crawl, 2-tile stand-up zone, reversal over the gate roof on a
+  crumble platform). New enemy: **mouse** — stompable Mario-style (flees off-screen,
+  never dies; side contact hurts), pixel-perfect like everything else. Mono/clash
+  modes now collapse only the playfield — the sidebar keeps its colours (the
+  authentic "B&W game, colour HUD" ZX look). See docs/screen-redesign.sk.md.
 - ✅ **2026-06-11 — Fake biomes v1: depth strata.** `LEVEL.strata` colours ambient
   tiles (stone, moss) per depth band at build time — deep green cave → fungal
   mid-cave → moon-touched frost; colder toward the moon. Mechanic tiles (crumble,
