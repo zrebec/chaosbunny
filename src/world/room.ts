@@ -19,6 +19,7 @@ export interface Room {
   carrots: ReadonlyArray<{ x: number; y: number }>
   spiders: ReadonlyArray<{ x: number; anchorY: number; bottomY: number }>
   bats: ReadonlyArray<{ baseX: number; baseY: number; rangeX: number }>
+  mice: ReadonlyArray<{ x: number; floorY: number; minX: number; maxX: number }>
   torches: ReadonlyArray<{ x: number; y: number }>
   /** Escape zone (world px) — overlap it with the player box to win the room. */
   exit: Rect
@@ -53,6 +54,9 @@ export interface LevelData {
   spiders: ReadonlyArray<{ x: number; y: number }>
   /** Bat patrols around `(x,y)` over a horizontal `range` (tiles). */
   bats: ReadonlyArray<{ x: number; y: number; range: number }>
+  /** Mouse runs on the platform whose TOP row is `y`, patrolling ±`range`
+   *  tiles around column `x`. Stomp it and it flees off-screen (never dies). */
+  mice: ReadonlyArray<{ x: number; y: number; range: number }>
   torches: ReadonlyArray<{ x: number; y: number }>
   /** Depth strata — fake biomes, applied at build time (no runtime switching).
    *  Each stratum starts at `fromRow` (y-down) and reaches down to the next
@@ -138,10 +142,16 @@ export function buildRoomFromLevel(level: LevelData): Room {
   const carrots = level.carrots.map((c) => ({ x: c.x * CELL, y: c.y * CELL - 16 }))
   const spiders = level.spiders.map((s) => ({ x: s.x * CELL, anchorY: 1 * CELL, bottomY: s.y * CELL }))
   const bats = level.bats.map((b) => ({ baseX: b.x * CELL, baseY: b.y * CELL, rangeX: b.range * CELL }))
+  const mice = level.mice.map((m) => ({
+    x: m.x * CELL,
+    floorY: m.y * CELL, // platform top — the mouse stands on it
+    minX: (m.x - m.range) * CELL,
+    maxX: (m.x + m.range) * CELL,
+  }))
   const torches = level.torches.map((t) => ({ x: t.x * CELL, y: t.y * CELL }))
 
   const spawnX = level.spawn.x * CELL
   const spawnY = level.spawn.y * CELL - RABBIT_H
 
-  return { map, spawnX, spawnY, carrots, spiders, bats, torches, exit }
+  return { map, spawnX, spawnY, carrots, spiders, bats, mice, torches, exit }
 }

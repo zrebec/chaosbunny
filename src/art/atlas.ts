@@ -73,6 +73,8 @@ export const atlas = {
   batWingsMid: buildAsset(S.BAT_WINGS_MID),
   batWingsDown: buildAsset(S.BAT_WINGS_DOWN),
   batEnemy: buildAsset(S.BAT_ENEMY),
+  mouseA: buildAsset(S.MOUSE_A),
+  mouseB: buildAsset(S.MOUSE_B),
 
   // tiles
   caveStoneTile: buildAsset(S.CAVE_STONE_TILE),
@@ -81,6 +83,10 @@ export const atlas = {
   ladderTile: buildAsset(S.LADDER_TILE),
   crumbleTile: buildAsset(S.CRUMBLE_TILE),
   overhangTile: buildAsset(S.OVERHANG_TILE),
+
+  // HUD (sidebar frame)
+  sidebarCarrotBody: buildAsset(S.SIDEBAR_CARROT_BODY),
+  sidebarCarrotLeaf: buildAsset(S.SIDEBAR_CARROT_LEAF),
 } as const
 
 export type AtlasKey = keyof typeof atlas

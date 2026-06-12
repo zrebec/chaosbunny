@@ -5,6 +5,17 @@ export const GAME_WIDTH = 256
 export const GAME_HEIGHT = 192
 export const CANVAS_SCALE = 4
 
+/**
+ * Screen layout (2026-06-12 redesign, see docs/screen-redesign.sk.md): the
+ * classic ZX pattern — a framed HUD sidebar on the left, the playfield on the
+ * right. Everything stays inside the 256×192 ZX screen. All values MUST be
+ * multiples of 8 (attribute cells, mono/clash alignment, frame tiles).
+ */
+export const SIDEBAR_W = 80 as const // 10 cells: 1 frame + 8 content + 1 frame
+export const PLAYFIELD_X = SIDEBAR_W
+export const PLAYFIELD_W = GAME_WIDTH - SIDEBAR_W // 176 px = 22 cells
+export const PLAYFIELD_H = GAME_HEIGHT // 192 px = 24 cells
+
 /** UI language (i18n wiring comes in a later step). */
 export const LANGUAGE_CODE = 'sk'
 
@@ -154,6 +165,7 @@ export const THEME_LADDER_INK: SpectrumColor = C.B_GREEN
 /** Enemies. */
 export const THEME_SPIDER_INK: SpectrumColor = C.WHITE
 export const THEME_BAT_INK: SpectrumColor = C.B_MAGENTA
+export const THEME_MOUSE_INK: SpectrumColor = C.WHITE
 /** Carrots: the pickup and the thrown spark. */
 export const THEME_CARROT_INK: SpectrumColor = C.B_YELLOW
 export const THEME_CARROT_SHOT_INK: SpectrumColor = C.B_YELLOW

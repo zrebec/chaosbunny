@@ -308,6 +308,31 @@ export const BAT_WINGS_DOWN = [
 
 export const BAT_ENEMY = BAT_WINGS_MID
 
+// Mouse — a skittish floor critter (16×8, two run frames; authored facing
+// right, mirrored in code). Stomp it Mario-style and it bolts off-screen —
+// it never dies, it just flees (non-lethal rule 8). `K` = eye.
+export const MOUSE_A = [
+  '........XX......',
+  '.......XXXXX....',
+  '.X.....XXXXKX...',
+  '..X..XXXXXXXXXX.',
+  '...XXXXXXXXXXX..',
+  '....XXXXXXXXX...',
+  '....XX....XX....',
+  '...XX......XX...',
+] as const
+
+export const MOUSE_B = [
+  '........XX......',
+  '.......XXXXX....',
+  '.X.....XXXXKX...',
+  '..X..XXXXXXXXXX.',
+  '...XXXXXXXXXXX..',
+  '....XXXXXXXXX...',
+  '......XX..XX....',
+  '.....XX....XX...',
+] as const
+
 // ─── Tiles ──────────────────────────────────────────────────────────────────
 
 export const CAVE_STONE_TILE = [
@@ -378,6 +403,31 @@ export const OVERHANG_TILE = [
   '..X..X..',
   '..X..X..',
   '...XX...',
+] as const
+
+// Sidebar frame — a small diagonal carrot, tiled around the HUD panel.
+// Two layers so the frame isn't one flat colour: body (B_YELLOW-ish) + leaves
+// (B_GREEN), drawn on top of each other like the rabbit's colour layers.
+export const SIDEBAR_CARROT_BODY = [
+  '........',
+  '........',
+  '.....X..',
+  '....XXX.',
+  '...XXX..',
+  '..XXX...',
+  '.XX.....',
+  'X.......',
+] as const
+
+export const SIDEBAR_CARROT_LEAF = [
+  '.....X.X',
+  '......XX',
+  '....X.X.',
+  '........',
+  '........',
+  '........',
+  '........',
+  '........',
 ] as const
 
 // Heart — HP indicator (raw 8×8 sprite, drawn via zx-kit `drawSprite`).
