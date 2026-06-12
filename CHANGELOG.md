@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/zrebec/chaosbunny/compare/v0.4.0...v0.5.0) (2026-06-12)
+
+
+### Features
+
+* **ui:** sidebar HUD + narrow playfield, long-crawl level, stompable mouse ([b796883](https://github.com/zrebec/chaosbunny/commit/b7968835fd1949219d8e899327cff3ff08a83b6c))
+
 # [0.4.0](https://github.com/zrebec/chaosbunny/compare/v0.3.0...v0.4.0) (2026-06-11)
 
 
