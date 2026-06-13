@@ -35,8 +35,8 @@ export const LEVEL: LevelData = {
 
   // Zig-zag staircase, bottom → top (4-row steps = head clearance).
   platforms: [
-    { x: 2, y: 47, w: 5 },   // 1
-    { x: 4, y: 43, w: 18 },   // 2  (carries the small teaching crouch-gate)
+    { x: 16, y: 47, w: 5 },   // 1
+    { x: 2, y: 43, w: 15 },   // 2  (carries the small teaching crouch-gate)
     { x: 17, y: 39, w: 4 },  // 3 (4-row step from platform 2 — a 3-row step head-bonks)
     { x: 1, y: 35, w: 13 },   // 4 (reaches within 4 cols of platform 3 — jump reach limit)
     { x: 14, y: 31, w: 7 },  // 5  (the ladder up to the crawl starts here)
@@ -52,7 +52,7 @@ export const LEVEL: LevelData = {
   // 5-row stone cap (too tall to jump over), narrower than the platform.
   overhangs: [
     // Small teaching gate over platform 2 (cols 9–14): crawl past the carrot.
-    { x: 11, y: 36, w: 3, h: 5 },
+    { x: 4, y: 39, w: 12, h: 2 },
     // THE LONG CRAWL over platform 6 (cols 3–20): gate spans cols 5–17, so you
     // climb the ladder into the right stand-up zone (18–20), crawl 13 tiles
     // left and surface in the 2-tile zone (3–4) at the far end.
