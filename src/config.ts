@@ -146,6 +146,17 @@ export const physics = {
 export const JUMP_APEX_PX = (physics.jumpVelocity ** 2) / (2 * physics.gravity)
 export const JUMP_REACH_PX = physics.maxSpeed * (Math.abs(physics.jumpVelocity) / physics.gravity)
 
+/**
+ * Sprite animation cadence (ms per frame) — distinct from the MOVEMENT physics
+ * above, which stays snappy for responsive control. The walk/idle frame rate is
+ * eased a touch from a frantic arcade run so the rabbit reads as a calmer, more
+ * deliberate cave creature. Dial these up for slower, dreamier; down for peppier.
+ */
+/** One beat of the 3-beat walk gait (A → B → C → B). */
+export const ANIM_WALK_MS = 170 as const
+/** One breath of the two-frame idle. */
+export const ANIM_IDLE_MS = 760 as const
+
 /** Ink for the rabbit's silhouette in the authentic-clash view (`C` → clash): one
  *  flat colour so the rabbit doesn't clash with itself. Pick any palette colour;
  *  bright cyan keeps the cute identity and pops on the cave. */

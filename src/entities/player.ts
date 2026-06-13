@@ -19,7 +19,7 @@ import type { Painter } from '../world/playfield.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
 import {
-  physics,
+  physics, ANIM_WALK_MS, ANIM_IDLE_MS,
   THEME_RABBIT_BODY_INK, THEME_RABBIT_BELLY_INK, THEME_RABBIT_ACCENT_INK, THEME_RABBIT_EYE_INK,
 } from '../config.js'
 
@@ -335,12 +335,12 @@ function frameAsset(p: Player): RabbitAsset {
     case 'shoot': return atlas.rabbitShoot
     case 'climb': return atlas.rabbitSideIdleA // dedicated climb pose: later
     case 'walk': {
-      // 3-beat gait: stride → passing → stride → passing, ~130ms/beat.
+      // 3-beat gait: stride → passing → stride → passing.
       const cycle = [atlas.rabbitWalkA, atlas.rabbitWalkB, atlas.rabbitWalkC, atlas.rabbitWalkB]
-      return cycle[Math.floor(p.animTime / 130) % cycle.length]!
+      return cycle[Math.floor(p.animTime / ANIM_WALK_MS) % cycle.length]!
     }
     case 'idle':
-    default: return Math.floor(p.animTime / 600) % 2 === 0 ? atlas.rabbitSideIdleA : atlas.rabbitSideIdleB
+    default: return Math.floor(p.animTime / ANIM_IDLE_MS) % 2 === 0 ? atlas.rabbitSideIdleA : atlas.rabbitSideIdleB
   }
 }
 
