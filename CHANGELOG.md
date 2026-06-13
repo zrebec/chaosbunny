@@ -1,3 +1,16 @@
+# [0.6.0](https://github.com/zrebec/chaosbunny/compare/v0.5.0...v0.6.0) (2026-06-13)
+
+
+### Bug Fixes
+
+* **physics:** stop the rabbit climbing walls into the sky ([3193a97](https://github.com/zrebec/chaosbunny/commit/3193a9720c86758b1265fff418085e5f680835bc))
+
+
+### Features
+
+* **anim:** ease the walk and idle sprite cadence ([1504e68](https://github.com/zrebec/chaosbunny/commit/1504e683bfe03866cb260e9c3f5129fa3b201a0e))
+* redraw of level 1 to make it more like a maze ([373c768](https://github.com/zrebec/chaosbunny/commit/373c76830e3581d53a4e2316dc5a70502cb07707))
+
 # [0.5.0](https://github.com/zrebec/chaosbunny/compare/v0.4.0...v0.5.0) (2026-06-12)
 
 
