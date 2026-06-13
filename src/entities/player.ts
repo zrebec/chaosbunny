@@ -91,13 +91,49 @@ function canStand(p: Player, map: TileMap): boolean {
   return true
 }
 
-/** True when a solid tile sits directly beneath the box bottom (with 1px tolerance). */
+/** True when a FLOOR sits directly beneath the box bottom — not a flanking wall.
+ *  A floor column is solid below the feet but open at foot level; a side wall is
+ *  solid at BOTH (it spans the body's whole height). Only counting true floors
+ *  fixes the "rabbit floats up to the sky" bug: when the body box dipped a pixel
+ *  into a border wall, that wall column read as ground, so `onGround` stuck true
+ *  in mid-air — refreshing coyote time and snapping the rabbit upward, letting it
+ *  ratchet up the wall (even with no key held). */
 function solidBelow(b: Rect, map: TileMap): boolean {
-  const ty = Math.floor((b.y + b.h) / CELL)
+  const feetRow = Math.floor((b.y + b.h - 1) / CELL) // row the feet occupy
+  const belowRow = Math.floor((b.y + b.h) / CELL)    // row just beneath the feet
   const x0 = Math.floor(b.x / CELL)
   const x1 = Math.floor((b.x + b.w - 1) / CELL)
-  for (let tx = x0; tx <= x1; tx++) if (map.isSolid(tx, ty)) return true
+  for (let tx = x0; tx <= x1; tx++)
+    if (map.isSolid(tx, belowRow) && !map.isSolid(tx, feetRow)) return true
   return false
+}
+
+/**
+ * Pushes the body box out of any wall it overlaps horizontally, back to flush.
+ *
+ * The box is facing-aware (mirrored to match the sprite), so turning around while
+ * snug against a wall teleports the asymmetric box a few px *into* it on a frame
+ * with no horizontal move — and the leading-edge tile resolver only corrects the
+ * edge it's travelling toward. Left embedded, `resolveRectY` reads the wall under
+ * the box's bottom edge as a FLOOR and snaps the box onto its "top" — i.e. up one
+ * cell — every frame, ratcheting the rabbit up the wall and out through the ceiling
+ * (the "fly slowly up to the sky" bug; out-of-bounds tiles count as solid, so above
+ * the ceiling is solid too). Re-flushing here keeps the box in free space, so the
+ * resolver only ever sees real floors. Checks the box's own rows (body height), so
+ * a real floor below — or an overhang cap above a crouch — never trips it.
+ */
+function depenetrateX(p: Player, map: TileMap): void {
+  const b = box(p)
+  const rowTop = Math.floor(b.y / CELL)
+  const rowBot = Math.floor((b.y + b.h - 1) / CELL)
+  const colSolid = (tx: number): boolean => {
+    for (let ty = rowTop; ty <= rowBot; ty++) if (map.isSolid(tx, ty)) return true
+    return false
+  }
+  const colR = Math.floor((b.x + b.w - 1) / CELL)
+  if (colSolid(colR)) { p.x -= (b.x + b.w) - colR * CELL; p.vx = 0; return } // flush to a wall on the right
+  const colL = Math.floor(b.x / CELL)
+  if (colSolid(colL)) { p.x += (colL + 1) * CELL - b.x; p.vx = 0 }           // flush to a wall on the left
 }
 
 /** Column of a ladder tile overlapping the body box, or -1 if none in reach. */
@@ -238,6 +274,9 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
     p.x += r.x - b.x
     if (r.hitLeft || r.hitRight) { p.vx = 0; break }
   }
+  // Clean up any wall the box ended up inside (facing flip / crouch box / lag) before
+  // the vertical pass — an embedded box makes resolveRectY climb the wall (see above).
+  depenetrateX(p, map)
 
   const dy = p.vy * dt
   const ySteps = Math.max(1, Math.ceil(Math.abs(dy) / MAX_STEP))
