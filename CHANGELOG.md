@@ -1,3 +1,10 @@
+# [0.7.0](https://github.com/zrebec/chaosbunny/compare/v0.6.0...v0.7.0) (2026-06-14)
+
+
+### Features
+
+* **player:** Jump King charge-jump — hold Space to charge, release to leap ([ab6effa](https://github.com/zrebec/chaosbunny/commit/ab6effaa9d6c0fba17968397bdfc78b2907820f5))
+
 # [0.6.0](https://github.com/zrebec/chaosbunny/compare/v0.5.0...v0.6.0) (2026-06-13)
 
 
