@@ -1,7 +1,19 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+// The charge-jump tests drive held keys; swap zx-kit's DOM-backed isHeld for a Set.
+const { HELD } = vi.hoisted(() => ({ HELD: new Set<string>() }))
+vi.mock('zx-kit', async (orig) => {
+  const real = await orig<typeof import('zx-kit')>()
+  return { ...real, isHeld: (k: string) => HELD.has(k) }
+})
+
 import { createTileMap, CELL, C, type Tile } from 'zx-kit'
 import { createPlayer, updatePlayer, playerBox } from '../src/entities/player.js'
+import { chargeVelocity, physics } from '../src/config.js'
 import { atlas } from '../src/art/atlas.js'
+
+/** Set the currently-held keys (mirrors zx-kit isHeld for the player input). */
+function hold(...keys: string[]): void { HELD.clear(); for (const k of keys) HELD.add(k) }
 
 function solidTile(): Tile {
   return { sprite: atlas.caveStoneTile.bitmap.data, ink: C.WHITE, paper: C.BLACK, solid: true, id: 'stone' }
@@ -59,5 +71,83 @@ describe('player physics — the "rabbit flew to infinity" bug', () => {
     // and must not be falsely grounded while hanging in the air beside the wall.
     expect(player.y).toBeGreaterThanOrEqual(startY)
     expect(player.y).toBeGreaterThan(0)
+  })
+})
+
+describe('charge-jump (Jump King)', () => {
+  /** A rabbit standing on a floor, no keys held. */
+  function groundedPlayer() {
+    const map = createTileMap(12, 24)
+    map.fillRect(0, 23, 12, 1, solidTile()) // floor at row 23
+    const p = createPlayer(4 * CELL, 0)
+    hold()
+    for (let i = 0; i < 80; i++) updatePlayer(p, map, 16) // fall & settle
+    return { map, p }
+  }
+
+  it('chargeVelocity: tap≈min, asymptotes to max, monotone, never past the cap', () => {
+    expect(chargeVelocity(0)).toBeCloseTo(physics.chargeMinVel, 5)
+    expect(chargeVelocity(1e6)).toBeCloseTo(physics.chargeMaxVel, 3)
+    let prev = chargeVelocity(0)
+    for (let ms = 20; ms <= 3000; ms += 20) {
+      const v = chargeVelocity(ms)
+      expect(v).toBeLessThanOrEqual(prev + 1e-9)             // more negative each step (higher)
+      expect(v).toBeGreaterThanOrEqual(physics.chargeMaxVel) // never past the asymptote
+      expect(v).toBeLessThanOrEqual(physics.chargeMinVel)
+      prev = v
+    }
+  })
+
+  it('holds to charge (rooted in place), releases to leap', () => {
+    const { map, p } = groundedPlayer()
+    expect(p.onGround).toBe(true)
+    hold(' ')
+    for (let i = 0; i < 15; i++) updatePlayer(p, map, 16)
+    expect(p.charging).toBe(true)
+    expect(p.vx).toBe(0)                  // rooted while charging
+    expect(p.chargeMs).toBeGreaterThan(0)
+    hold()                                // release
+    updatePlayer(p, map, 16)
+    expect(p.onGround).toBe(false)        // launched
+    expect(p.vy).toBeLessThan(0)          // rising
+    expect(p.charging).toBe(false)
+    expect(p.chargeMs).toBe(0)
+  })
+
+  it('a longer charge launches harder (higher apex)', () => {
+    const launchVy = (frames: number): number => {
+      const { map, p } = groundedPlayer()
+      hold(' ')
+      for (let i = 0; i < frames; i++) updatePlayer(p, map, 16)
+      hold()
+      updatePlayer(p, map, 16) // release frame
+      return p.vy
+    }
+    expect(launchVy(30)).toBeLessThan(launchVy(1)) // more negative = higher
+  })
+
+  it('cannot charge or jump from a Down-crouch', () => {
+    const { map, p } = groundedPlayer()
+    hold('ArrowDown', ' ')                // duck + hold jump
+    for (let i = 0; i < 20; i++) updatePlayer(p, map, 16)
+    expect(p.crouching).toBe(true)
+    expect(p.charging).toBe(false)        // no charging while crouched
+    hold('ArrowDown')                     // release jump, still ducking
+    updatePlayer(p, map, 16)
+    expect(p.onGround).toBe(true)         // never launched
+  })
+
+  it('no mid-air steering — vx is locked at launch', () => {
+    const { map, p } = groundedPlayer()
+    hold(' ')
+    for (let i = 0; i < 15; i++) updatePlayer(p, map, 16)
+    hold()
+    updatePlayer(p, map, 16)              // launch (facing right by default)
+    const launchVx = p.vx
+    expect(launchVx).toBeGreaterThan(0)   // a forward hop
+    hold('ArrowLeft')
+    for (let i = 0; i < 4; i++) updatePlayer(p, map, 16) // try to steer left, still airborne
+    expect(p.onGround).toBe(false)
+    expect(p.vx).toBe(launchVx)           // unchanged — committed arc
   })
 })

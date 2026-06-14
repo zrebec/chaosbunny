@@ -435,7 +435,7 @@ function frame(now: number): void {
     ctx.strokeStyle = C.B_GREEN
     ctx.lineWidth = 1
     ctx.strokeRect(Math.round(b.x - camX), Math.round(b.y - camY), b.w, b.h)
-    drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
+    drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} ch:${player.chargeMs | 0} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
     drawText(ctx, `music:${currentMusicTrackName()}`, 2, 22, C.B_MAGENTA)
   }
 

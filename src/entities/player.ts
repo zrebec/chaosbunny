@@ -4,8 +4,8 @@
  * Ground detection uses an explicit probe (solid tile 1px below the body box)
  * rather than relying on collision-resolver flags — that keeps `onGround` rock
  * stable, which fixes both the trembling (state no longer flickers idle↔jump)
- * and the jump (a press always registers while grounded). Jump feel: coyote
- * time, jump buffering, variable height, and heavier fall gravity.
+ * and the jump (a press always registers while grounded). The jump is a Jump-King
+ * charge-jump: hold to charge while rooted, release to leap; no mid-air steering.
  *
  * Tile movement resolves against a tight, facing-aware body box (the mask's
  * bounding rect, mirrored when facing left). Entity-vs-entity hits use real
@@ -19,11 +19,11 @@ import type { Painter } from '../world/playfield.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
 import {
-  physics, ANIM_WALK_MS, ANIM_IDLE_MS,
+  physics, chargeVelocity, ANIM_WALK_MS, ANIM_IDLE_MS,
   THEME_RABBIT_BODY_INK, THEME_RABBIT_BELLY_INK, THEME_RABBIT_ACCENT_INK, THEME_RABBIT_EYE_INK,
 } from '../config.js'
 
-export type PlayerState = 'idle' | 'walk' | 'jump' | 'crouch' | 'shoot' | 'climb'
+export type PlayerState = 'idle' | 'walk' | 'jump' | 'crouch' | 'shoot' | 'climb' | 'charge'
 
 export interface Player {
   x: number
@@ -38,7 +38,10 @@ export interface Player {
   animTime: number
   shootLock: number
   coyote: number
-  jumpBuffer: number
+  /** Charge-jump: ms Space has been held while rooted (0 when not charging). */
+  chargeMs: number
+  /** True while charging a jump (rooted in place, Space held). */
+  charging: boolean
   jumpHeld: boolean
   fireHeld: boolean
   /** True while gripping a ladder (gravity suspended, vertical control). */
@@ -152,7 +155,7 @@ export function createPlayer(spawnX: number, spawnY: number): Player {
   return {
     x: spawnX, y: spawnY, vx: 0, vy: 0,
     facing: 1, onGround: false, crouching: false, state: 'idle',
-    animTime: 0, shootLock: 0, coyote: 0, jumpBuffer: 0,
+    animTime: 0, shootLock: 0, coyote: 0, chargeMs: 0, charging: false,
     jumpHeld: false, fireHeld: false, onLadder: false,
     hp: 3, invuln: 0, knockback: 0,
     homeX: spawnX, homeY: spawnY,
@@ -219,36 +222,53 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
   const wantCrouch = down && p.onGround
   p.crouching = p.onGround && (wantCrouch || (p.crouching && !canStand(p, map)))
 
-  // ── Horizontal: accelerate on the ground, preserve momentum in the air ──
-  // This is what makes a running jump arc forward like a thrown projectile —
-  // vx carries through the whole parabola instead of snapping to 0.
-  let dir = (right ? 1 : 0) - (left ? 1 : 0)
-  if (p.knockback > 0) { p.knockback -= dt; dir = 0 } // no control mid-knockback
-  if (dir !== 0) {
-    p.facing = dir > 0 ? 1 : -1
-    const target = dir * (p.crouching ? physics.crouchSpeed : physics.maxSpeed) // crawl when ducked
-    const a = (p.onGround ? physics.accelGround : physics.accelAir) * dt
-    if (p.vx < target) p.vx = Math.min(target, p.vx + a)
-    else if (p.vx > target) p.vx = Math.max(target, p.vx - a)
-  } else if (p.onGround) {
-    // Friction only on the ground; in the air we keep the launch momentum.
-    const f = physics.frictionGround * dt
-    if (p.vx > 0) p.vx = Math.max(0, p.vx - f)
-    else if (p.vx < 0) p.vx = Math.min(0, p.vx + f)
-  }
-
-  // ── Jump: buffer the press, allow within coyote window ──
-  p.jumpBuffer = jumpPressed ? physics.jumpBufferMs : Math.max(0, p.jumpBuffer - dt)
+  // ── Charge-jump (Jump King): hold Space to charge while rooted, release to leap.
+  // Height = how long you held before release (`chargeVelocity`: diminishing returns,
+  // NO cap → over-charging overshoots and you fall). You can't charge from a Down-
+  // crouch (no jump from a crouch). A short coyote window still lets you start a
+  // charge just after stepping off a ledge.
   p.coyote = p.onGround ? physics.coyoteMs : Math.max(0, p.coyote - dt)
-  if (p.jumpBuffer > 0 && p.coyote > 0 && !p.crouching) { // no jump straight from a crouch
-    p.vy = physics.jumpVelocity
+  const canCharge = (p.onGround || p.coyote > 0) && !p.crouching && !p.onLadder
+  let launch = false
+  if (p.charging) {
+    if (!jump) launch = true                                       // released → leap
+    else if (p.crouching) { p.charging = false; p.chargeMs = 0 }   // ducked → cancel
+    else if (!canCharge) launch = true                            // ground gone past coyote → leap
+    else p.chargeMs += dt                                          // keep charging
+  } else if (jump && canCharge && p.onGround) {
+    p.charging = true                                             // start charging (rooted)
+    p.chargeMs += dt
+  }
+  if (launch) {
+    p.vy = chargeVelocity(p.chargeMs)
+    p.vx = p.facing * physics.hopSpeed                            // always a forward hop
     p.onGround = false
     p.coyote = 0
-    p.jumpBuffer = 0
+    p.charging = false
+    p.chargeMs = 0
     events.jumped = true
   }
-  // Variable height: releasing mid-rise cuts the jump short.
-  if (!jump && p.jumpHeld && p.vy < 0) p.vy *= physics.jumpCut
+
+  // ── Horizontal: run on the ground; rooted while charging; NO mid-air steering
+  //    (the hop's arc commits at launch — pure Jump King; vx keeps its launch value). ──
+  let dir = (right ? 1 : 0) - (left ? 1 : 0)
+  if (p.knockback > 0) { p.knockback -= dt; dir = 0 } // no control mid-knockback
+  if (p.charging) {
+    p.vx = 0                                          // rooted: charge from a standstill…
+    if (dir !== 0) p.facing = dir > 0 ? 1 : -1        // …but you may aim the upcoming hop
+  } else if (p.onGround) {
+    if (dir !== 0) {
+      p.facing = dir > 0 ? 1 : -1
+      const target = dir * (p.crouching ? physics.crouchSpeed : physics.maxSpeed) // crawl when ducked
+      const a = physics.accelGround * dt
+      if (p.vx < target) p.vx = Math.min(target, p.vx + a)
+      else if (p.vx > target) p.vx = Math.max(target, p.vx - a)
+    } else {
+      const f = physics.frictionGround * dt
+      if (p.vx > 0) p.vx = Math.max(0, p.vx - f)
+      else if (p.vx < 0) p.vx = Math.min(0, p.vx + f)
+    }
+  }
 
   // ── Shoot (rising edge, gated by a short anim/cooldown lock) ──
   if (firePressed && p.shootLock <= 0) {
@@ -317,7 +337,8 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
 
   // ── Animation state ──
   p.animTime += dt
-  if (p.crouching) p.state = 'crouch'         // crouch-shoot keeps the low pose (shot leaves low)
+  if (p.charging) p.state = 'charge'          // rooted, winding up a leap
+  else if (p.crouching) p.state = 'crouch'    // crouch-shoot keeps the low pose (shot leaves low)
   else if (p.shootLock > 0) p.state = 'shoot'
   else if (!p.onGround) p.state = 'jump'
   else if (Math.abs(p.vx) > 0.01) p.state = 'walk'
@@ -331,6 +352,9 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
 function frameAsset(p: Player): RabbitAsset {
   switch (p.state) {
     case 'jump': return atlas.rabbitJump
+    // Charge winds up from the crouch (anticipation); a dedicated squash pose comes
+    // with the rabbit redraw.
+    case 'charge': return atlas.rabbitCrouch
     case 'crouch': return atlas.rabbitCrouch
     case 'shoot': return atlas.rabbitShoot
     case 'climb': return atlas.rabbitSideIdleA // dedicated climb pose: later

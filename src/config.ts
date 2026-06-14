@@ -100,51 +100,74 @@ export const BG_GRIT = 0.25 as const
 
 /**
  * Platformer physics in pixel/millisecond units (frame-rate independent —
- * everything is multiplied by `dt` in ms). Tuned for a snappy Mario / Jazz
- * Jackrabbit feel: punchy jump, heavier fall, short coyote + buffer windows.
+ * everything is multiplied by `dt` in ms). The jump is a Jump-King **charge-jump**:
+ * hold Space to charge while rooted, release to leap (height = charge time, see
+ * {@link chargeVelocity}). Ground running stays snappy; there is **no mid-air
+ * steering** — the arc commits at launch.
  */
 export const physics = {
-  /** Rising-gravity (px/ms²). Lowered for a slightly slower, floatier jump. */
+  /** Rising-gravity (px/ms²). */
   gravity: 0.0017,
   /** Heavier gravity while falling — steeper descent, like a thrown arc. */
   fallGravity: 0.0030,
-  /** Max horizontal speed (px/ms ≈ 120 px/s). */
+  /** Max horizontal RUN speed on the ground (px/ms ≈ 120 px/s). */
   maxSpeed: 0.12,
-  /** Horizontal acceleration toward max speed while grounded (px/ms²). */
+  /** Horizontal acceleration toward run speed while grounded (px/ms²). */
   accelGround: 0.0015,
-  /** Weaker mid-air steering — you mostly keep your launch momentum. */
-  accelAir: 0.0008,
-  /** Ground friction when no direction is held (px/ms²). Air has none → momentum. */
+  /** Ground friction when no direction is held (px/ms²). */
   frictionGround: 0.0024,
-  /** Initial jump velocity (px/ms). Apex ≈ 47px — clears the 32px steps with
-   *  margin; combined with the lower gravity the jump feels a touch slower. */
+  /** Ladder hop-off velocity (px/ms, − = up) — a fixed small hop off a rung. */
   jumpVelocity: -0.40,
-  /** On jump release while rising, velocity is cut to this fraction (variable height). */
-  jumpCut: 0.45,
   /** Terminal fall speed clamp (px/ms). */
   maxFallSpeed: 0.7,
-  /** Grace window after leaving a ledge during which a jump still fires (ms). */
+  /** Grace window to still start a charge just after stepping off a ledge (ms). */
   coyoteMs: 200,
-  /** Window before landing during which a jump press is remembered (ms). */
-  jumpBufferMs: 120,
-  /** Ladder climb speed (px/ms) — a touch slower than running. */
+  /** Ladder climb speed (px/ms). */
   climbSpeed: 0.06,
   /** Crouch crawl speed (px/ms) — slow and deliberate; you can't jump from a crouch. */
   crouchSpeed: 0.05,
+
+  // ── Charge-jump (hold Space → leap). Tune these four by feel. ───────────────
+  /** Launch velocity from a bare TAP (px/ms, − = up). Apex ≈ 1.5 tiles — clears one
+   *  ledge, not two. */
+  chargeMinVel: -0.22,
+  /** Asymptotic launch velocity from an endless hold (px/ms). Apex ≈ 8 tiles —
+   *  deliberately higher than the ~5–6 tile target gaps, so over-charging OVERSHOOTS
+   *  (the right charge sits mid-curve → timing matters). No hard cap; the curve only
+   *  approaches this. */
+  chargeMaxVel: -0.47,
+  /** Charge time constant (ms): velocity covers ~63% of the min→max range per TAU,
+   *  ~95% by 3×TAU. Bigger = slower, more deliberate charge. */
+  chargeTauMs: 260,
+  /** Fixed forward horizontal speed imparted at launch (px/ms) — every hop travels
+   *  forward (facing dir); longer charges fly farther (more airtime). */
+  hopSpeed: 0.11,
 } as const
+
+/**
+ * Charge → launch velocity (px/ms, − = up). Holding longer falls toward
+ * {@link physics.chargeMaxVel} with **diminishing returns** (exponential approach)
+ * and **no hard cap** — so over-charging a short gap overshoots it (Jump King). A
+ * bare tap (`chargeMs ≈ 0`) yields {@link physics.chargeMinVel}.
+ */
+export function chargeVelocity(chargeMs: number): number {
+  const t = 1 - Math.exp(-Math.max(0, chargeMs) / physics.chargeTauMs)
+  return physics.chargeMinVel + (physics.chargeMaxVel - physics.chargeMinVel) * t
+}
 
 /**
  * Jump envelope, derived once from {@link physics} — the single source of truth
  * the level and its reachability linter (`tests/level.tests.ts`) measure platform
- * spacing against. Retune the jump or speed and the reachable spacing follows
- * automatically; no magic numbers.
+ * spacing against. With the charge-jump this is the **full-charge** reach (apex at
+ * `chargeMaxVel`): if the strongest charge can reach a platform, some charge can.
+ * Retune the charge and the reachable spacing follows automatically; no magic numbers.
  *
- *  - `JUMP_APEX_PX`  — peak rise of a full jump (`v² / 2g`).
- *  - `JUMP_REACH_PX` — horizontal distance covered on the way up at full speed
- *    (conservative: rise time × max speed).
+ *  - `JUMP_APEX_PX`  — peak rise of a full-charge jump (`v² / 2g`).
+ *  - `JUMP_REACH_PX` — horizontal distance on the way up at launch hop-speed
+ *    (conservative: rise time × hopSpeed).
  */
-export const JUMP_APEX_PX = (physics.jumpVelocity ** 2) / (2 * physics.gravity)
-export const JUMP_REACH_PX = physics.maxSpeed * (Math.abs(physics.jumpVelocity) / physics.gravity)
+export const JUMP_APEX_PX = (physics.chargeMaxVel ** 2) / (2 * physics.gravity)
+export const JUMP_REACH_PX = physics.hopSpeed * (Math.abs(physics.chargeMaxVel) / physics.gravity)
 
 /**
  * Sprite animation cadence (ms per frame) — distinct from the MOVEMENT physics

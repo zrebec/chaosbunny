@@ -70,15 +70,19 @@ describe('no jump from a crouch', () => {
     expect(p.vy).toBeGreaterThanOrEqual(0) // never launched upward
   })
 
-  it('Jump alone (standing) DOES leave the ground', () => {
+  it('Jump alone (standing) DOES leave the ground — hold to charge, release to leap', () => {
     const map = floorMap()
     const p = createPlayer(2 * CELL, 8 * CELL)
     settleOnGround(p, map)
 
     HELD.clear()
-    HELD.add(' ') // jump, not crouching
-    const ev = updatePlayer(p, map, 16)
+    HELD.add(' ') // hold jump → charge (rooted, still grounded)
+    for (let i = 0; i < 8; i++) updatePlayer(p, map, 16)
+    expect(p.charging).toBe(true)
+    expect(p.onGround).toBe(true)
 
+    HELD.clear() // release → launch
+    const ev = updatePlayer(p, map, 16)
     expect(ev.jumped).toBe(true)
     expect(p.vy).toBeLessThan(0) // moving upward
   })
