@@ -3,7 +3,6 @@ import { C, type SpectrumColor } from 'zx-kit'
 
 export const GAME_WIDTH = 256
 export const GAME_HEIGHT = 192
-export const CANVAS_SCALE = 4
 
 /**
  * Screen layout (2026-06-12 redesign, see docs/screen-redesign.sk.md): the
@@ -22,8 +21,8 @@ export const LANGUAGE_CODE = 'sk'
 /**
  * Floors to climb before the escape hatch — the room's goal, shown in the HUD.
  * 11 matches the hand-built vertical slice (one platform ≈ one floor). The full
- * game targets 50 across ~5 escalating cave strata; bump this when the world
- * goes procedural.
+ * game targets 50 across ~5 escalating cave strata; bump this as the level grows
+ * toward them.
  */
 export const FLOOR_TARGET = 11 as const
 
@@ -136,8 +135,9 @@ export const physics = {
 
 /**
  * Jump envelope, derived once from {@link physics} — the single source of truth
- * the world generator measures platform spacing against. Retune the jump or
- * speed and the reachable spacing follows automatically; no magic numbers.
+ * the level and its reachability linter (`tests/level.tests.ts`) measure platform
+ * spacing against. Retune the jump or speed and the reachable spacing follows
+ * automatically; no magic numbers.
  *
  *  - `JUMP_APEX_PX`  — peak rise of a full jump (`v² / 2g`).
  *  - `JUMP_REACH_PX` — horizontal distance covered on the way up at full speed

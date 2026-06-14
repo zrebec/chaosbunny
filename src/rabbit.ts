@@ -2,8 +2,8 @@
  * Rabbit metrics — the single source of truth for the rabbit's size.
  *
  * Everything that used to hard-code a rabbit size reads from here instead: the
- * collision box (below), the world generator's platform spacing/width
- * (`world/room.ts`), and the tests. Redraw the rabbit at any size and these
+ * collision box (below) and the level's platform spacing/width, checked by the
+ * reachability linter (`tests/level.tests.ts`). Redraw the rabbit at any size and these
  * derive from the new bitmap automatically — the rules scale, not the numbers.
  */
 import { CELL, type Rect, type PixelMask } from 'zx-kit'

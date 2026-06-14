@@ -63,11 +63,20 @@
 
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
-| 1 | **Lighten chaosBunny (config + dead-code cleanup)** | The codebase is accreting cruft. Biggest win: remove the **dead procedural generator** (`generateCaveRoom`, `buildCaveRoom`, the staircase constants `STEP_UP`/`PLAT_W_*`/`EDGE_GAP_*`/`LEDGE_*`, and `tests/generate.tests.ts`) — unused since fixed levels won; `room.ts` ~halves. ~~Colours from the palette, not hex~~ → ✅ done 2026-06-11: every playfield ink is a `THEME_*_INK` constant in `config.ts` (tiles, spider, bat, carrots, torch, rabbit layers) — edit values for fake biomes; B14 will wrap them into per-biome themes. Drop `CANVAS_SCALE` (duplicates zx-kit `SCALE`). Keep `GAME_WIDTH/HEIGHT` (the game's own screen size — zx-kit doesn't own it). | S | 🔜 next |
+| 1 | **Lighten chaosBunny (config + dead-code cleanup)** | ✅ **Done.** The dead procedural generator (`generateCaveRoom`/`buildCaveRoom`, staircase consts `STEP_UP`/`PLAT_W_*`/`EDGE_GAP_*`/`LEDGE_*`, `tests/generate.tests.ts`) was removed once fixed levels won. Playfield inks → `THEME_*_INK` consts (2026-06-11). `CANVAS_SCALE` dropped for zx-kit `SCALE` (2026-06-14). `GAME_WIDTH/HEIGHT` kept (the game's own screen size — zx-kit doesn't own it). | S | ✅ |
 | 2 | **Replace / retune track 2 "Crystal Drip"** | Owner dislikes it. Music-content task — do it in a dedicated music session. | S | 🔲 |
 | 3 | **In-game controls overlay** | ✅ **Done 2026-06-11 as part of pause:** `B` (or `P` / gamepad Start) pauses the game — music stops, every update and time-driven visual freezes (`gameTime` clock, separate from wall time) — and a blinking PAUSED + the full key help renders over the frozen scene. | S | ✅ |
 | 4 | **Testing push (targeted now, big later)** | Keep adding focused unit tests as features land; defer the 100% / headless-browser sweep until structurally stable. Coverage floor ~75–80 % on logic modules, not 100 % on canvas. | ongoing / L | 💭 |
 | 5 | **ZX dither lighting (opt-in, restore + tune)** | The `'zx'` mode was removed 2026-06-10 when smooth won as default. Last implementation (zx-kit `lighting` + depth gradient `MAX_DARKNESS`/`SURFACE_LIGHT_FACTOR`) lives in git history on `master`; `docs/lighting-archive.md` only has the older pre-zx-kit snapshot. Restore behind `LIGHTING_MODE` if a biome wants the authentic blocky look. | S–M | 💭 |
+
+## Before new content — geometry first
+
+Three things define the game's geometry and must land **before** new levels/biomes
+(the level gets rebuilt once): **screen layout** (✅ sidebar + 22 cols), **rabbit
+redraw** (silhouette-first — changes `RABBIT_BOX`, and thus platform spacing), and
+**charge-jump** (hold-to-charge height — changes `JUMP_APEX_PX` and the reachability
+linter). Author more floors / biomes only after those land, or every spacing gets
+re-tuned twice.
 
 ## Parking lot / notes
 

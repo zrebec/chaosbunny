@@ -18,6 +18,7 @@ import {
   flashBorder,
   C,
   CELL,
+  SCALE,
   createCamera,
   setCameraTarget,
   tickCamera,
@@ -43,7 +44,7 @@ import {
   type SpectrumColor,
 } from 'zx-kit'
 import {
-  GAME_WIDTH, GAME_HEIGHT, CANVAS_SCALE, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK,
+  GAME_WIDTH, GAME_HEIGHT, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK,
   SIDEBAR_W, PLAYFIELD_X, PLAYFIELD_W, PLAYFIELD_H, physics,
 } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
@@ -68,7 +69,7 @@ import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackNa
 import { drawTiles, ctxPainter, monoPainter, attrPainter, nextViewMode, type ViewMode } from './world/playfield.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
-const ctx = setupCanvas(canvas, CANVAS_SCALE, GAME_WIDTH, GAME_HEIGHT)
+const ctx = setupCanvas(canvas, SCALE, GAME_WIDTH, GAME_HEIGHT)
 canvas.style.width = ''
 canvas.style.height = ''
 
