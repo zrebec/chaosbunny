@@ -1,5 +1,7 @@
 # AGENTS.md — chaosBunny Implementation Addendum
 
+> **Known issue:** `npm audit` flags 1 high vuln (**undici 6.26.0**) bundled inside the `npm` CLI (pulled by semantic-release) — **unfixable downstream, dev/CI-only, never shipped** (the game ships a static Vite bundle). Don't re-investigate (audit fix / `--force` / overrides / nuke all tried 2026-06-20). Full note: `docs/known-issues.md`.
+
 ## Mission
 
 Extend chaosBunny into a procedural, tilemap-based, pixel-perfect cave platformer using `zx-kit`.
