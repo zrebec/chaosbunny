@@ -1174,7 +1174,7 @@ Live backlog is **`docs/ROADMAP.md`** (read it first). Since the 2026-05-31 note
 - **Carrot shot at two heights** (`muzzle()`): standing high, crouch low — a low bat is only hittable crouched.
 - **`C` cycles four playfield looks:** bricks → black bg → mono → **authentic ZX attribute clash** (zx-kit `attrscreen` via `attrPainter` in `world/clash.ts`); the clash rabbit is one ink (`CLASH_RABBIT_INK`) so it doesn't self-clash.
 
-**Decisions:** stay at **256×192** (hi-res only as a future remaster — see `../../docs/sk/chaosbunny_rozlisenie-rozhodnutie.sk.md`); keep **both** mono and clash (they show zx-kit's range).
+**Decisions:** stay at **256×192** (hi-res only as a future remaster — see `../../docs/sk/chaosbunny.md`, section Technické otázky); keep **both** mono and clash (they show zx-kit's range).
 
 **Direction — keep it lean:** what zx-kit owns, let zx-kit own (`SCALE`, `CELL`, palette `C` — use `C.*`, never raw hex). Next is a cleanup pass: drop the **dead procedural generator** (`generateCaveRoom`/`buildCaveRoom` + staircase consts + `generate.tests.ts`) now that the game is fixed-level. See ROADMAP #1.
 

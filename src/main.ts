@@ -48,7 +48,11 @@ import {
   SIDEBAR_W, PLAYFIELD_X, PLAYFIELD_W, PLAYFIELD_H, physics,
 } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
+// ── Active level ──────────────────────────────────────────────────────────────
+// DEV: the charge-jump TUNING SHAFT is active so you can dial the feel. For the real
+// game, swap back — uncomment the first line and comment the second.
 import { LEVEL } from './world/level.js'
+//import { LEVEL_TEST as LEVEL } from './world/level-test.js' // DEV tuning shaft — revert before release
 import { HEART } from './art/sprites.js'
 import { atlas } from './art/atlas.js'
 import { drawDungeonBackground, initBackground } from './world/background.js'
@@ -102,6 +106,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
   if (e.key === 'n' || e.key === 'N') nextMusicTrack() // next AY loop
   if (e.key === 'c' || e.key === 'C') viewMode = nextViewMode(viewMode) // cycle playfield look
+  if (e.key === 'g' || e.key === 'G') debug = !debug // browser-safe debug toggle (Ctrl+Shift+B is eaten by browsers)
 })
 
 // Key help shown while paused (B10) — mirrors the README controls table.
@@ -163,6 +168,7 @@ let crumblers = makeCrumblers(room.map, LEVEL.platforms)
 let carrotCount = 0
 const TOTAL_CARROTS = LEVEL.carrots.length // collect them all to open the moon (the exit)
 let debug = false
+let lastChargeMs = 0 // debug readout: last charge held (ms); kept after release until the next charge
 let last = performance.now()
 let frameMs = 16 // smoothed real frame time (debug FPS readout)
 // Game clock for time-driven visuals (torch pulse, moon breathing). Unlike
@@ -280,6 +286,9 @@ function frame(now: number): void {
   if (state === 'playing' && !paused) {
     const ev = updatePlayer(player, room.map, dt)
     if (ev.jumped) SFX.jump()
+    // Debug: track the charge live while holding; freeze it on release (so the held
+    // duration stays readable) until the next charge press starts a new one.
+    if (player.charging) lastChargeMs = Math.round(player.chargeMs)
     if (ev.landed) SFX.land()
     if (ev.shot) {
       const m = muzzle(player)
@@ -435,7 +444,7 @@ function frame(now: number): void {
     ctx.strokeStyle = C.B_GREEN
     ctx.lineWidth = 1
     ctx.strokeRect(Math.round(b.x - camX), Math.round(b.y - camY), b.w, b.h)
-    drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} ch:${player.chargeMs | 0} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
+    drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} ch:${lastChargeMs} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
     drawText(ctx, `music:${currentMusicTrackName()}`, 2, 22, C.B_MAGENTA)
   }
 
