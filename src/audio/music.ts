@@ -1,76 +1,179 @@
 /**
- * Background cave music — short AY loops for the vertical slice.
- *
- * Track 0 preserves the original public-domain Scarborough Fair arrangement.
- * The added tracks are original cave loops: slow minor/dorian motifs, low drones
- * and sparse AY noise drips. Beeper stays reserved for SFX.
- *
- * `M` mutes/unmutes. `N` skips to the next track. While playing, the game also
- * auto-shuffles to another loop every `MUSIC_LOOPS_PER_TRACK` repeats.
+ * Background cave music — action-oriented AY suites for chaosBunny.
+ * Rýchlejšie, rytmickejšie, hnacie verzie (Jump King feel).
+ * Všetko kompatibilné s existujúcim schedulerom.
  */
+
 import { seq, playAY, getAudioContext, createRng, type AYNote, type AYHandle, type Rng } from 'zx-kit'
 import { MUSIC_LOOPS_PER_TRACK } from '../config.js'
 
-// 8 bars × 1200 ms = 9600 ms; every channel sums to that for a clean loop.
-const SCARBOROUGH_MELODY = seq(
-  'A4:800 E5:400 ' + // Are you go-
-  'E5:800 F#5:400 ' + // -ing to
-  'E5:400 D5:400 C5:400 ' + // Scar-bo-rough
-  'B4:800 A4:400 ' + // Fair?
-  'A4:400 B4:400 C5:400 ' + // Pars-ley sage
-  'D5:800 C5:400 ' + // rose-ma-
-  'B4:400 A4:400 G4:400 ' + // -ry and thyme
-  'A4:1200', // (resolve)
-)
+// ─── Action-oriented helpers ─────────────────────────────────────────────────
 
-const SCARBOROUGH_BASS = seq('A2:1200 A2:1200 G2:1200 A2:1200 A2:1200 F2:1200 E2:1200 A2:1200')
-
-// Kick: low tone + noise, fast decay envelope = a boomy thud on beat 1 of each bar.
-const KICK: AYNote = { freq: 55, dur: 160, noise: true, noisePeriod: 24, envShape: 0, envCycleDurMs: 160 }
-const REST: AYNote = { freq: 0, dur: 1040 }
-const SCARBOROUGH_DRUMS: AYNote[] = Array.from({ length: 8 }, () => [KICK, REST]).flat()
-
-const DRIP: AYNote = { freq: 0, dur: 90, noise: true, noisePeriod: 7, envShape: 0, envCycleDurMs: 90 }
-const DEEP_DRIP: AYNote = { freq: 0, dur: 120, noise: true, noisePeriod: 18, envShape: 0, envCycleDurMs: 120 }
+const KICK: AYNote = { freq: 52, dur: 120, noise: true, noisePeriod: 24, envShape: 0, envCycleDurMs: 120 }
+const HARD_KICK: AYNote = { freq: 46, dur: 100, noise: true, noisePeriod: 22, envShape: 0, envCycleDurMs: 100 }
+const DRIP: AYNote = { freq: 0, dur: 70, noise: true, noisePeriod: 16, envShape: 0, envCycleDurMs: 70 }
+const DEEP_DRIP: AYNote = { freq: 0, dur: 95, noise: true, noisePeriod: 23, envShape: 0, envCycleDurMs: 95 }
+const PULSE: AYNote = { freq: 42, dur: 140, noise: true, noisePeriod: 27, envShape: 0, envCycleDurMs: 140 }
 const rest = (dur: number): AYNote => ({ freq: 0, dur })
 
-const CRYSTAL_DRIP_MELODY = seq(
-  'E5:300 r:100 D#5:300 r:100 B4:400 ' +
-  'G4:300 r:100 A4:300 r:100 B4:400 ' +
-  'E5:300 r:100 G5:300 r:100 F5:400 ' +
-  'D5:600 B4:300 r:300 ' +
-  'C5:300 r:100 B4:300 r:100 G4:400 ' +
-  'A4:300 r:100 C5:300 r:100 B4:400 ' +
-  'G4:400 F4:400 E4:400 ' +
-  'E5:600 r:600',
+const silentBar = (): AYNote[] => [rest(1100)]
+const kickBar = (): AYNote[] => [KICK, rest(980)]
+const hardKickBar = (): AYNote[] => [HARD_KICK, rest(1000)]
+const doubleKick = (): AYNote[] => [KICK, rest(380), KICK, rest(420)]
+const tripleKick = (): AYNote[] => [KICK, rest(160), KICK, rest(160), KICK, rest(320)]
+
+const fastDripBar = (): AYNote[] => [rest(420), DRIP, rest(580)]
+const doubleDripBar = (): AYNote[] => [rest(200), DRIP, rest(300), DRIP, rest(400)]
+const deepDripBar = (): AYNote[] => [rest(360), DEEP_DRIP, rest(640)]
+const pulseBar = (): AYNote[] => [PULSE, rest(960)]
+const pulseDripBar = (): AYNote[] => [PULSE, rest(360), DEEP_DRIP, rest(480)]
+
+// ─── TRACK 1: Void Drive (rýchle stúpanie) ────────────────────────────────────
+
+const VOID_DRIVE_MELODY = seq(
+  'A3:200 C4:200 E4:300 G4:200 F#4:200 E4:300 ' +
+  'D4:200 C4:200 B3:300 C4:200 E4:200 G4:300 ' +
+  'A4:200 G4:200 F#4:300 E4:200 D4:200 C4:300 ' +
+  'B3:200 A3:200 G3:300 A3:600 r:500 ' +
+  'C4:200 E4:200 G4:300 B4:200 A4:200 G4:300 ' +
+  'F#4:200 E4:200 D4:300 E4:200 G4:200 B4:300 ' +
+  'A4:200 G4:200 F#4:300 E4:200 D4:200 C4:300 ' +
+  'B3:200 A3:200 G3:300 A3:900 r:200 ' +
+  'E4:200 G4:200 B4:300 D5:200 C5:200 B4:300 ' +
+  'A4:200 G4:200 F#4:300 G4:200 B4:200 D5:300 ' +
+  'C5:200 B4:200 A4:300 G4:200 F#4:200 E4:300 ' +
+  'D4:200 C4:200 B3:300 C4:700 r:400 '
 )
-const CRYSTAL_DRIP_BASS = seq('E2:2400 C2:1200 D2:1200 E2:2400 B1:1200 A1:1200')
-const CRYSTAL_DRIP_NOISE: AYNote[] = [
-  rest(520), DRIP, rest(590),
-  rest(1120), DRIP, rest(80),
-  rest(760), DRIP, rest(350),
-  rest(1200),
-  rest(430), DRIP, rest(680),
-  rest(950), DRIP, rest(160),
-  rest(1200),
-  rest(690), DRIP, rest(330),
+
+const VOID_DRIVE_BASS = seq(
+  'A1:300 E2:300 A1:300 E2:300 ' +
+  'G1:300 D2:300 G1:300 D2:300 ' +
+  'F1:300 C2:300 F1:300 C2:300 ' +
+  'E1:300 B1:300 E1:300 B1:300 ' +
+  'A1:300 E2:300 G1:300 D2:300 ' +
+  'F1:300 C2:300 E1:300 B1:300 ' +
+  'D1:300 A1:300 C1:300 G1:300 ' +
+  'A1:900 '
+)
+
+const VOID_DRIVE_DRUMS: AYNote[] = [
+  ...Array.from({ length: 4 }, silentBar).flat(),
+  ...Array.from({ length: 10 }, doubleKick).flat(),
+  ...Array.from({ length: 8 }, kickBar).flat(),
+  ...Array.from({ length: 10 }, doubleKick).flat(),
+  ...Array.from({ length: 6 }, tripleKick).flat(),
+  ...Array.from({ length: 8 }, doubleKick).flat(),
 ]
 
-const DEEP_BURROW_MELODY = seq(
-  'D4:600 F4:300 E4:300 ' +
-  'C4:600 D4:300 r:300 ' +
-  'A3:600 C4:300 D4:300 ' +
-  'E4:900 r:300 ' +
-  'F4:600 E4:300 C4:300 ' +
-  'D4:600 A3:300 r:300 ' +
-  'Bb3:600 C4:300 D4:300 ' +
-  'A3:1200',
+// ─── TRACK 2: Shadow Pulse (rýchlejšie kvapkanie + napätie) ──────────────────
+
+const SHADOW_PULSE_MELODY = seq(
+  'E4:180 r:80 D#4:180 r:80 B3:240 G3:180 r:80 A3:180 r:80 B3:240 ' +
+  'E4:180 r:80 G4:180 r:80 F4:240 D4:300 B3:180 r:120 ' +
+  'C4:180 r:80 B3:180 r:80 G3:240 A3:180 r:80 C4:180 r:80 B3:240 ' +
+  'G3:240 F3:240 E3:240 E4:400 r:300 ' +
+  'E4:200 F#4:200 G4:240 B3:300 A3:180 G3:180 ' +
+  'E4:200 D#4:200 B3:240 G3:300 A3:180 B3:180 ' +
+  'C4:200 B3:200 A3:240 G3:200 F#3:200 E3:240 ' +
+  'D#4:400 B3:180 r:120 E4:900 '
 )
-const DEEP_BURROW_BASS = seq('D2:1200 D2:1200 C2:1200 D2:1200 F1:1200 G1:1200 D2:1200 A1:1200')
-const LOW_PULSE: AYNote = { freq: 43, dur: 180, noise: true, noisePeriod: 31, envShape: 0, envCycleDurMs: 180 }
-const DEEP_BURROW_NOISE: AYNote[] = Array.from({ length: 8 }, (_, i) =>
-  i % 2 === 0 ? [LOW_PULSE, rest(420), DEEP_DRIP, rest(480)] : [LOW_PULSE, rest(1020)],
-).flat()
+
+const SHADOW_PULSE_BASS = seq(
+  'E1:300 B1:300 E1:300 B1:300 ' +
+  'D1:300 A1:300 D1:300 A1:300 ' +
+  'C1:300 G1:300 C1:300 G1:300 ' +
+  'B0:300 F#1:300 B0:300 F#1:300 ' +
+  'E1:300 B1:300 D1:300 A1:300 ' +
+  'C1:300 G1:300 B0:300 F#1:300 ' +
+  'A0:300 E1:300 G0:300 D1:300 ' +
+  'E1:900 '
+)
+
+const SHADOW_PULSE_NOISE: AYNote[] = [
+  ...Array.from({ length: 3 }, silentBar).flat(),
+  ...Array.from({ length: 8 }, fastDripBar).flat(),
+  ...Array.from({ length: 8 }, doubleDripBar).flat(),
+  ...Array.from({ length: 6 }, deepDripBar).flat(),
+  ...Array.from({ length: 8 }, doubleDripBar).flat(),
+  ...Array.from({ length: 6 }, fastDripBar).flat(),
+  ...Array.from({ length: 5 }, silentBar).flat(),
+]
+
+// ─── TRACK 3: Winged Drive (vylepšená verzia najlepšieho tracku) ─────────────
+
+const WINGED_DRIVE_MELODY = seq(
+  'A3:160 C4:160 E4:220 G4:160 F#4:160 E4:220 ' +
+  'D4:160 C4:160 B3:220 C4:160 E4:160 G4:220 ' +
+  'A4:160 G4:160 F#4:220 E4:160 D4:160 C4:220 ' +
+  'B3:160 A3:160 G3:220 A3:500 r:300 ' +
+  'C4:160 E4:160 G4:220 B4:160 A4:160 G4:220 ' +
+  'F#4:160 E4:160 D4:220 E4:160 G4:160 B4:220 ' +
+  'A4:160 G4:160 F#4:220 E4:160 D4:160 C4:220 ' +
+  'B3:160 A3:160 G3:220 A3:800 r:100 ' +
+  'E4:160 G4:160 B4:220 D5:160 C5:160 B4:220 ' +
+  'A4:160 G4:160 F#4:220 G4:160 B4:160 D5:220 ' +
+  'C5:160 B4:160 A4:220 G4:160 F#4:160 E4:220 ' +
+  'D4:160 C4:160 B3:220 C4:600 r:200 '
+)
+
+const WINGED_DRIVE_BASS = seq(
+  'A1:220 E2:220 A1:220 E2:220 ' +
+  'G1:220 D2:220 G1:220 D2:220 ' +
+  'F1:220 C2:220 F1:220 C2:220 ' +
+  'E1:220 B1:220 E1:220 B1:220 ' +
+  'A1:220 E2:220 G1:220 D2:220 ' +
+  'F1:220 C2:220 E1:220 B1:220 ' +
+  'D1:220 A1:220 C1:220 G1:220 ' +
+  'A1:800 '
+)
+
+const WINGED_DRIVE_NOISE: AYNote[] = [
+  ...Array.from({ length: 3 }, silentBar).flat(),
+  ...Array.from({ length: 10 }, doubleKick).flat(),
+  ...Array.from({ length: 8 }, hardKickBar).flat(),
+  ...Array.from({ length: 10 }, doubleKick).flat(),
+  ...Array.from({ length: 8 }, tripleKick).flat(),
+  ...Array.from({ length: 6 }, doubleKick).flat(),
+]
+
+// ─── TRACK 4: Moon Rush (rýchly, hnací, s nádejou) ────────────────────────────
+
+const MOON_RUSH_MELODY = seq(
+  'A3:180 C4:180 E4:240 G4:180 F#4:180 E4:240 ' +
+  'D4:180 C4:180 B3:240 C4:180 E4:180 G4:240 ' +
+  'A4:180 G4:180 F#4:240 E4:180 D4:180 C4:240 ' +
+  'B3:180 A3:180 G3:240 A3:700 r:200 ' +
+  'E4:180 G4:180 B4:240 D5:180 C5:180 B4:240 ' +
+  'A4:180 G4:180 F#4:240 G4:180 B4:180 D5:240 ' +
+  'C5:180 B4:180 A4:240 G4:180 F#4:180 E4:240 ' +
+  'D4:180 C4:180 B3:240 C4:700 r:200 ' +
+  'A3:180 C4:180 E4:240 G4:180 F#4:180 E4:240 ' +
+  'D4:180 C4:180 B3:240 C4:180 E4:180 G4:240 ' +
+  'A4:180 G4:180 F#4:240 E4:180 D4:180 C4:240 ' +
+  'B3:180 A3:180 G3:240 A3:900 '
+)
+
+const MOON_RUSH_BASS = seq(
+  'A1:240 E2:240 A1:240 E2:240 ' +
+  'G1:240 D2:240 G1:240 D2:240 ' +
+  'F1:240 C2:240 F1:240 C2:240 ' +
+  'E1:240 B1:240 E1:240 B1:240 ' +
+  'A1:240 E2:240 G1:240 D2:240 ' +
+  'F1:240 C2:240 E1:240 B1:240 ' +
+  'D1:240 A1:240 C1:240 G1:240 ' +
+  'A1:900 '
+)
+
+const MOON_RUSH_DRUMS: AYNote[] = [
+  ...Array.from({ length: 3 }, silentBar).flat(),
+  ...Array.from({ length: 9 }, doubleKick).flat(),
+  ...Array.from({ length: 8 }, hardKickBar).flat(),
+  ...Array.from({ length: 10 }, doubleKick).flat(),
+  ...Array.from({ length: 7 }, tripleKick).flat(),
+  ...Array.from({ length: 8 }, doubleKick).flat(),
+]
+
+// ─── Finálna štruktúra ───────────────────────────────────────────────────────
 
 interface MusicTrack {
   readonly name: string
@@ -80,31 +183,29 @@ interface MusicTrack {
 }
 
 export const MUSIC_TRACKS: readonly MusicTrack[] = [
-  { name: 'Scarborough Cave', a: SCARBOROUGH_MELODY, b: SCARBOROUGH_BASS, c: SCARBOROUGH_DRUMS },
-  { name: 'Crystal Drip', a: CRYSTAL_DRIP_MELODY, b: CRYSTAL_DRIP_BASS, c: CRYSTAL_DRIP_NOISE },
-  { name: 'Deep Burrow', a: DEEP_BURROW_MELODY, b: DEEP_BURROW_BASS, c: DEEP_BURROW_NOISE },
+  { name: 'Void Drive', a: VOID_DRIVE_MELODY, b: VOID_DRIVE_BASS, c: VOID_DRIVE_DRUMS },
+  { name: 'Shadow Pulse', a: SHADOW_PULSE_MELODY, b: SHADOW_PULSE_BASS, c: SHADOW_PULSE_NOISE },
+  { name: 'Winged Drive', a: WINGED_DRIVE_MELODY, b: WINGED_DRIVE_BASS, c: WINGED_DRIVE_NOISE },
+  { name: 'Moon Rush', a: MOON_RUSH_MELODY, b: MOON_RUSH_BASS, c: MOON_RUSH_DRUMS },
 ] as const
+
+// ─── Scheduler a ovládanie (nemením) ─────────────────────────────────────────
 
 type Timer = ReturnType<typeof setTimeout>
 
 let loopTimer: Timer | null = null
 let current: AYHandle | null = null
 let currentTrack = 0
-let loopsPlayed = 0 // how many times the current track has looped (drives auto-rotation)
-let muted = false   // user pressed M — keep music off across audio-unlock gestures
+let loopsPlayed = 0
+let muted = false
 
-/**
- * Shuffle-bag track picker: returns each track index once per cycle in a random
- * (seeded → deterministic) order, never the same track twice in a row. Exported
- * for tests; the running game uses the seeded instance below.
- */
 export function makeTrackShuffler(rng: Rng): (current: number, count: number) => number {
   let bag: number[] = []
   return (current, count) => {
     if (count <= 1) return current
     if (bag.length === 0) {
       bag = rng.shuffle(Array.from({ length: count }, (_, i) => i))
-      if (bag[0] === current) bag.push(bag.shift()!) // no repeat across the bag seam
+      if (bag[0] === current) bag.push(bag.shift()!)
     }
     return bag.shift()!
   }
@@ -126,12 +227,6 @@ function clearLoop(): void {
   loopTimer = null
 }
 
-/**
- * Plays the current track once and schedules the next loop. After
- * {@link MUSIC_LOOPS_PER_TRACK} repeats it shuffles to another track on the loop
- * boundary (no stop needed — the old loop ends exactly as the new one starts).
- * Self-reschedules with each track's own length, so tracks may differ in length.
- */
 function playLoopAndScheduleNext(): void {
   const t = activeTrack()
   current = playAY({ a: t.a, b: t.b, c: t.c })
@@ -145,24 +240,18 @@ function playLoopAndScheduleNext(): void {
   }, trackLength(t))
 }
 
-/** Starts the loop once audio is unlocked. Safe to call on every gesture. */
 export function startMusic(): void {
-  if (loopTimer || muted || !getAudioContext()) return // `muted` keeps it off on every gesture
+  if (loopTimer || muted || !getAudioContext()) return
   loopsPlayed = 0
   playLoopAndScheduleNext()
 }
 
-/** Stops the music immediately (e.g. on game over or mute) — silences the
- *  in-flight loop now, not at the next loop boundary. */
 export function stopMusic(): void {
   clearLoop()
   current?.stop()
   current = null
 }
 
-/** Mutes / unmutes. Muting silences the music instantly and *keeps* it off, so a
- *  later gesture-driven `startMusic()` (the audio-unlock handler fires on every
- *  keydown) can't sneak it back on — press M again to unmute. */
 export function toggleMusic(): void {
   if (loopTimer) {
     muted = true
@@ -173,19 +262,16 @@ export function toggleMusic(): void {
   }
 }
 
-/** True while a background loop is scheduled (not muted / not stopped). */
 export function isMusicPlaying(): boolean {
   return loopTimer !== null
 }
 
-/** Manually skips to the next track (in order). If music is playing it starts
- *  immediately; also resets the auto-rotation counter. */
 export function nextMusicTrack(): string {
   const wasPlaying = loopTimer !== null
-  if (wasPlaying) stopMusic()                            // silence the current track now
+  if (wasPlaying) stopMusic()
   currentTrack = (currentTrack + 1) % MUSIC_TRACKS.length
   loopsPlayed = 0
-  if (wasPlaying) playLoopAndScheduleNext()              // start the new one from the top
+  if (wasPlaying) playLoopAndScheduleNext()
   return activeTrack().name
 }
 

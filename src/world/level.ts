@@ -56,7 +56,7 @@ export const LEVEL: LevelData = {
     // THE LONG CRAWL over platform 6 (cols 3–20): gate spans cols 5–17, so you
     // climb the ladder into the right stand-up zone (18–20), crawl 13 tiles
     // left and surface in the 2-tile zone (3–4) at the far end.
-    { x: 5, y: 20, w: 13, h: 5 },
+    { x: 8, y: 20, w: 6, h: 5 },
   ],
 
   // The ONLY way onto the crawl platform: ladder from platform 5's right end

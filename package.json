@@ -30,7 +30,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "zx-kit": "^0.32.0"
+    "zx-kit": "^0.36.0"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -47,5 +47,9 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true
   }
 }
