@@ -1,3 +1,11 @@
+# [0.8.0](https://github.com/zrebec/chaosbunny/compare/v0.7.0...v0.8.0) (2026-06-30)
+
+
+### Features
+
+* added test level for charge jump ([5700237](https://github.com/zrebec/chaosbunny/commit/57002374d0c46775e6789e181dc8f8ea9584cd22))
+* new musics per  and prepare to stereo. ([9b6b659](https://github.com/zrebec/chaosbunny/commit/9b6b6594c59212384b2bfaa61e12e55f08ee273d))
+
 # [0.7.0](https://github.com/zrebec/chaosbunny/compare/v0.6.0...v0.7.0) (2026-06-14)
 
 
