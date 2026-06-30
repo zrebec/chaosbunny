@@ -1,3 +1,10 @@
+## [0.8.1](https://github.com/zrebec/chaosbunny/compare/v0.8.0...v0.8.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **audio:** remove unused pulse percussion bars to unblock the build ([91f36ff](https://github.com/zrebec/chaosbunny/commit/91f36ff3a4908fcd24043afdec28290207d10fae))
+
 # [0.8.0](https://github.com/zrebec/chaosbunny/compare/v0.7.0...v0.8.0) (2026-06-30)
 
 
