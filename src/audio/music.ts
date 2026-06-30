@@ -13,7 +13,6 @@ const KICK: AYNote = { freq: 52, dur: 120, noise: true, noisePeriod: 24, envShap
 const HARD_KICK: AYNote = { freq: 46, dur: 100, noise: true, noisePeriod: 22, envShape: 0, envCycleDurMs: 100 }
 const DRIP: AYNote = { freq: 0, dur: 70, noise: true, noisePeriod: 16, envShape: 0, envCycleDurMs: 70 }
 const DEEP_DRIP: AYNote = { freq: 0, dur: 95, noise: true, noisePeriod: 23, envShape: 0, envCycleDurMs: 95 }
-const PULSE: AYNote = { freq: 42, dur: 140, noise: true, noisePeriod: 27, envShape: 0, envCycleDurMs: 140 }
 const rest = (dur: number): AYNote => ({ freq: 0, dur })
 
 const silentBar = (): AYNote[] => [rest(1100)]
@@ -25,8 +24,6 @@ const tripleKick = (): AYNote[] => [KICK, rest(160), KICK, rest(160), KICK, rest
 const fastDripBar = (): AYNote[] => [rest(420), DRIP, rest(580)]
 const doubleDripBar = (): AYNote[] => [rest(200), DRIP, rest(300), DRIP, rest(400)]
 const deepDripBar = (): AYNote[] => [rest(360), DEEP_DRIP, rest(640)]
-const pulseBar = (): AYNote[] => [PULSE, rest(960)]
-const pulseDripBar = (): AYNote[] => [PULSE, rest(360), DEEP_DRIP, rest(480)]
 
 // ─── TRACK 1: Void Drive (rýchle stúpanie) ────────────────────────────────────
 
