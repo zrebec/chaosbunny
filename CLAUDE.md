@@ -1212,3 +1212,9 @@ zx-kit's `drawBitmap` paints **1×1 `fillRect`s per pixel** — fine for sprites
 
 Run with Node 22 (default 20 breaks vitest 4): `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"`, then `npx tsc --noEmit`, `npm test`, `npm run build`. The owner commits; do not commit unless asked.
 
+
+**CI / Pages rule (2026-07-03):** the deploy workflow must use `actions/upload-pages-artifact@v5+`
+and `actions/deploy-pages@v5+` — the Pages backend rejects v3-era artifacts since 2026-07-03 with a
+generic *"Deployment failed, try again later"* (build/tests green, no error description; diagnosed
+in minefield after 5 failed deploys). If a Pages deploy fails like that, check these two action
+versions FIRST.
