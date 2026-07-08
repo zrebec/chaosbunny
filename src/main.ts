@@ -102,6 +102,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
   if (e.key === 'n' || e.key === 'N') nextMusicTrack() // next AY loop
   if (e.key === 'c' || e.key === 'C') viewMode = nextViewMode(viewMode) // cycle playfield look
+  if (e.key === 'g' || e.key === 'G') debug = !debug // browser-safe debug toggle (Ctrl+Shift+B is eaten by browsers)
 })
 
 // Key help shown while paused (B10) — mirrors the README controls table.
