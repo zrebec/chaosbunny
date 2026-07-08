@@ -10,6 +10,7 @@ import {
   isMusicPlaying,
   MUSIC_TRACKS,
 } from '../src/audio/music.js'
+import { MUSIC_LOOPS_PER_TRACK } from '../src/config.js'
 
 // ── makeTrackShuffler (pure logic) ────────────────────────────────────────────
 
@@ -85,7 +86,13 @@ class MockAudioContext {
   createBufferSource() { return { buffer: null as unknown, loop: false, connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn() } }
 }
 
-const LOOP_MS = 9600 // every track sums to 8 bars × 1200 ms
+// Real loop length of a track = its longest channel (matches music.ts trackLength()).
+// The action tracks are no longer a uniform 9600 ms, so derive it per track.
+const loopMsOf = (name: string): number => {
+  const t = MUSIC_TRACKS.find((x) => x.name === name)!
+  const sum = (ns: readonly { readonly dur: number }[]) => ns.reduce((s, n) => s + n.dur, 0)
+  return Math.max(sum(t.a), sum(t.b), sum(t.c))
+}
 
 describe('background music auto-rotation', () => {
   beforeAll(() => {
@@ -98,9 +105,10 @@ describe('background music auto-rotation', () => {
   it('auto-shuffles to a different track after MUSIC_LOOPS_PER_TRACK loops', () => {
     vi.useFakeTimers()
     const before = currentMusicTrackName()
+    const loopMs = loopMsOf(before)
     startMusic()
     expect(currentMusicTrackName()).toBe(before)          // still on the starting track
-    vi.advanceTimersByTime(2 * LOOP_MS)                   // 2nd loop boundary triggers the switch
+    vi.advanceTimersByTime(MUSIC_LOOPS_PER_TRACK * loopMs + 50) // Nth loop boundary triggers the switch
     expect(currentMusicTrackName()).not.toBe(before)      // auto-rotated
     vi.useRealTimers()
   })
@@ -110,7 +118,7 @@ describe('background music auto-rotation', () => {
     startMusic()
     toggleMusic()                                         // mute (stops immediately)
     const muted = currentMusicTrackName()
-    vi.advanceTimersByTime(5 * LOOP_MS)                   // nothing scheduled → no rotation
+    vi.advanceTimersByTime(5 * loopMsOf(muted))           // nothing scheduled → no rotation
     expect(currentMusicTrackName()).toBe(muted)
     vi.useRealTimers()
   })
