@@ -1,3 +1,11 @@
+# [0.7.0](https://github.com/zrebec/chaosbunny/compare/v0.6.0...v0.7.0) (2026-07-08)
+
+
+### Features
+
+* **audio:** new AY action tracks (stereo-ready) ([6089304](https://github.com/zrebec/chaosbunny/commit/6089304e51809c2582a1acd1d02a20dc59aca490))
+* **debug:** 'G' toggles the debug overlay ([c4a6fc1](https://github.com/zrebec/chaosbunny/commit/c4a6fc11a3ee72264168f589cc061e233d5ff879))
+
 # [0.6.0](https://github.com/zrebec/chaosbunny/compare/v0.5.0...v0.6.0) (2026-06-13)
 
 
