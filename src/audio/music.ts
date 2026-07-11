@@ -4,7 +4,10 @@
  * Všetko kompatibilné s existujúcim schedulerom.
  */
 
-import { seq, playAY, getAudioContext, createRng, type AYNote, type AYHandle, type Rng } from 'zx-kit'
+import {
+  seq, playAY, getAudioContext, loadPSG, playAYDump, AY_MACHINE,
+  type AYNote, type AYHandle, type AYDump, type Rng,
+} from 'zx-kit'
 import { MUSIC_LOOPS_PER_TRACK } from '../config.js'
 
 // ─── Action-oriented helpers ─────────────────────────────────────────────────
@@ -186,16 +189,48 @@ export const MUSIC_TRACKS: readonly MusicTrack[] = [
   { name: 'Moon Rush', a: MOON_RUSH_MELODY, b: MOON_RUSH_BASS, c: MOON_RUSH_DRUMS },
 ] as const
 
-// ─── Scheduler a ovládanie (nemením) ─────────────────────────────────────────
+// ─── Unified music transport — one playlist, one next(), any kind ─────────────
+// A song is just DATA; we don't care how it was made — hand-composed AY note loops,
+// or a real PSG register dump from the scene (author's export, offline PT3→PSG…).
+// The transport holds ONE index and ONE `source`, and offers ONE next(). A per-kind
+// adapter is the only code that knows how to turn a song into a playable Source.
+// Radio: when a song ends, the source calls onEnded → the transport advances to the
+// next song, across kinds. Add a new format = a Song variant + a case in start().
 
 type Timer = ReturnType<typeof setTimeout>
 
-let loopTimer: Timer | null = null
-let current: AYHandle | null = null
-let currentTrack = 0
-let loopsPlayed = 0
-let muted = false
+/** Anything the transport can drive once started — kind-agnostic. */
+interface Source {
+  stop(): void
+  setMuted(on: boolean): void
+}
 
+/** A song is data. `ay` = note loops (playAY); `psg` = a scene register dump (playAYDump). */
+type Song =
+  | { kind: 'ay'; name: string; a: AYNote[]; b: AYNote[]; c: AYNote[] }
+  | { kind: 'psg'; name: string; url: string }
+
+// The ONE playlist. AY tracks + PSG showcase tunes — treated identically. Add any
+// .psg to public/music/ (converted offline; only tunes you're licensed to use) or
+// any AY track; next() walks through all of them, in order.
+export const PLAYLIST: readonly Song[] = [
+  ...MUSIC_TRACKS.map((t): Song => ({ kind: 'ay', name: t.name, a: t.a, b: t.b, c: t.c })),
+  { kind: 'psg', name: 'nq — rgbk+', url: './music/nq-rgbk.psg' },
+  { kind: 'psg', name: 'je_main_trigger5', url: './music/je_main_trigger5.psg' },
+]
+
+// State — the whole model is two variables (index + source) plus intent/mute flags.
+let index = 0
+let source: Source | null = null
+let wantPlaying = false            // does the player want music on? (survives mute)
+let muted = false
+let token = 0                      // guards async starts against a newer next()/stop()
+let status = ''                    // HUD "now playing" line
+const psgCache = new Map<string, AYDump>()
+
+const wrap = (i: number): number => ((i % PLAYLIST.length) + PLAYLIST.length) % PLAYLIST.length
+
+// Pure shuffle-bag (kept; handy if you later want a shuffled play order).
 export function makeTrackShuffler(rng: Rng): (current: number, count: number) => number {
   let bag: number[] = []
   return (current, count) => {
@@ -208,70 +243,101 @@ export function makeTrackShuffler(rng: Rng): (current: number, count: number) =>
   }
 }
 
-const nextShuffledTrack = makeTrackShuffler(createRng('chaosBunny-music'))
+// ── Per-kind adapters — the ONLY code that knows about a kind ──
 
-function activeTrack(): MusicTrack {
-  return MUSIC_TRACKS[currentTrack]!
-}
-
-function trackLength(t: MusicTrack): number {
-  const total = (ns: readonly AYNote[]) => ns.reduce((sum, n) => sum + n.dur, 0)
-  return Math.max(total(t.a), total(t.b), total(t.c))
-}
-
-function clearLoop(): void {
-  if (loopTimer) clearTimeout(loopTimer)
-  loopTimer = null
-}
-
-function playLoopAndScheduleNext(): void {
-  const t = activeTrack()
-  current = playAY({ a: t.a, b: t.b, c: t.c })
-  loopTimer = setTimeout(() => {
-    loopsPlayed += 1
-    if (MUSIC_LOOPS_PER_TRACK > 0 && loopsPlayed >= MUSIC_LOOPS_PER_TRACK) {
-      currentTrack = nextShuffledTrack(currentTrack, MUSIC_TRACKS.length)
-      loopsPlayed = 0
-    }
-    playLoopAndScheduleNext()
-  }, trackLength(t))
-}
-
-export function startMusic(): void {
-  if (loopTimer || muted || !getAudioContext()) return
-  loopsPlayed = 0
-  playLoopAndScheduleNext()
-}
-
-export function stopMusic(): void {
-  clearLoop()
-  current?.stop()
-  current = null
-}
-
-export function toggleMusic(): void {
-  if (loopTimer) {
-    muted = true
-    stopMusic()
-  } else {
-    muted = false
-    startMusic()
+function startAy(song: Extract<Song, { kind: 'ay' }>, onEnded: () => void): Source {
+  const len = Math.max(...[song.a, song.b, song.c].map((ns) => ns.reduce((s, n) => s + n.dur, 0)))
+  const target = MUSIC_LOOPS_PER_TRACK > 0 ? MUSIC_LOOPS_PER_TRACK : 1
+  let handle: AYHandle | null = null
+  let timer: Timer | null = null
+  let loops = 0
+  const loop = (): void => {
+    handle = playAY({ a: song.a, b: song.b, c: song.c })
+    timer = setTimeout(() => { if (++loops >= target) onEnded(); else loop() }, len)
+  }
+  loop()
+  return {
+    stop() { if (timer) clearTimeout(timer); timer = null; handle?.stop(); handle = null },
+    setMuted(on) {
+      if (on) { if (timer) clearTimeout(timer); timer = null; handle?.stop(); handle = null }
+      else if (!handle) loop()
+    },
   }
 }
 
-export function isMusicPlaying(): boolean {
-  return loopTimer !== null
+async function startPsg(song: Extract<Song, { kind: 'psg' }>, onEnded: () => void): Promise<Source> {
+  let dump = psgCache.get(song.url)
+  if (!dump) { dump = await loadPSG(song.url); psgCache.set(song.url, dump) }
+  const h = await playAYDump(dump, { loop: false, ...AY_MACHINE.melodik }) // loop:false → it ends → onEnded
+  h.onEnded = onEnded
+  return { stop: () => h.stop(), setMuted: (on) => { if (on) h.pause(); else h.resume() } }
 }
 
-export function nextMusicTrack(): string {
-  const wasPlaying = loopTimer !== null
-  if (wasPlaying) stopMusic()
-  currentTrack = (currentTrack + 1) % MUSIC_TRACKS.length
-  loopsPlayed = 0
-  if (wasPlaying) playLoopAndScheduleNext()
-  return activeTrack().name
+// ── Transport — kind-agnostic; the switch on kind lives ONLY here ──
+
+function startCurrent(): void {
+  const mine = ++token
+  source?.stop()
+  source = null
+  const song = PLAYLIST[index]!
+  status = `♪ ${index + 1}/${PLAYLIST.length} ${song.name}`
+  const onEnded = (): void => { if (mine === token) advance(index + 1) }
+  const applied = (s: Source): void => {
+    if (mine !== token) { s.stop(); return }   // a newer start won the race
+    source = s
+    s.setMuted(muted)
+  }
+  const failed = (err: unknown): void => {
+    console.error('[chaosbunny] music failed:', err)
+    status = `♪ ERR ${song.name}`
+    if (mine === token) advance(index + 1)     // radio: skip a track that won't load
+  }
+  // AY is synchronous (source ready immediately); PSG loads/decodes, so it's async.
+  if (song.kind === 'psg') startPsg(song, onEnded).then(applied).catch(failed)
+  else applied(startAy(song, onEnded))
 }
 
-export function currentMusicTrackName(): string {
-  return activeTrack().name
+function advance(i: number): void {
+  index = wrap(i)
+  if (wantPlaying) startCurrent()
+}
+
+// ── Public API — this is all the game touches ──
+
+/** Start the radio (first user gesture). No-op before audio is unlocked or if already on. */
+export function startMusic(): void {
+  if (!getAudioContext() || wantPlaying) return
+  wantPlaying = true
+  startCurrent()
+}
+
+/** Stop playback entirely (game over / pause). Keeps the index. */
+export function stopMusic(): void {
+  wantPlaying = false
+  token++                          // invalidate any in-flight start
+  source?.stop()
+  source = null
+}
+
+/** N: next song — any kind. Before audio is unlocked it just moves the pointer. */
+export function nextTrack(): string {
+  index = wrap(index + 1)
+  if (wantPlaying) startCurrent()
+  else status = `♪ ${index + 1}/${PLAYLIST.length} ${PLAYLIST[index]!.name}`
+  return PLAYLIST[index]!.name
+}
+
+/** M: mute / unmute whatever is playing. */
+export function toggleMute(): void {
+  muted = !muted
+  source?.setMuted(muted)
+}
+
+export function isMusicPlaying(): boolean { return wantPlaying }
+export function isMuted(): boolean { return muted }
+export function currentTrackName(): string { return PLAYLIST[index]!.name }
+
+/** HUD "now playing" line (empty when off). */
+export function musicStatus(): string {
+  return wantPlaying ? `${status}${muted ? ' (muted)' : ''}` : ''
 }
