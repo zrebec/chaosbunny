@@ -123,6 +123,12 @@ export const physics = {
   jumpCut: 0.45,
   /** Terminal fall speed clamp (px/ms). */
   maxFallSpeed: 0.7,
+  /** Ears-brake (hold Down in the air): gentler fall gravity while flared. */
+  brakeGravity: 0.011,
+  /** Ears-brake terminal fall speed — a slow, aimable glide (px/ms). */
+  brakeFallSpeed: 0.066,
+  /** Rate the ears bleed excess downward speed toward brakeFallSpeed (px/ms²). */
+  brakeDrag: 0.022,
   /** Grace window after leaving a ledge during which a jump still fires (ms). */
   coyoteMs: 200,
   /** Window before landing during which a jump press is remembered (ms). */
@@ -132,6 +138,18 @@ export const physics = {
   /** Crouch crawl speed (px/ms) — slow and deliberate; you can't jump from a crouch. */
   crouchSpeed: 0.05,
 } as const
+
+/**
+ * Ears-brake glide reserve (the "falling bunny" experiment). Holding Down in the
+ * air spends the reserve to glide; when it hits 0 the ears STOP braking entirely
+ * (so a level can't be hovered over). The ONLY refuel is collecting carrots — the
+ * collectible IS the fuel, fusing the collect-loop and the survival-loop into one.
+ */
+export const GLIDE_MAX_MS = 900 as const
+/** Reserve spent per ms of braking (1 = real-time drain; >1 drains faster). */
+export const GLIDE_DRAIN_RATE = 1 as const
+/** Reserve refilled per carrot collected (ms). */
+export const GLIDE_REFILL_MS = 450 as const
 
 /**
  * Jump envelope, derived once from {@link physics} — the single source of truth

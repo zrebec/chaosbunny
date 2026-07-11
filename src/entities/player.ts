@@ -19,7 +19,7 @@ import type { Painter } from '../world/playfield.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
 import {
-  physics, ANIM_WALK_MS, ANIM_IDLE_MS,
+  physics, ANIM_WALK_MS, ANIM_IDLE_MS, GLIDE_MAX_MS, GLIDE_DRAIN_RATE,
   THEME_RABBIT_BODY_INK, THEME_RABBIT_BELLY_INK, THEME_RABBIT_ACCENT_INK, THEME_RABBIT_EYE_INK,
 } from '../config.js'
 
@@ -34,6 +34,12 @@ export interface Player {
   onGround: boolean
   /** True while ducked: shorter collision box, can crawl, cannot jump. */
   crouching: boolean
+  /** True while air-braking (ears flared, Down held in the air): gentler fall +
+   *  a low, aimable terminal speed. Never-cruel glide — softens the descent. */
+  braking: boolean
+  /** Ears-brake glide reserve (ms). Spent while braking; at 0 the ears stop
+   *  braking. Refuelled ONLY by collecting carrots (see main.ts). */
+  glideMs: number
   state: PlayerState
   animTime: number
   shootLock: number
@@ -151,10 +157,10 @@ function ladderColAt(b: Rect, map: TileMap): number {
 export function createPlayer(spawnX: number, spawnY: number): Player {
   return {
     x: spawnX, y: spawnY, vx: 0, vy: 0,
-    facing: 1, onGround: false, crouching: false, state: 'idle',
+    facing: 1, onGround: false, crouching: false, braking: false, state: 'idle',
     animTime: 0, shootLock: 0, coyote: 0, jumpBuffer: 0,
     jumpHeld: false, fireHeld: false, onLadder: false,
-    hp: 3, invuln: 0, knockback: 0,
+    hp: 3, invuln: 0, knockback: 0, glideMs: GLIDE_MAX_MS,
     homeX: spawnX, homeY: spawnY,
   }
 }
@@ -257,9 +263,24 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
   }
   if (p.shootLock > 0) p.shootLock -= dt
 
-  // ── Gravity (heavier while falling) ──
-  const g = p.vy > 0 ? physics.fallGravity : physics.gravity
-  p.vy = Math.min(p.vy + g * dt, physics.maxFallSpeed)
+  // ── Gravity (heavier while falling; ears-brake glides the descent) ──
+  // Hold Down in the air to flare the ears: a gentler pull and a much lower
+  // terminal speed, bleeding away any excess downward speed — a soft, aimable
+  // glide (the rabbit's identity verb). On the ground Down still means crouch.
+  // Braking needs glide reserve; it empties → no braking (a level can't be hovered
+  // over). The ONLY refuel is carrots (added on pickup in main.ts) — the fuel is the
+  // collectible, so the collect-loop and the survival-loop are the same loop.
+  p.braking = down && !p.onGround && p.vy > 0 && p.glideMs > 0
+  if (p.braking) {
+    p.glideMs = Math.max(0, p.glideMs - GLIDE_DRAIN_RATE * dt)
+    p.vy += physics.brakeGravity * dt
+    if (p.vy > physics.brakeFallSpeed) {
+      p.vy = Math.max(physics.brakeFallSpeed, p.vy - physics.brakeDrag * dt)
+    }
+  } else {
+    const g = p.vy > 0 ? physics.fallGravity : physics.gravity
+    p.vy = Math.min(p.vy + g * dt, physics.maxFallSpeed)
+  }
 
   // ── Move & resolve, sub-stepped (≤ MAX_STEP px) so fast motion can't tunnel
   //    through 8px-thin platforms — resolveRect* only checks the leading edge. ──

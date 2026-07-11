@@ -4,15 +4,17 @@ import {
   makeTrackShuffler,
   startMusic,
   stopMusic,
-  toggleMusic,
-  nextMusicTrack,
-  currentMusicTrackName,
+  toggleMute,
+  nextTrack,
+  currentTrackName,
   isMusicPlaying,
+  isMuted,
+  PLAYLIST,
   MUSIC_TRACKS,
 } from '../src/audio/music.js'
 import { MUSIC_LOOPS_PER_TRACK } from '../src/config.js'
 
-// ── makeTrackShuffler (pure logic) ────────────────────────────────────────────
+// ── makeTrackShuffler (pure logic) — unchanged ────────────────────────────────
 
 describe('makeTrackShuffler', () => {
   it('never returns the same track twice in a row', () => {
@@ -50,19 +52,19 @@ describe('makeTrackShuffler', () => {
   })
 })
 
-// ── nextMusicTrack (manual skip, headless — runs before audio is unlocked) ─────
+// ── nextTrack headless (before audio unlock): walks the whole playlist ─────────
 
-describe('nextMusicTrack (manual skip, headless)', () => {
-  it('cycles through every track name in order and wraps to the start', () => {
-    const start = currentMusicTrackName()
+describe('nextTrack (headless pointer walk — any kind)', () => {
+  it('cycles through every song in the playlist and wraps', () => {
+    const start = currentTrackName()
     const names = [start]
-    for (let i = 0; i < MUSIC_TRACKS.length; i++) names.push(nextMusicTrack())
-    expect(names.at(-1)).toBe(start)                                  // full wrap
-    expect(new Set(names)).toEqual(new Set(MUSIC_TRACKS.map((t) => t.name))) // visited all
+    for (let i = 0; i < PLAYLIST.length; i++) names.push(nextTrack())
+    expect(names.at(-1)).toBe(start)                                   // full wrap
+    expect(new Set(names)).toEqual(new Set(PLAYLIST.map((s) => s.name))) // AY + PSG, all visited
   })
 })
 
-// ── auto-rotation (mocked AudioContext + fake timers) ─────────────────────────
+// ── radio auto-advance + mute (mocked AudioContext + fake timers, AY portion) ──
 
 function makeParam() {
   return {
@@ -86,47 +88,55 @@ class MockAudioContext {
   createBufferSource() { return { buffer: null as unknown, loop: false, connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn() } }
 }
 
-// Real loop length of a track = its longest channel (matches music.ts trackLength()).
-// The action tracks are no longer a uniform 9600 ms, so derive it per track.
+// Loop length of an AY track = its longest channel (matches startAy()).
 const loopMsOf = (name: string): number => {
   const t = MUSIC_TRACKS.find((x) => x.name === name)!
   const sum = (ns: readonly { readonly dur: number }[]) => ns.reduce((s, n) => s + n.dur, 0)
   return Math.max(sum(t.a), sum(t.b), sum(t.c))
 }
 
-describe('background music auto-rotation', () => {
+// Move the transport's pointer to a known AY track (index 0) without touching audio.
+function seekToFirstAyTrack(): void {
+  let guard = 0
+  while (currentTrackName() !== MUSIC_TRACKS[0]!.name && guard++ < PLAYLIST.length * 2) nextTrack()
+}
+
+describe('radio auto-advance (AY loops)', () => {
   beforeAll(() => {
     vi.stubGlobal('AudioContext', MockAudioContext)
-    initAudio() // unlock zx-kit's shared context so startMusic() actually schedules loops
+    initAudio() // unlock zx-kit's shared context so playAY actually schedules
   })
   afterEach(() => { stopMusic() })
   afterAll(() => { vi.unstubAllGlobals() })
 
-  it('auto-shuffles to a different track after MUSIC_LOOPS_PER_TRACK loops', () => {
+  it('auto-advances to the next song after MUSIC_LOOPS_PER_TRACK loops', () => {
     vi.useFakeTimers()
-    const before = currentMusicTrackName()
+    seekToFirstAyTrack()
+    const before = currentTrackName()
     const loopMs = loopMsOf(before)
     startMusic()
-    expect(currentMusicTrackName()).toBe(before)          // still on the starting track
-    vi.advanceTimersByTime(MUSIC_LOOPS_PER_TRACK * loopMs + 50) // Nth loop boundary triggers the switch
-    expect(currentMusicTrackName()).not.toBe(before)      // auto-rotated
+    expect(currentTrackName()).toBe(before)                         // still on the starting song
+    vi.advanceTimersByTime(MUSIC_LOOPS_PER_TRACK * loopMs + 50)     // Nth loop boundary → advance
+    expect(currentTrackName()).not.toBe(before)                    // moved on, on its own
     vi.useRealTimers()
   })
 
-  it('stays put while muted — no loop is scheduled after toggling off', () => {
+  it('does not advance while muted', () => {
     vi.useFakeTimers()
+    seekToFirstAyTrack()
     startMusic()
-    toggleMusic()                                         // mute (stops immediately)
-    const muted = currentMusicTrackName()
-    vi.advanceTimersByTime(5 * loopMsOf(muted))           // nothing scheduled → no rotation
-    expect(currentMusicTrackName()).toBe(muted)
+    toggleMute()                                                   // mute → the loop timer is cleared
+    const at = currentTrackName()
+    vi.advanceTimersByTime(5 * loopMsOf(at))                       // nothing scheduled → no rotation
+    expect(currentTrackName()).toBe(at)
+    toggleMute()                                                   // leave it unmuted for the next test
     vi.useRealTimers()
   })
 })
 
-// ── Mute stays muted across audio-unlock gestures (bug fix) ───────────────────
+// ── mute survives a later startMusic() (the audio-unlock bug) ──────────────────
 
-describe('mute is not undone by a later startMusic() (M then move)', () => {
+describe('mute is not undone by a later startMusic()', () => {
   beforeAll(() => {
     vi.stubGlobal('AudioContext', MockAudioContext)
     initAudio()
@@ -134,19 +144,21 @@ describe('mute is not undone by a later startMusic() (M then move)', () => {
   afterAll(() => { vi.unstubAllGlobals() })
   afterEach(() => { stopMusic() })
 
-  it('startMusic() after pressing M does NOT restart the music', () => {
+  it('a later startMusic() does not unmute', () => {
     vi.useFakeTimers()
-    if (!isMusicPlaying()) toggleMusic() // ensure a clean, unmuted, playing start
+    seekToFirstAyTrack()
+    startMusic()
     expect(isMusicPlaying()).toBe(true)
+    expect(isMuted()).toBe(false)
 
-    toggleMusic()                        // press M → mute
-    expect(isMusicPlaying()).toBe(false)
+    toggleMute()                         // press M → mute
+    expect(isMuted()).toBe(true)
 
     startMusic()                         // a later keydown fires the audio-unlock handler
-    expect(isMusicPlaying()).toBe(false) // stays muted (was the bug: it restarted)
+    expect(isMuted()).toBe(true)         // stays muted (was the bug: it restarted unmuted)
 
-    toggleMusic()                        // press M again → unmute
-    expect(isMusicPlaying()).toBe(true)
+    toggleMute()                         // press M again → unmute
+    expect(isMuted()).toBe(false)
     vi.useRealTimers()
   })
 })
