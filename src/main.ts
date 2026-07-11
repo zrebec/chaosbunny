@@ -46,9 +46,12 @@ import {
 import {
   GAME_WIDTH, GAME_HEIGHT, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK,
   SIDEBAR_W, PLAYFIELD_X, PLAYFIELD_W, PLAYFIELD_H, physics,
+  GLIDE_MAX_MS, GLIDE_REFILL_MS,
 } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
-import { LEVEL } from './world/level.js'
+// PROTO: falling-bunny experiment — swap back to './world/level.js' to compare with the climb.
+// import { LEVEL } from './world/level.js'
+import { LEVEL_FALL as LEVEL } from './world/level-fall.js'
 import { HEART } from './art/sprites.js'
 import { atlas } from './art/atlas.js'
 import { drawDungeonBackground, initBackground } from './world/background.js'
@@ -65,7 +68,9 @@ import { makeSpiders, updateSpiders, renderSpiders } from './entities/spider.js'
 import { makeBats, updateBats, renderBats } from './entities/bat.js'
 import { makeMice, updateMice, renderMice } from './entities/mouse.js'
 import { ensureAudio, SFX } from './audio/sfx.js'
-import { startMusic, toggleMusic, stopMusic, nextMusicTrack, currentMusicTrackName } from './audio/music.js'
+import {
+  startMusic, stopMusic, nextTrack, toggleMute, currentTrackName, musicStatus,
+} from './audio/music.js'
 import { drawTiles, ctxPainter, monoPainter, attrPainter, nextViewMode, type ViewMode } from './world/playfield.js'
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
@@ -99,8 +104,8 @@ window.addEventListener('keydown', (e) => {
   if ((e.key === 'b' || e.key === 'B') && !e.ctrlKey && !e.metaKey && !e.altKey) togglePause()
   if (paused) return // paused means paused: every other toggle waits
   if (e.key === 'l' || e.key === 'L') lightsOn = !lightsOn
-  if (e.key === 'm' || e.key === 'M') toggleMusic() // mute / unmute music
-  if (e.key === 'n' || e.key === 'N') nextMusicTrack() // next AY loop
+  if (e.key === 'm' || e.key === 'M') toggleMute()   // mute / unmute whatever's playing
+  if (e.key === 'n' || e.key === 'N') nextTrack()    // next song — any kind (AY loop or PSG)
   if (e.key === 'c' || e.key === 'C') viewMode = nextViewMode(viewMode) // cycle playfield look
   if (e.key === 'g' || e.key === 'G') debug = !debug // browser-safe debug toggle (Ctrl+Shift+B is eaten by browsers)
 })
@@ -111,7 +116,7 @@ const PAUSE_HELP: readonly string[] = [
   'ARROWS A D - MOVE',
   'SPACE W - JUMP',
   'UP DOWN - CLIMB',
-  'DOWN S - CROUCH',
+  'DOWN - BRAKE / CROUCH',
   'Z CTRL - SHOOT',
   'L - LIGHTS',
   'M - MUSIC ON/OFF',
@@ -241,19 +246,20 @@ function drawSidebarFrame(c: CanvasRenderingContext2D): void {
 
 function renderSidebar(
   c: CanvasRenderingContext2D,
-  hp: number, got: number, total: number, floor: number, exitOpen: boolean, fps: number,
+  hp: number, got: number, total: number, floor: number, exitOpen: boolean, glide: number, fps: number,
 ): void {
   const panel = refreshLayer(sidebarCache, (lctx) => {
     lctx.fillStyle = C.BLACK
     lctx.fillRect(0, 0, SIDEBAR_W, GAME_HEIGHT)
     drawSidebarFrame(lctx)
     sideCentered(lctx, 'LIVES', 14, C.B_RED)
-    sideCentered(lctx, 'CARROTS', 44, C.B_YELLOW)
-    sideCentered(lctx, 'FLOOR', 78, C.CYAN)
-    sideCentered(lctx, 'VERSION', 108, C.WHITE)
-    sideCentered(lctx, APP_VER, 118, C.WHITE)
-    sideCentered(lctx, 'ZX-KIT', 136, C.WHITE)
-    sideCentered(lctx, ZX_KIT_VER, 146, C.WHITE)
+    sideCentered(lctx, 'CARROTS', 40, C.B_YELLOW)
+    sideCentered(lctx, 'EARS', 68, C.B_CYAN)
+    sideCentered(lctx, 'FLOOR', 96, C.CYAN)
+    sideCentered(lctx, 'VERSION', 122, C.WHITE)
+    sideCentered(lctx, APP_VER, 132, C.WHITE)
+    sideCentered(lctx, 'ZX-KIT', 148, C.WHITE)
+    sideCentered(lctx, ZX_KIT_VER, 158, C.WHITE)
   })
   if (panel) c.drawImage(panel, 0, 0)
 
@@ -261,11 +267,21 @@ function renderSidebar(
   for (let i = 0; i < Math.max(0, hp); i++) {
     drawSprite(c, HEART, 26 + i * 10, 24, C.B_RED, C.BLACK)
   }
-  drawBitmap(c, atlas.carrotPickup.bitmap, 16, 50, C.B_YELLOW)
-  drawText(c, `${got}/${total}`, 38, 56, exitOpen ? C.B_GREEN : C.B_WHITE, C.BLACK)
-  sideCentered(c, `${floor} OF ${FLOOR_TARGET}`, 88, C.CYAN)
+  drawBitmap(c, atlas.carrotPickup.bitmap, 16, 46, C.B_YELLOW)
+  drawText(c, `${got}/${total}`, 38, 52, exitOpen ? C.B_GREEN : C.B_WHITE, C.BLACK)
+
+  // Ears-brake glide gauge — depletes while braking, refuelled by carrots; runs
+  // low → red warning, empty → the ears can no longer brake.
+  const gx = 14, gy = 78, gw = SIDEBAR_W - 28, gh = 6
+  c.fillStyle = C.WHITE; c.fillRect(gx - 1, gy - 1, gw + 2, gh + 2)
+  c.fillStyle = C.BLACK; c.fillRect(gx, gy, gw, gh)
+  const gf = Math.max(0, Math.min(1, glide))
+  c.fillStyle = gf > 0.33 ? C.B_CYAN : C.B_RED
+  c.fillRect(gx, gy, Math.round(gw * gf), gh)
+
+  sideCentered(c, `${floor} OF ${FLOOR_TARGET}`, 106, C.CYAN)
   const fpsInk = fps >= 55 ? C.B_GREEN : fps >= 30 ? C.B_YELLOW : C.B_RED
-  sideCentered(c, `${fps} FPS`, 168, fpsInk)
+  sideCentered(c, `${fps} FPS`, 174, fpsInk)
 }
 
 function frame(now: number): void {
@@ -305,6 +321,7 @@ function frame(now: number): void {
     if (got > 0) {
       const was = carrotCount
       carrotCount += got
+      player.glideMs = Math.min(GLIDE_MAX_MS, player.glideMs + got * GLIDE_REFILL_MS) // carrots refuel the ears
       SFX.pickup()
       // The last carrot opens the moon — flash to signal the exit is live.
       if (was < TOTAL_CARROTS && carrotCount >= TOTAL_CARROTS) flashBorder(C.B_YELLOW, 3, 120)
@@ -437,8 +454,12 @@ function frame(now: number): void {
     ctx.lineWidth = 1
     ctx.strokeRect(Math.round(b.x - camX), Math.round(b.y - camY), b.w, b.h)
     drawText(ctx, `${player.state} g:${player.onGround ? 1 : 0} sh:${shots.length} light:${lightsOn ? 1 : 0} ${frameMs.toFixed(1)}ms`, 2, 12, C.B_CYAN)
-    drawText(ctx, `music:${currentMusicTrackName()}`, 2, 22, C.B_MAGENTA)
+    drawText(ctx, `music:${currentTrackName()}`, 2, 22, C.B_MAGENTA)
   }
+
+  // "Now playing" — always visible while music is on (demoscene: show the tune).
+  const nowPlaying = musicStatus()
+  if (nowPlaying) drawText(ctx, nowPlaying, 2, 2, C.B_YELLOW)
 
   // Pause overlay — frozen scene below, blinking PAUSED + key help on top.
   // Blink runs on real `now` (gameTime is frozen while paused by design).
@@ -470,7 +491,7 @@ function frame(now: number): void {
 
   ctx.restore() // end of the translated + clipped playfield
 
-  renderSidebar(ctx, player.hp, carrotCount, TOTAL_CARROTS, highestFloor, exitOpen, Math.round(1000 / frameMs))
+  renderSidebar(ctx, player.hp, carrotCount, TOTAL_CARROTS, highestFloor, exitOpen, player.glideMs / GLIDE_MAX_MS, Math.round(1000 / frameMs))
 
   // CRT scanlines: rendered once into an offscreen at device resolution, then
   // blitted in physical pixels (reset the ×SCALE transform for a 1:1 copy).
