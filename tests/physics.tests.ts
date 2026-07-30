@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createTileMap, CELL, C, type Tile } from 'zx-kit'
 import { createPlayer, updatePlayer, playerBox } from '../src/entities/player.js'
+import { FALL_MIN_PX, PX_PER_METRE } from '../src/config.js'
 import { atlas } from '../src/art/atlas.js'
 
 function solidTile(): Tile {
@@ -59,5 +60,68 @@ describe('player physics — the "rabbit flew to infinity" bug', () => {
     // and must not be falsely grounded while hanging in the air beside the wall.
     expect(player.y).toBeGreaterThanOrEqual(startY)
     expect(player.y).toBeGreaterThan(0)
+  })
+})
+
+// ── Fall telemetry (the sidebar's FALLS readout) ───────────────────────────────
+
+describe('player fall telemetry', () => {
+  /** Drops the player from `fromY` onto a floor and returns the settled player. */
+  function dropOnto(fromY: number, floorRow: number) {
+    const map = createTileMap(6, 40)
+    map.fillRect(0, floorRow, 6, 1, solidTile())
+    const player = createPlayer(2 * CELL, fromY)
+    // one tick to leave the ground, then run until it settles
+    for (let i = 0; i < 200 && !player.onGround; i++) updatePlayer(player, map, 16)
+    updatePlayer(player, map, 16)
+    return player
+  }
+
+  it('starts a run with a clean sheet', () => {
+    const p = createPlayer(0, 0)
+    expect(p.falls).toBe(0)
+    expect(p.fallenPx).toBe(0)
+    expect(p.fallFromY).toBeNull()
+  })
+
+  it('counts a real drop and records how far it fell', () => {
+    const p = dropOnto(0, 30)
+    expect(p.onGround).toBe(true)
+    expect(p.falls).toBe(1)
+    expect(p.fallenPx).toBeGreaterThanOrEqual(FALL_MIN_PX)
+    // the readout divides by PX_PER_METRE, so the metre figure must be sane too
+    expect(Math.round(p.fallenPx / PX_PER_METRE)).toBeGreaterThan(0)
+  })
+
+  it('ignores a drop shorter than FALL_MIN_PX (a 1-cell lip is not a fall)', () => {
+    const map = createTileMap(6, 40)
+    map.fillRect(0, 20, 6, 1, solidTile())
+    const player = createPlayer(2 * CELL, 0)
+    for (let i = 0; i < 200 && !player.onGround; i++) updatePlayer(player, map, 16)
+    player.falls = 0
+    player.fallenPx = 0
+    // step off a lip barely shorter than the threshold
+    player.onGround = false
+    player.fallFromY = player.y
+    player.y += FALL_MIN_PX - 1
+    updatePlayer(player, map, 16)
+    expect(player.falls).toBe(0)
+  })
+
+  it('accumulates across several falls', () => {
+    const map = createTileMap(6, 60)
+    map.fillRect(0, 50, 6, 1, solidTile())
+    const player = createPlayer(2 * CELL, 0)
+    for (let i = 0; i < 300 && !player.onGround; i++) updatePlayer(player, map, 16)
+    updatePlayer(player, map, 16)
+    const afterFirst = { falls: player.falls, px: player.fallenPx }
+    // lift it back up and let it fall again
+    player.y -= 200
+    player.onGround = false
+    player.vy = 0
+    for (let i = 0; i < 300 && !player.onGround; i++) updatePlayer(player, map, 16)
+    updatePlayer(player, map, 16)
+    expect(player.falls).toBe(afterFirst.falls + 1)
+    expect(player.fallenPx).toBeGreaterThan(afterFirst.px)
   })
 })

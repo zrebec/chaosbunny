@@ -46,7 +46,7 @@ import {
 import {
   GAME_WIDTH, GAME_HEIGHT, LIGHTING_MODE, FLOOR_TARGET, CLASH_RABBIT_INK,
   SIDEBAR_W, PLAYFIELD_X, PLAYFIELD_W, PLAYFIELD_H, physics,
-  GLIDE_MAX_MS, GLIDE_REFILL_MS,
+  PX_PER_METRE,
 } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
 import { LEVEL } from './world/level.js'
@@ -244,7 +244,8 @@ function drawSidebarFrame(c: CanvasRenderingContext2D): void {
 
 function renderSidebar(
   c: CanvasRenderingContext2D,
-  hp: number, got: number, total: number, floor: number, exitOpen: boolean, glide: number, fps: number,
+  hp: number, got: number, total: number, floor: number, exitOpen: boolean,
+  falls: number, fallenPx: number, fps: number,
 ): void {
   const panel = refreshLayer(sidebarCache, (lctx) => {
     lctx.fillStyle = C.BLACK
@@ -252,7 +253,7 @@ function renderSidebar(
     drawSidebarFrame(lctx)
     sideCentered(lctx, 'LIVES', 14, C.B_RED)
     sideCentered(lctx, 'CARROTS', 40, C.B_YELLOW)
-    sideCentered(lctx, 'EARS', 68, C.B_CYAN)
+    sideCentered(lctx, 'FALLS', 68, C.B_CYAN)
     sideCentered(lctx, 'FLOOR', 96, C.CYAN)
     sideCentered(lctx, 'VERSION', 122, C.WHITE)
     sideCentered(lctx, APP_VER, 132, C.WHITE)
@@ -268,14 +269,13 @@ function renderSidebar(
   drawBitmap(c, atlas.carrotPickup.bitmap, 16, 46, C.B_YELLOW)
   drawText(c, `${got}/${total}`, 38, 52, exitOpen ? C.B_GREEN : C.B_WHITE, C.BLACK)
 
-  // Ears-brake glide gauge — depletes while braking, refuelled by carrots; runs
-  // low → red warning, empty → the ears can no longer brake.
-  const gx = 14, gy = 78, gw = SIDEBAR_W - 28, gh = 6
-  c.fillStyle = C.WHITE; c.fillRect(gx - 1, gy - 1, gw + 2, gh + 2)
-  c.fillStyle = C.BLACK; c.fillRect(gx, gy, gw, gh)
-  const gf = Math.max(0, Math.min(1, glide))
-  c.fillStyle = gf > 0.33 ? C.B_CYAN : C.B_RED
-  c.fillRect(gx, gy, Math.round(gw * gf), gh)
+  // Fall telemetry, in the slot the ears gauge used to hold: how many times you
+  // went down, and how far in total. Cheap to read at a glance and it turns a
+  // bad run into a number you can try to beat — the counter IS the scoreboard.
+  // Colour is a running verdict: clean → cyan, sloppy → yellow, disastrous → red.
+  const metres = Math.round(fallenPx / PX_PER_METRE)
+  const fallInk = falls === 0 ? C.B_CYAN : falls < 5 ? C.B_YELLOW : C.B_RED
+  sideCentered(c, `${falls}x ${metres}M`, 78, fallInk)
 
   sideCentered(c, `${floor} OF ${FLOOR_TARGET}`, 106, C.CYAN)
   const fpsInk = fps >= 55 ? C.B_GREEN : fps >= 30 ? C.B_YELLOW : C.B_RED
@@ -319,7 +319,6 @@ function frame(now: number): void {
     if (got > 0) {
       const was = carrotCount
       carrotCount += got
-      player.glideMs = Math.min(GLIDE_MAX_MS, player.glideMs + got * GLIDE_REFILL_MS) // carrots refuel the ears
       SFX.pickup()
       // The last carrot opens the moon — flash to signal the exit is live.
       if (was < TOTAL_CARROTS && carrotCount >= TOTAL_CARROTS) flashBorder(C.B_YELLOW, 3, 120)
@@ -489,7 +488,8 @@ function frame(now: number): void {
 
   ctx.restore() // end of the translated + clipped playfield
 
-  renderSidebar(ctx, player.hp, carrotCount, TOTAL_CARROTS, highestFloor, exitOpen, player.glideMs / GLIDE_MAX_MS, Math.round(1000 / frameMs))
+  renderSidebar(ctx, player.hp, carrotCount, TOTAL_CARROTS, highestFloor, exitOpen,
+    player.falls, player.fallenPx, Math.round(1000 / frameMs))
 
   // CRT scanlines: rendered once into an offscreen at device resolution, then
   // blitted in physical pixels (reset the ×SCALE transform for a 1:1 copy).
