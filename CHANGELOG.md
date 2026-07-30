@@ -1,24 +1,17 @@
-## [0.8.1](https://github.com/zrebec/chaosbunny/compare/v0.8.0...v0.8.1) (2026-06-30)
+## [0.7.1](https://github.com/zrebec/chaosbunny/compare/v0.7.0...v0.7.1) (2026-07-30)
 
 
 ### Bug Fixes
 
-* **audio:** remove unused pulse percussion bars to unblock the build ([91f36ff](https://github.com/zrebec/chaosbunny/commit/91f36ff3a4908fcd24043afdec28290207d10fae))
+* return to classic level ([edfa044](https://github.com/zrebec/chaosbunny/commit/edfa04474560b557be236671062c248ed7845c45))
 
-# [0.8.0](https://github.com/zrebec/chaosbunny/compare/v0.7.0...v0.8.0) (2026-06-30)
-
-
-### Features
-
-* added test level for charge jump ([5700237](https://github.com/zrebec/chaosbunny/commit/57002374d0c46775e6789e181dc8f8ea9584cd22))
-* new musics per  and prepare to stereo. ([9b6b659](https://github.com/zrebec/chaosbunny/commit/9b6b6594c59212384b2bfaa61e12e55f08ee273d))
-
-# [0.7.0](https://github.com/zrebec/chaosbunny/compare/v0.6.0...v0.7.0) (2026-06-14)
+# [0.7.0](https://github.com/zrebec/chaosbunny/compare/v0.6.0...v0.7.0) (2026-07-08)
 
 
 ### Features
 
-* **player:** Jump King charge-jump — hold Space to charge, release to leap ([ab6effa](https://github.com/zrebec/chaosbunny/commit/ab6effaa9d6c0fba17968397bdfc78b2907820f5))
+* **audio:** new AY action tracks (stereo-ready) ([6089304](https://github.com/zrebec/chaosbunny/commit/6089304e51809c2582a1acd1d02a20dc59aca490))
+* **debug:** 'G' toggles the debug overlay ([c4a6fc1](https://github.com/zrebec/chaosbunny/commit/c4a6fc11a3ee72264168f589cc061e233d5ff879))
 
 # [0.6.0](https://github.com/zrebec/chaosbunny/compare/v0.5.0...v0.6.0) (2026-06-13)
 

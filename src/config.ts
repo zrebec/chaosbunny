@@ -156,6 +156,20 @@ export function chargeVelocity(chargeMs: number): number {
 }
 
 /**
+ * Fall telemetry, shared with master. A "fall" is measured from where the rabbit
+ * left the ground to where it landed — so hopping up and coming back down on the
+ * same ledge is not a fall, while stepping off one is. Only drops of at least
+ * {@link FALL_MIN_PX} count, so shuffling off a 1-cell lip is ignored.
+ *
+ * Kept on this branch even though the sidebar shows the charge timer instead: the
+ * numbers are cheap, and keeping the two branches identical below the HUD means a
+ * future master merge only ever conflicts in main.ts.
+ */
+export const FALL_MIN_PX = 24 as const
+/** Pixels per displayed metre. One 8px cell = 1 m, so the 52-row tower is 52 m. */
+export const PX_PER_METRE = 8 as const
+
+/**
  * Jump envelope, derived once from {@link physics} — the single source of truth
  * the level and its reachability linter (`tests/level.tests.ts`) measure platform
  * spacing against. With the charge-jump this is the **full-charge** reach (apex at

@@ -1210,7 +1210,7 @@ zx-kit's `drawBitmap` paints **1×1 `fillRect`s per pixel** — fine for sprites
 
 ## Build / verify
 
-Run with Node 22 (default 20 breaks vitest 4): `export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"`, then `npx tsc --noEmit`, `npm test`, `npm run build`. The owner commits; do not commit unless asked.
+Run with Node 24 (see `.nvmrc`; nvm's default alias already points there): `npx tsc --noEmit`, `npm test`, `npm run build`. The owner commits; do not commit unless asked.
 
 
 **CI / Pages rule (2026-07-03):** the deploy workflow must use `actions/upload-pages-artifact@v5+`

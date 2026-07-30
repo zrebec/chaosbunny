@@ -19,7 +19,7 @@ import type { Painter } from '../world/playfield.js'
 import { atlas, type RabbitAsset } from '../art/atlas.js'
 import { RABBIT_BOX, CROUCH_BOX } from '../rabbit.js'
 import {
-  physics, chargeVelocity, ANIM_WALK_MS, ANIM_IDLE_MS,
+  physics, chargeVelocity, ANIM_WALK_MS, ANIM_IDLE_MS, FALL_MIN_PX,
   THEME_RABBIT_BODY_INK, THEME_RABBIT_BELLY_INK, THEME_RABBIT_ACCENT_INK, THEME_RABBIT_EYE_INK,
 } from '../config.js'
 
@@ -34,6 +34,13 @@ export interface Player {
   onGround: boolean
   /** True while ducked: shorter collision box, can crawl, cannot jump. */
   crouching: boolean
+  /** World Y at the moment the rabbit last left the ground — the datum a fall is
+   *  measured from. `null` while grounded. */
+  fallFromY: number | null
+  /** How many real falls (drop ≥ FALL_MIN_PX) this run. */
+  falls: number
+  /** Total pixels fallen this run; the sidebar divides by PX_PER_METRE. */
+  fallenPx: number
   state: PlayerState
   animTime: number
   shootLock: number
@@ -158,6 +165,7 @@ export function createPlayer(spawnX: number, spawnY: number): Player {
     animTime: 0, shootLock: 0, coyote: 0, chargeMs: 0, charging: false,
     jumpHeld: false, fireHeld: false, onLadder: false,
     hp: 3, invuln: 0, knockback: 0,
+    fallFromY: null, falls: 0, fallenPx: 0,
     homeX: spawnX, homeY: spawnY,
   }
 }
@@ -322,6 +330,26 @@ export function updatePlayer(p: Player, map: TileMap, dt: number): PlayerEvents 
     p.onGround = false
   }
   if (p.onGround && !wasGround && p.vy >= 0) events.landed = true
+
+  // ── Fall telemetry ──
+  // Measured from where the ground was LEFT to where it was regained, so a hop
+  // that returns to the same ledge scores nothing while stepping off one counts.
+  // (Height above the apex is deliberately ignored — the question is how far you
+  // ended up below where you started, not how high you got on the way.)
+  // The datum is normally taken the tick the ground is left. The `null` fallback
+  // covers becoming airborne without that transition being observed here: spawning
+  // mid-air, and damagePlayer() clearing onGround directly on a knockback.
+  if (!p.onGround && (wasGround || p.fallFromY === null)) p.fallFromY = p.y
+  if (p.onGround && !wasGround) {
+    if (p.fallFromY !== null) {
+      const drop = p.y - p.fallFromY
+      if (drop >= FALL_MIN_PX) {
+        p.falls += 1
+        p.fallenPx += drop
+      }
+    }
+    p.fallFromY = null
+  }
 
   // ── Safety net: never let the rabbit go non-finite or escape the world ──
   const worldW = map.cols * CELL
