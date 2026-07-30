@@ -49,9 +49,7 @@ import {
   GLIDE_MAX_MS, GLIDE_REFILL_MS,
 } from './config.js'
 import { buildRoomFromLevel } from './world/room.js'
-// PROTO: falling-bunny experiment — swap back to './world/level.js' to compare with the climb.
-// import { LEVEL } from './world/level.js'
-import { LEVEL_FALL as LEVEL } from './world/level-fall.js'
+import { LEVEL } from './world/level.js'
 import { HEART } from './art/sprites.js'
 import { atlas } from './art/atlas.js'
 import { drawDungeonBackground, initBackground } from './world/background.js'
