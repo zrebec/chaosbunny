@@ -123,12 +123,6 @@ export const physics = {
   jumpCut: 0.45,
   /** Terminal fall speed clamp (px/ms). */
   maxFallSpeed: 0.7,
-  /** Ears-brake (hold Down in the air): gentler fall gravity while flared. */
-  brakeGravity: 0.011,
-  /** Ears-brake terminal fall speed — a slow, aimable glide (px/ms). */
-  brakeFallSpeed: 0.066,
-  /** Rate the ears bleed excess downward speed toward brakeFallSpeed (px/ms²). */
-  brakeDrag: 0.022,
   /** Grace window after leaving a ledge during which a jump still fires (ms). */
   coyoteMs: 200,
   /** Window before landing during which a jump press is remembered (ms). */
@@ -140,16 +134,14 @@ export const physics = {
 } as const
 
 /**
- * Ears-brake glide reserve (the "falling bunny" experiment). Holding Down in the
- * air spends the reserve to glide; when it hits 0 the ears STOP braking entirely
- * (so a level can't be hovered over). The ONLY refuel is collecting carrots — the
- * collectible IS the fuel, fusing the collect-loop and the survival-loop into one.
+ * Fall telemetry (the sidebar's third readout). A "fall" is measured from where
+ * the rabbit left the ground to where it landed — so hopping up and coming back
+ * down on the same ledge is not a fall, while stepping off one is. Only drops of
+ * at least {@link FALL_MIN_PX} count, so shuffling off a 1-cell lip is ignored.
  */
-export const GLIDE_MAX_MS = 900 as const
-/** Reserve spent per ms of braking (1 = real-time drain; >1 drains faster). */
-export const GLIDE_DRAIN_RATE = 1 as const
-/** Reserve refilled per carrot collected (ms). */
-export const GLIDE_REFILL_MS = 450 as const
+export const FALL_MIN_PX = 24 as const
+/** Pixels per displayed metre. One 8px cell = 1 m, so the 52-row tower is 52 m. */
+export const PX_PER_METRE = 8 as const
 
 /**
  * Jump envelope, derived once from {@link physics} — the single source of truth
