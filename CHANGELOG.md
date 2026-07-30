@@ -1,3 +1,10 @@
+## [0.7.1](https://github.com/zrebec/chaosbunny/compare/v0.7.0...v0.7.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* return to classic level ([edfa044](https://github.com/zrebec/chaosbunny/commit/edfa04474560b557be236671062c248ed7845c45))
+
 # [0.7.0](https://github.com/zrebec/chaosbunny/compare/v0.6.0...v0.7.0) (2026-07-08)
 
 
