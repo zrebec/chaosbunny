@@ -10,6 +10,9 @@
  * - R: start the room again
  * - 1, 2, …: jump to that room (after a win, any key goes on to the next)
  *
+ * After a win, P plays the run back and B the run that holds the room's record
+ * (`replay.ts`: a run is just its actions); any key stops it.
+ *
  * It opens on the title (`title.ts`): `LOAD ""`, a key starts the tape, a key
  * during the load finishes it, a key on the picture starts room 1. Winning the
  * last room comes back to the picture.
@@ -24,6 +27,7 @@ import { consumeAnyKey, consumeFlag, initInput, resetInput, SCALE, setupCanvas, 
 import { ensureAudio } from '../audio/sfx.js'
 import { beat, startWorld, type Action, type World } from './beat.js'
 import { openRecords, type Run } from './records.js'
+import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom } from './room.js'
 import { ROOM_01 } from './rooms/room01.js'
 import { ROOM_02 } from './rooms/room02.js'
@@ -41,6 +45,10 @@ const BEAT_MS = 150
 const CAUGHT_MS = 900
 /** A pause after winning before a key restarts, so the winning keypress cannot skip the screen. */
 const WON_GRACE_MS = 400
+/** Replay pace: a little slower than play, so a run can be followed. */
+const REPLAY_BEAT_MS = 260
+/** How long the last beat of a replay stays before the win screen returns. */
+const REPLAY_HOLD_MS = 700
 
 const canvas = document.getElementById('game') as HTMLCanvasElement
 const ctx = setupCanvas(canvas, SCALE, 256, 192)
@@ -65,7 +73,7 @@ let prev: World = world
 let t = 1
 let thrown: Frame['thrown'] = null
 let aiming = false
-let phase: 'title' | 'play' | 'caught' | 'won' = 'title'
+let phase: 'title' | 'play' | 'caught' | 'won' | 'replay' = 'title'
 let phaseMs = 0
 let caughtBy: number | null = null
 let bittenBy: number | null = null
@@ -73,6 +81,10 @@ let queued: Action | null = null
 const title = createTitle()
 const book = openRecords()
 let lastRun: Run | null = null
+/** Every action of the current attempt that the room took — the run, if it wins. */
+let runActions: Action[] = []
+let wonWorld: World | null = null
+let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: number } | null = null
 let titleMode: TitleMode = 'prompt'
 let loadMs = 0
 
@@ -122,7 +134,54 @@ function restart(): void {
   caughtBy = null
   bittenBy = null
   queued = null
+  runActions = []
+  replay = null
   resetInput()
+}
+
+function startReplay(actions: readonly Action[]): void {
+  if (!wonWorld || actions.length === 0) return
+  phase = 'replay'
+  world = startWorld(room)
+  prev = world
+  t = 1
+  thrown = null
+  replay = { actions, next: 0, waitMs: 0, holdMs: 0 }
+  resetInput()
+}
+
+function stopReplay(): void {
+  if (!wonWorld) return
+  phase = 'won'
+  phaseMs = 0
+  world = wonWorld
+  prev = wonWorld
+  t = 1
+  thrown = null
+  replay = null
+  resetInput()
+}
+
+/** One beat of a replay: the same beat() the player's keys went through. */
+function stepReplay(r: NonNullable<typeof replay>, dt: number): void {
+  if (r.next >= r.actions.length) {
+    r.holdMs += dt
+    if (r.holdMs >= REPLAY_HOLD_MS) stopReplay()
+    return
+  }
+  if (t < 1) return
+  r.waitMs += dt
+  if (r.waitMs < REPLAY_BEAT_MS - BEAT_MS) return
+  r.waitMs = 0
+  const result = beat(room, world, r.actions[r.next]!)
+  r.next = result.outcome === 'ok' ? r.next + 1 : r.actions.length
+  if (result.outcome === 'blocked') return
+  playEvents(result.events)
+  prev = world
+  world = result.world
+  t = 0
+  const toss = result.events.find((e) => e.type === 'throw')
+  thrown = toss && toss.type === 'throw' ? { from: toss.from, to: toss.to } : null
 }
 
 function play(action: Action): void {
@@ -132,6 +191,7 @@ function play(action: Action): void {
     return
   }
   playEvents(r.events)
+  runActions.push(action)
   prev = world
   world = r.world
   t = 0
@@ -146,7 +206,8 @@ function play(action: Action): void {
     queued = null
     aiming = false
   } else if (r.outcome === 'won') {
-    lastRun = book.finish(room.name, world.beats)
+    lastRun = book.finish(room.name, world.beats, encodeRun(runActions))
+    wonWorld = world
     phase = 'won'
     phaseMs = 0
     queued = null
@@ -171,6 +232,12 @@ window.addEventListener('keydown', (e) => {
   const digit = Number(e.key)
   if (Number.isInteger(digit) && digit >= 1 && digit <= ROOMS.length) {
     goToRoom(digit - 1)
+    return
+  }
+  if (phase === 'won' && phaseMs >= WON_GRACE_MS) {
+    if (e.key === 'p' || e.key === 'P') startReplay(runActions)
+    const best = book.bestRun(room.name)
+    if ((e.key === 'b' || e.key === 'B') && best) startReplay(decodeRun(best))
     return
   }
   if (phase !== 'play') return
@@ -218,6 +285,10 @@ function frame(now: number): void {
         play(next)
       }
     }
+  } else if (phase === 'replay') {
+    t = Math.min(1, t + dt / BEAT_MS)
+    if (consumeAnyKey()) stopReplay()
+    else if (replay) stepReplay(replay, dt)
   } else if (phase === 'title') {
     if (titleMode === 'loading') {
       loadMs += dt
@@ -229,7 +300,8 @@ function frame(now: number): void {
     t = Math.min(1, t + dt / BEAT_MS)
     phaseMs += dt
     if (phase === 'caught' && phaseMs >= CAUGHT_MS) restart()
-    if (phase === 'won' && phaseMs >= WON_GRACE_MS && consumeAnyKey()) {
+    // Keys during the grace are dropped, not kept for later — or they would skip the screen the moment it ends.
+    if (phase === 'won' && consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
       if (roomIndex === ROOMS.length - 1) goToTitle('ready')
       else goToRoom(roomIndex + 1)
     }
@@ -239,6 +311,8 @@ function frame(now: number): void {
   else render(ctx, scene, {
       world, prev, t, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
       record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
+      replaying: phase === 'replay',
+      bestRunKept: book.bestRun(room.name) !== null,
     }, STR)
   requestAnimationFrame(frame)
 }

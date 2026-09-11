@@ -49,6 +49,10 @@ export interface Frame {
   readonly won: boolean
   /** On the win screen: the room's record after this run, and whether this run set it. */
   readonly record: { readonly best: number; readonly isNew: boolean } | null
+  /** A run being played back: no overlay, a banner instead of the key hints. */
+  readonly replaying: boolean
+  /** On the win screen, whether a record run is kept that B can play. */
+  readonly bestRunKept: boolean
 }
 
 export interface Scene {
@@ -240,7 +244,8 @@ function drawHud(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Str
   drawText(ctx, str.carrots(r.carrots), 96, HUD_Y, r.carrots > 0 ? C.B_YELLOW : C.YELLOW)
   const right = `${str.room(scene.number)} ${str.beats(f.world.beats)}`
   drawText(ctx, right, PLAY_W - right.length * 8, HUD_Y, C.WHITE)
-  drawText(ctx, f.aiming ? str.aimHints : str.hints, 0, HUD_Y + 8, f.aiming ? C.B_WHITE : C.WHITE)
+  if (f.replaying) drawText(ctx, str.replaying, 0, HUD_Y + 8, C.B_YELLOW)
+  else drawText(ctx, f.aiming ? str.aimHints : str.hints, 0, HUD_Y + 8, f.aiming ? C.B_WHITE : C.WHITE)
 }
 
 export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Strings): void {
@@ -268,7 +273,8 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
       const text = f.record.isNew ? str.newRecord : str.record(f.record.best)
       drawTextCentered(ctx, text, 104, 32, f.record.isNew ? C.B_CYAN : C.WHITE, C.BLACK)
     }
-    drawTextCentered(ctx, str.again, 128, 32, C.WHITE, C.BLACK)
+    drawTextCentered(ctx, str.replayHint(f.bestRunKept), 120, 32, C.B_WHITE, C.BLACK)
+    drawTextCentered(ctx, str.again, 136, 32, C.WHITE, C.BLACK)
   }
   drawHud(ctx, scene, f, str)
 }

@@ -26,6 +26,9 @@ export interface Strings {
   readonly startPrompt: string
   readonly record: (n: number) => string
   readonly newRecord: string
+  /** Win-screen hint: P replays this run, B the record run (when there is one). */
+  readonly replayHint: (withBest: boolean) => string
+  readonly replaying: string
 }
 
 const EN: Strings = {
@@ -46,6 +49,8 @@ const EN: Strings = {
   startPrompt: 'PRESS ANY KEY',
   record: (n) => `BEST ${n}`,
   newRecord: 'NEW BEST!',
+  replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
+  replaying: 'REPLAY - ANY KEY STOPS',
 }
 
 const SK: Strings = {
@@ -66,6 +71,8 @@ const SK: Strings = {
   startPrompt: 'STLAC KLAVESU',
   record: (n) => `REKORD ${n}`,
   newRecord: 'NOVY REKORD!',
+  replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),
+  replaying: 'ZAZNAM - KLAVESA ZASTAVI',
 }
 
 export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)
