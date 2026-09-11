@@ -24,6 +24,8 @@ export interface Strings {
   /** The command a Spectrum owner typed to load a tape — the same in every language. */
   readonly loadCommand: string
   readonly startPrompt: string
+  readonly record: (n: number) => string
+  readonly newRecord: string
 }
 
 const EN: Strings = {
@@ -42,6 +44,8 @@ const EN: Strings = {
   again: 'ANY KEY: NEXT ROOM',
   loadCommand: 'LOAD ""',
   startPrompt: 'PRESS ANY KEY',
+  record: (n) => `BEST ${n}`,
+  newRecord: 'NEW BEST!',
 }
 
 const SK: Strings = {
@@ -60,6 +64,8 @@ const SK: Strings = {
   again: 'KLAVESA: DALSIA MIESTNOST',
   loadCommand: 'LOAD ""',
   startPrompt: 'STLAC KLAVESU',
+  record: (n) => `REKORD ${n}`,
+  newRecord: 'NOVY REKORD!',
 }
 
 export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)

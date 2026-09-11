@@ -43,6 +43,8 @@ export interface Frame {
   /** The fox that caught Randy, shown with `!`. */
   readonly caughtBy: number | null
   readonly won: boolean
+  /** On the win screen: the room's record after this run, and whether this run set it. */
+  readonly record: { readonly best: number; readonly isNew: boolean } | null
 }
 
 export interface Scene {
@@ -233,14 +235,18 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
   }
   if (f.won) {
     blit(ctx, scene.dimLayer)
-    drawTextCentered(ctx, str.won, 64, 32, C.B_GREEN, C.BLACK)
-    drawTextCentered(ctx, str.wonBeats(f.world.beats), 80, 32, C.B_WHITE, C.BLACK)
+    drawTextCentered(ctx, str.won, 56, 32, C.B_GREEN, C.BLACK)
+    drawTextCentered(ctx, str.wonBeats(f.world.beats), 72, 32, C.B_WHITE, C.BLACK)
     const par = scene.room.par
     if (par !== null) {
       const onPar = f.world.beats <= par
-      drawTextCentered(ctx, onPar ? str.onPar : str.par(par), 96, 32, onPar ? C.B_YELLOW : C.WHITE, C.BLACK)
+      drawTextCentered(ctx, onPar ? str.onPar : str.par(par), 88, 32, onPar ? C.B_YELLOW : C.WHITE, C.BLACK)
     }
-    drawTextCentered(ctx, str.again, 112, 32, C.WHITE, C.BLACK)
+    if (f.record) {
+      const text = f.record.isNew ? str.newRecord : str.record(f.record.best)
+      drawTextCentered(ctx, text, 104, 32, f.record.isNew ? C.B_CYAN : C.WHITE, C.BLACK)
+    }
+    drawTextCentered(ctx, str.again, 128, 32, C.WHITE, C.BLACK)
   }
   drawHud(ctx, scene, f, str)
 }

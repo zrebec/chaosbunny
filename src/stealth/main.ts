@@ -23,6 +23,7 @@
 import { consumeAnyKey, consumeFlag, initInput, resetInput, SCALE, setupCanvas, tickMovement } from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
 import { beat, startWorld, type Action, type World } from './beat.js'
+import { openRecords, type Run } from './records.js'
 import { parseRoom } from './room.js'
 import { ROOM_01 } from './rooms/room01.js'
 import { ROOM_02 } from './rooms/room02.js'
@@ -67,6 +68,8 @@ let phaseMs = 0
 let caughtBy: number | null = null
 let queued: Action | null = null
 const title = createTitle()
+const book = openRecords()
+let lastRun: Run | null = null
 let titleMode: TitleMode = 'prompt'
 let loadMs = 0
 
@@ -138,6 +141,7 @@ function play(action: Action): void {
     queued = null
     aiming = false
   } else if (r.outcome === 'won') {
+    lastRun = book.finish(room.name, world.beats)
     phase = 'won'
     phaseMs = 0
     queued = null
@@ -227,7 +231,10 @@ function frame(now: number): void {
   }
 
   if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR)
-  else render(ctx, scene, { world, prev, t, thrown, aiming, caughtBy, won: phase === 'won' }, STR)
+  else render(ctx, scene, {
+      world, prev, t, thrown, aiming, caughtBy, won: phase === 'won',
+      record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
+    }, STR)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)
