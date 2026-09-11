@@ -1,0 +1,58 @@
+/**
+ * Every word the prototype puts on screen, per language, picked once with
+ * zx-kit's `pickLocale`. The canvas draws with the ROM font — 96 ASCII glyphs —
+ * so the Slovak strings are written without diacritics, as in Minefield.
+ * Every line must fit the 32 columns of the screen.
+ */
+import { pickLocale } from 'zx-kit'
+import { LANGUAGE_CODE } from '../config.js'
+
+export interface Strings {
+  readonly earsUp: string
+  readonly earsDown: string
+  readonly carrots: (n: number) => string
+  readonly beats: (n: number) => string
+  readonly hints: string
+  readonly aimHints: string
+  readonly caught: string
+  readonly won: string
+  readonly wonBeats: (n: number) => string
+  readonly par: (n: number) => string
+  readonly onPar: string
+  readonly room: (n: number) => string
+  readonly again: string
+}
+
+const EN: Strings = {
+  earsUp: 'EARS UP',
+  earsDown: 'EARS DOWN',
+  carrots: (n) => `CARROT ${n}`,
+  beats: (n) => `BEAT ${n}`,
+  hints: 'Z EARS X THROW SPC WAIT R RESET',
+  aimHints: 'THROW: PICK A DIRECTION  X NO',
+  caught: 'CAUGHT!',
+  won: 'SLIPPED OUT',
+  wonBeats: (n) => `IN ${n} BEATS`,
+  par: (n) => `PAR ${n}`,
+  onPar: 'ON PAR!',
+  room: (n) => `R${n}`,
+  again: 'ANY KEY: NEXT ROOM',
+}
+
+const SK: Strings = {
+  earsUp: 'USI HORE',
+  earsDown: 'USI DOLE',
+  carrots: (n) => `MRKVA ${n}`,
+  beats: (n) => `BEAT ${n}`,
+  hints: 'Z USI X HOD MEDZ CAKAJ R ZNOVA',
+  aimHints: 'HOD: VYBER SMER SIPKOU  X NIE',
+  caught: 'CHYTENY!',
+  won: 'PREKLZOL SI',
+  wonBeats: (n) => `ZA ${n} BEATOV`,
+  par: (n) => `PAR ${n}`,
+  onPar: 'NA PAR!',
+  room: (n) => `M${n}`,
+  again: 'KLAVESA: DALSIA MIESTNOST',
+}
+
+export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)
