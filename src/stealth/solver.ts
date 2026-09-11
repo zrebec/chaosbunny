@@ -9,6 +9,13 @@
  *
  * This is the guarantee Minefield gives its fields, applied to a stealth room: a
  * room that ships has a solution, and a test says so.
+ *
+ * One pruning, on by default: a carrot thrown where no fox hears it is skipped.
+ * Foxes react only to a carrot *landing*, never to one lying on the floor, so such a
+ * throw just moves the carrot — the same beat as waiting with it in hand, plus a
+ * detour to pick it up later. Waiting dominates it: the same foxes, the same sights,
+ * no fewer beats. It changes no answer (a test holds `prune: false` to that) and
+ * cuts the states a thrown carrot can multiply by the cells it could land on.
  */
 import { DIRS, cellKey } from './grid.js'
 import { beat, startWorld, type Action, type World } from './beat.js'
@@ -19,7 +26,14 @@ export interface SolveOptions {
   readonly throws?: boolean
   /** Allow ears up/down (default true). Off, Randy keeps his ears up the whole way. */
   readonly ears?: boolean
+  /** Skip throws no fox hears (default true) — see the module comment. */
+  readonly prune?: boolean
   readonly maxStates?: number
+}
+
+/** A throw that diverts nobody: dominated by waiting, so the search need not follow it. */
+function pointless(action: Action, events: readonly { readonly type: string }[]): boolean {
+  return action.kind === 'throw' && !events.some((e) => e.type === 'heard')
 }
 
 export function worldKey(w: World): string {
@@ -50,6 +64,7 @@ export function actionsFor(throws: boolean, ears: boolean): Action[] {
 export function fewestSightings(room: Room, options: SolveOptions = {}): number | null {
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
+  const prune = options.prune ?? true
   const start = startWorld(room)
   const cost = new Map<string, number>([[worldKey(start), 0]])
   const buckets: World[][] = [[start]]
@@ -63,6 +78,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
         if (result.outcome === 'blocked' || result.outcome === 'caught') continue
         // A winning step ends the beat before any fox looks, so it adds no sighting.
         if (result.outcome === 'won') return q
+        if (prune && pointless(action, result.events)) continue
         const c = q + result.events.filter((e) => e.type === 'suspicious').length
         const key = worldKey(result.world)
         if ((cost.get(key) ?? Infinity) <= c) continue
@@ -79,6 +95,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
 export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
+  const prune = options.prune ?? true
   const start = startWorld(room)
   const parent = new Map<string, { prev: string; action: Action } | null>([[worldKey(start), null]])
   const queue: World[] = [start]
@@ -94,6 +111,7 @@ export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
         for (let at = parent.get(key); at; at = parent.get(at.prev)) path.push(at.action)
         return path.reverse()
       }
+      if (prune && pointless(action, result.events)) continue
       const next = worldKey(result.world)
       if (parent.has(next)) continue
       if (parent.size >= maxStates) throw new Error(`${room.name}: more than ${maxStates} states — is the room too open?`)
