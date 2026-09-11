@@ -22,6 +22,7 @@ import { beat, startWorld, type Action, type World } from './beat.js'
 import { parseRoom } from './room.js'
 import { ROOM_01 } from './rooms/room01.js'
 import { ROOM_02 } from './rooms/room02.js'
+import { ROOM_03 } from './rooms/room03.js'
 import { playBlocked, playEvents } from './sound.js'
 import { STR } from './strings.js'
 import { createScene, render, type Frame, type Scene } from './view.js'
@@ -37,7 +38,7 @@ const ctx = setupCanvas(canvas, SCALE, 256, 192)
 canvas.style.width = '' // index.html's CSS fits the canvas to the window
 canvas.style.height = ''
 
-const ROOMS = [ROOM_01, ROOM_02].map(parseRoom)
+const ROOMS = [ROOM_01, ROOM_02, ROOM_03].map(parseRoom)
 const scenes = new Map<number, Scene>()
 let roomIndex = 0
 let room = ROOMS[roomIndex]!
