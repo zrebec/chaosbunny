@@ -10,6 +10,10 @@
  * - R: start the room again
  * - 1, 2, …: jump to that room (after a win, any key goes on to the next)
  *
+ * It opens on the title (`title.ts`): `LOAD ""`, a key starts the tape, a key
+ * during the load finishes it, a key on the picture starts room 1. Winning the
+ * last room comes back to the picture.
+ *
  * Ears down allows only `SNEAK_STEPS` (beat.ts) steps before they must come up;
  * the pips beside EARS DOWN count them.
  *
@@ -23,8 +27,10 @@ import { parseRoom } from './room.js'
 import { ROOM_01 } from './rooms/room01.js'
 import { ROOM_02 } from './rooms/room02.js'
 import { ROOM_03 } from './rooms/room03.js'
-import { playBlocked, playEvents } from './sound.js'
+import { playBlocked, playEvents, playTape, stopTape } from './sound.js'
 import { STR } from './strings.js'
+import { loadStateAt } from './loader.js'
+import { createTitle, renderTitle, setBorder, type TitleMode } from './title.js'
 import { createScene, render, type Frame, type Scene } from './view.js'
 
 const BEAT_MS = 150
@@ -56,17 +62,43 @@ let prev: World = world
 let t = 1
 let thrown: Frame['thrown'] = null
 let aiming = false
-let phase: 'play' | 'caught' | 'won' = 'play'
+let phase: 'title' | 'play' | 'caught' | 'won' = 'title'
 let phaseMs = 0
 let caughtBy: number | null = null
 let queued: Action | null = null
+const title = createTitle()
+let titleMode: TitleMode = 'prompt'
+let loadMs = 0
 
 // Beat-paced key repeat: a held arrow steps again after 220 ms, then every 180 ms.
 initInput(220, 180)
 window.addEventListener('keydown', ensureAudio)
 window.addEventListener('pointerdown', ensureAudio)
 
+function goToTitle(mode: TitleMode): void {
+  phase = 'title'
+  titleMode = mode
+  loadMs = 0
+  resetInput()
+}
+
+/** A key on the title: start the tape, finish it, or start the game. */
+function advanceTitle(): void {
+  if (titleMode === 'prompt') {
+    titleMode = 'loading'
+    loadMs = 0
+    playTape() // the key that got us here has just unlocked audio (ensureAudio on keydown)
+  } else if (titleMode === 'loading') {
+    stopTape()
+    titleMode = 'ready'
+  } else {
+    goToRoom(0)
+  }
+}
+
 function goToRoom(i: number): void {
+  if (phase === 'title') stopTape()
+  setBorder(null, 0)
   roomIndex = ((i % ROOMS.length) + ROOMS.length) % ROOMS.length
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
@@ -177,14 +209,25 @@ function frame(now: number): void {
         play(next)
       }
     }
+  } else if (phase === 'title') {
+    if (titleMode === 'loading') {
+      loadMs += dt
+      if (loadStateAt(loadMs).phase === 'done') titleMode = 'ready'
+    }
+    setBorder(titleMode === 'loading' ? loadStateAt(loadMs).phase : null, now)
+    if (consumeAnyKey()) advanceTitle()
   } else {
     t = Math.min(1, t + dt / BEAT_MS)
     phaseMs += dt
     if (phase === 'caught' && phaseMs >= CAUGHT_MS) restart()
-    if (phase === 'won' && phaseMs >= WON_GRACE_MS && consumeAnyKey()) goToRoom(roomIndex + 1)
+    if (phase === 'won' && phaseMs >= WON_GRACE_MS && consumeAnyKey()) {
+      if (roomIndex === ROOMS.length - 1) goToTitle('ready')
+      else goToRoom(roomIndex + 1)
+    }
   }
 
-  render(ctx, scene, { world, prev, t, thrown, aiming, caughtBy, won: phase === 'won' }, STR)
+  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR)
+  else render(ctx, scene, { world, prev, t, thrown, aiming, caughtBy, won: phase === 'won' }, STR)
   requestAnimationFrame(frame)
 }
 requestAnimationFrame(frame)

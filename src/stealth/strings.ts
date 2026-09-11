@@ -21,6 +21,9 @@ export interface Strings {
   readonly onPar: string
   readonly room: (n: number) => string
   readonly again: string
+  /** The command a Spectrum owner typed to load a tape — the same in every language. */
+  readonly loadCommand: string
+  readonly startPrompt: string
 }
 
 const EN: Strings = {
@@ -37,6 +40,8 @@ const EN: Strings = {
   onPar: 'ON PAR!',
   room: (n) => `R${n}`,
   again: 'ANY KEY: NEXT ROOM',
+  loadCommand: 'LOAD ""',
+  startPrompt: 'PRESS ANY KEY',
 }
 
 const SK: Strings = {
@@ -53,6 +58,8 @@ const SK: Strings = {
   onPar: 'NA PAR!',
   room: (n) => `M${n}`,
   again: 'KLAVESA: DALSIA MIESTNOST',
+  loadCommand: 'LOAD ""',
+  startPrompt: 'STLAC KLAVESU',
 }
 
 export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)

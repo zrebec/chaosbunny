@@ -5,8 +5,9 @@
  *
  * Untested by ear — the levels and pitches are a first guess for the owner to tune.
  */
-import { beep, getAudioContext, resumeAudio } from 'zx-kit'
+import { beep, getAudioContext, resumeAudio, stopBeep } from 'zx-kit'
 import type { BeatEvent } from './beat.js'
+import { ATTRS_MS, PILOT_MS, PIXELS_MS } from './loader.js'
 
 function blip(freq: number, ms: number, delayMs = 0, volume = 0.5): void {
   const ctx = getAudioContext()
@@ -58,4 +59,26 @@ export function playEvents(events: readonly BeatEvent[]): void {
 /** A step into a wall, or a throw with nowhere to go: a dull knock, and no beat. */
 export function playBlocked(): void {
   blip(110, 40, 0, 0.3)
+}
+
+/**
+ * A tape loading: the 808 Hz pilot tone, then data — a stream of short pulses at
+ * the two bit frequencies, drawn from a fixed seed so every load sounds the same.
+ * Quiet on purpose: it is atmosphere, and a key cuts it short ({@link stopTape}).
+ */
+export function playTape(): void {
+  const ctx = getAudioContext()
+  if (!ctx) return
+  resumeAudio()
+  const t0 = ctx.currentTime
+  beep(808, PILOT_MS - 20, t0, 0, 0.1)
+  let seed = 0x2f6b
+  for (let t = 0; t < PIXELS_MS + ATTRS_MS; t += 9) {
+    seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff
+    beep(seed & 0x10000 ? 2000 : 1000, 6, t0 + (PILOT_MS + t) / 1000, 0, 0.06)
+  }
+}
+
+export function stopTape(): void {
+  stopBeep()
 }
