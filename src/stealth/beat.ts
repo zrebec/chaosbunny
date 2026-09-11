@@ -3,8 +3,11 @@
  * and the order is the rulebook:
  *
  * 1. **Randy acts** — a step, a throw, ears up/down, or waiting. A step into a wall
- *    or a throw with nowhere to land costs nothing (`blocked`). A step onto a door
- *    wins at once; a step into a fox is being caught.
+ *    or a throw with nowhere to land costs nothing (`blocked`). With his ears down
+ *    Randy may take only {@link SNEAK_STEPS} steps — like a dribble, then he must
+ *    put them up (which resets the count) before he can move again; standing still
+ *    with them down is free. A step onto a door wins at once; a step into a fox is
+ *    being caught.
  * 2. **Noise** — a carrot that landed this beat diverts every fox that hears it.
  * 3. **Foxes move**, each by its mode (`patrol.ts`).
  * 4. **Contact** — a fox that walks onto Randy's cell catches him.
@@ -23,6 +26,13 @@ import { spots } from './rules.js'
 /** How far a carrot flies. It stops short of walls and cover, and passes over foxes. */
 export const THROW_RANGE = 3
 
+/**
+ * Steps Randy may take with his ears down before he has to put them up. Hiding
+ * in place costs nothing; creeping costs this. 0 would make ears-down a freeze,
+ * and dark corridors impassable — measured with the solver before choosing 2.
+ */
+export const SNEAK_STEPS = 2
+
 export type Action =
   | { readonly kind: 'move'; readonly dir: Dir }
   | { readonly kind: 'throw'; readonly dir: Dir }
@@ -33,6 +43,8 @@ export interface Randy {
   readonly cell: Cell
   readonly earsDown: boolean
   readonly carrots: number
+  /** Steps left before the ears have to come up. Refilled each time they change. */
+  readonly sneakLeft: number
 }
 
 export interface World {
@@ -66,7 +78,7 @@ export interface BeatResult {
 
 export function startWorld(room: Room): World {
   return {
-    randy: { cell: room.spawn, earsDown: false, carrots: room.carrots },
+    randy: { cell: room.spawn, earsDown: false, carrots: room.carrots, sneakLeft: SNEAK_STEPS },
     foxes: initialFoxes(room),
     items: room.pickups,
     beats: 0,
@@ -108,7 +120,8 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
     case 'move': {
       const to = step(from, action.dir)
       if (!randyCanEnter(tileAt(room, to))) return { world, outcome: 'blocked', events: [] }
-      randy = { ...randy, cell: to }
+      if (randy.earsDown && randy.sneakLeft <= 0) return { world, outcome: 'blocked', events: [] }
+      randy = { ...randy, cell: to, sneakLeft: randy.earsDown ? randy.sneakLeft - 1 : randy.sneakLeft }
       events.push({ type: 'step' })
       const bumped = world.foxes.findIndex((f) => sameCell(f.cell, to))
       if (bumped >= 0) {
@@ -136,7 +149,7 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
       break
     }
     case 'ears':
-      randy = { ...randy, earsDown: !randy.earsDown }
+      randy = { ...randy, earsDown: !randy.earsDown, sneakLeft: SNEAK_STEPS }
       events.push({ type: 'ears', down: randy.earsDown })
       break
     case 'wait':

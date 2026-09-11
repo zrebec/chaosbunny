@@ -8,14 +8,16 @@
  * 4. Slip up the corridor while it eats, out through the door.
  *
  * The corridor is one tile wide and the fox never leaves it on its own, so the room
- * cannot be done without the carrot; and hiding behind the crate is a beat faster
- * than any way round it. Both are proved in `tests/stealth/room01.tests.ts`.
+ * cannot be done without the carrot; and the crate is a true hiding place — ears
+ * down behind it, the fox never sees you. Both are proved in
+ * `tests/stealth/room01.tests.ts`.
  */
 import type { RoomSource } from '../room.js'
 
 export const ROOM_01: RoomSource = {
   name: 'room01',
   carrots: 1,
+  par: 13,
   patrols: [{ route: [[7, 1], [7, 4]] }],
   rows: [
     '#######D########',

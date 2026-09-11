@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Cell, Dir } from '../../src/stealth/grid.js'
+import { tileAt } from '../../src/stealth/room.js'
 import { spots, visibleCells, SIGHT_RANGE } from '../../src/stealth/rules.js'
 import { testRoom } from './helpers.js'
 
@@ -78,6 +79,26 @@ describe('shadow', () => {
   it('does not hide him right in front of the fox', () => {
     const room = open({ '6,5': 's' })
     expect(spots(room, FOX, 'right', { x: 6, y: 5 }, true)).toMatchObject({ forward: 1, lateral: 0 })
+  })
+})
+
+describe('spots agrees with the drawn cone', () => {
+  // spots() is a direct lookup the solver can afford; visibleCells() is what gets drawn.
+  // The player must never be caught by a cell that was not dotted, or missed on one that was.
+  const room = open({ '6,4': '#', '7,5': '=', '8,6': 's', '4,5': 's', '5,7': '=', '3,3': '#' })
+  it.each<Dir>(['up', 'right', 'down', 'left'])('cell for cell, facing %s, ears up and down', (facing) => {
+    for (const earsDown of [false, true]) {
+      const drawn = new Map(visibleCells(room, FOX, facing, earsDown).map((s) => [`${s.cell.x},${s.cell.y}`, s]))
+      for (let y = 0; y < 11; y++) {
+        for (let x = 0; x < 16; x++) {
+          const d = drawn.get(`${x},${y}`)
+          const shadowHides = earsDown && tileAt(room, { x, y }) === 'shadow' && !(d?.forward === 1 && d.lateral === 0)
+          const expected = d && !shadowHides ? { forward: d.forward, lateral: d.lateral } : null
+          const seen = spots(room, FOX, facing, { x, y }, earsDown)
+          expect(seen && { forward: seen.forward, lateral: seen.lateral }, `${x},${y} ears ${earsDown ? 'down' : 'up'}`).toEqual(expected)
+        }
+      }
+    }
   })
 })
 

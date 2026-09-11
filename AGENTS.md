@@ -34,11 +34,18 @@ The platformer on `master` is untouched here and nothing on this branch imports 
   `solver.ts` (breadth-first proof that a room can be left).
 - **Rules 1–7 above do not apply**: position and contact are whole cells, so there are no pixel
   masks to overlap. Rules 8–11 do: foxes never hurt anyone, AY music, beeper SFX, `pickLocale()`.
-- **Every shipped room carries solver tests** (`tests/stealth/room01.tests.ts`): it can be left,
-  and the verbs it is meant to teach are actually needed. When a rule change breaks one, redesign
-  the room — do not loosen the test.
-- A standing verdict is still owed: the prototype exists to answer *is this fun?* in one room.
-  If not, this branch stays as the record and `master` keeps the platformer.
+- **Every shipped room carries solver tests** (`tests/stealth/roomNN.tests.ts`): it can be left,
+  its `par` equals the solver's fewest beats, the verbs it is meant to teach are actually needed,
+  and `fewestSightings` (the fewest `?` any way out needs) is pinned. When a rule change breaks
+  one, redesign the room — do not loosen the test.
+- **Never write a room's way through** — not in a test, an assertion message, a comment, a
+  commit message or a console log. The owner solves the rooms himself; tests prove claims
+  (solvable, par, what is required) without printing a path. Design with metrics, not replays.
+- **Ears down is a dribble**: `SNEAK_STEPS = 2` steps, then the ears must come up (owner's call,
+  2026-09-11, after the solver showed 0 makes dark corridors impassable). Standing still hidden
+  is free.
+- Verdict after the first playtest (2026-09-11): *very fun*. The direction is on; rooms grow
+  in `src/stealth/rooms/`.
 
 ## Sprite implementation format
 

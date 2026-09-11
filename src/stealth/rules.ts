@@ -17,7 +17,7 @@
  * block; low cover blocks only while Randy has his ears down (ears up stick out
  * over it). In shadow, ears down, Randy is invisible except right in front of a fox.
  */
-import { delta, sameCell, type Cell, type Dir } from './grid.js'
+import { delta, type Cell, type Dir } from './grid.js'
 import { tileAt, type Room, type TileGrid, type TileKind } from './room.js'
 
 export const SIGHT_RANGE = 4
@@ -82,11 +82,27 @@ export function visibleCells(grid: TileGrid, fox: Cell, facing: Dir, earsDown: b
   return seen
 }
 
-/** Whether the fox at `fox`, facing `facing`, sees Randy at `randy`; `null` if not. */
+/** The table entry for `f` ahead, `l` aside — one lookup instead of walking the cone. */
+const CONE_AT = new Map(CONE.map((e) => [`${e.f},${e.l}`, e]))
+
+/**
+ * Whether the fox at `fox`, facing `facing`, sees Randy at `randy`; `null` if not.
+ * The same answer as looking Randy up in {@link visibleCells}, computed directly —
+ * the solver asks this for every fox on every beat of every state.
+ */
 export function spots(room: Room, fox: Cell, facing: Dir, randy: Cell, earsDown: boolean): Sighting | null {
-  const s = visibleCells(room, fox, facing, earsDown).find((v) => sameCell(v.cell, randy))
-  if (!s) return null
-  const rightInFront = s.forward === 1 && s.lateral === 0
-  if (earsDown && tileAt(room, randy) === 'shadow' && !rightInFront) return null
-  return s
+  const fw = delta(facing)
+  const dx = randy.x - fox.x
+  const dy = randy.y - fox.y
+  // Inverse of toWorld: forward is the projection on fw, lateral on fw turned a quarter.
+  const forward = dx * fw.x + dy * fw.y
+  const lateral = -dx * fw.y + dy * fw.x
+  const e = CONE_AT.get(`${forward},${lateral}`)
+  if (!e) return null
+  const kind = tileAt(room, randy)
+  if (kind === 'wall' || kind === 'cover') return null
+  if (e.path.some(([f, l]) => blocksSight(tileAt(room, toWorld(fox, facing, f, l)), earsDown))) return null
+  const rightInFront = e.f === 1 && e.l === 0
+  if (earsDown && kind === 'shadow' && !rightInFront) return null
+  return { cell: randy, forward: e.f, lateral: e.l }
 }

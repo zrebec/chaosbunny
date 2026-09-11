@@ -28,7 +28,7 @@ export function worldKey(w: World): string {
   const foxes = w.foxes
     .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}`)
     .join('|')
-  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.carrots}/${items}/${foxes}`
+  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}`
 }
 
 export function actionsFor(throws: boolean, ears: boolean): Action[] {
@@ -37,6 +37,42 @@ export function actionsFor(throws: boolean, ears: boolean): Action[] {
   if (ears) actions.push({ kind: 'ears' })
   if (throws) actions.push(...DIRS.map((dir) => ({ kind: 'throw', dir }) as const))
   return actions
+}
+
+/**
+ * The fewest times any fox has to notice Randy (`?`) on a way out, or `null` if
+ * there is no way out. A room's fairness number: 0 means a clean sneak exists,
+ * 1 means even the most careful player is noticed once — however long they take.
+ *
+ * A bucket queue over sightings (each beat adds 0 or more), so the first way out
+ * found is one with the fewest. Beats are not minimised here; that is {@link solve}.
+ */
+export function fewestSightings(room: Room, options: SolveOptions = {}): number | null {
+  const actions = actionsFor(options.throws ?? true, options.ears ?? true)
+  const maxStates = options.maxStates ?? 500_000
+  const start = startWorld(room)
+  const cost = new Map<string, number>([[worldKey(start), 0]])
+  const buckets: World[][] = [[start]]
+  for (let q = 0; q < buckets.length; q++) {
+    const bucket = buckets[q] ?? []
+    for (let i = 0; i < bucket.length; i++) {
+      const world = bucket[i]!
+      if (cost.get(worldKey(world))! < q) continue // reached more cheaply since it was queued
+      for (const action of actions) {
+        const result = beat(room, world, action)
+        if (result.outcome === 'blocked' || result.outcome === 'caught') continue
+        // A winning step ends the beat before any fox looks, so it adds no sighting.
+        if (result.outcome === 'won') return q
+        const c = q + result.events.filter((e) => e.type === 'suspicious').length
+        const key = worldKey(result.world)
+        if ((cost.get(key) ?? Infinity) <= c) continue
+        if (cost.size >= maxStates) throw new Error(`${room.name}: more than ${maxStates} states — is the room too open?`)
+        cost.set(key, c)
+        ;(buckets[c] ??= []).push(result.world)
+      }
+    }
+  }
+  return null
 }
 
 /** The shortest winning action sequence, or `null` if the room cannot be left. */

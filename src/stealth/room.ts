@@ -46,6 +46,8 @@ export interface RoomSource {
   readonly patrols: readonly PatrolSource[]
   /** Carrots Randy walks in with (default 0). `c` cells add carrots lying on the floor. */
   readonly carrots?: number
+  /** The fewest beats the room can be left in — the solver's answer, pinned by the room's tests. */
+  readonly par?: number
 }
 
 export interface Patrol {
@@ -68,6 +70,8 @@ export interface Room {
   /** Carrots Randy carries at the start. */
   readonly carrots: number
   readonly patrols: readonly Patrol[]
+  /** See {@link RoomSource.par}. */
+  readonly par: number | null
 }
 
 /** The part of a room that {@link tileAt} reads. */
@@ -169,6 +173,7 @@ export function parseRoom(src: RoomSource): Room {
     exits,
     pickups,
     carrots: src.carrots ?? 0,
+    par: src.par ?? null,
   }
   const patrols = src.patrols.map((p, i) => parsePatrol(base, p, i))
   const starts = patrols.map((p) => p.route[0]!)

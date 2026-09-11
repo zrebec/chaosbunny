@@ -53,13 +53,17 @@ export function initialFoxes(room: Room): Fox[] {
 }
 
 /**
- * The first cell of a shortest fox path from `from` to `to`, or `null` when `to`
- * cannot be reached (or `from` is already there). Ties break in {@link DIRS} order.
+ * Fox walking distances to `to` from every cell, by BFS backwards from the goal.
+ * A room never changes, so each goal is searched once and kept — the solver asks
+ * for the same few carrots and route cells millions of times.
  */
-export function nextStepToward(room: Room, from: Cell, to: Cell): Cell | null {
-  if (sameCell(from, to) || !foxCanEnter(tileAt(room, to))) return null
-  // BFS backwards from the goal, so the first neighbour of `from` found on the
-  // frontier is a first step of some shortest path.
+const distances = new WeakMap<Room, Map<string, ReadonlyMap<string, number>>>()
+
+function distancesTo(room: Room, to: Cell): ReadonlyMap<string, number> {
+  let perRoom = distances.get(room)
+  if (!perRoom) distances.set(room, (perRoom = new Map()))
+  const cached = perRoom.get(cellKey(to))
+  if (cached) return cached
   const dist = new Map<string, number>([[cellKey(to), 0]])
   const queue: Cell[] = [to]
   for (let head = 0; head < queue.length; head++) {
@@ -72,6 +76,17 @@ export function nextStepToward(room: Room, from: Cell, to: Cell): Cell | null {
       queue.push(n)
     }
   }
+  perRoom.set(cellKey(to), dist)
+  return dist
+}
+
+/**
+ * The first cell of a shortest fox path from `from` to `to`, or `null` when `to`
+ * cannot be reached (or `from` is already there). Ties break in {@link DIRS} order.
+ */
+export function nextStepToward(room: Room, from: Cell, to: Cell): Cell | null {
+  if (sameCell(from, to) || !foxCanEnter(tileAt(room, to))) return null
+  const dist = distancesTo(room, to)
   let best: Cell | null = null
   let bestDist = Infinity
   for (const dir of DIRS) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { beat, startWorld, throwTarget, THROW_RANGE, type World } from '../../src/stealth/beat.js'
+import { beat, SNEAK_STEPS, startWorld, throwTarget, THROW_RANGE, type World } from '../../src/stealth/beat.js'
 import { ROOM_01 } from '../../src/stealth/rooms/room01.js'
 import { parseRoom } from '../../src/stealth/room.js'
 import { solve } from '../../src/stealth/solver.js'
@@ -36,6 +36,38 @@ describe('Randy acts', () => {
     expect(r.world.randy.earsDown).toBe(true)
     expect(r.world.beats).toBe(1)
     expect(r.world.foxes[0]!.cell).toEqual({ x: 4, y: 1 })
+  })
+})
+
+describe(`ears down: ${SNEAK_STEPS} steps, then the ears must come up`, () => {
+  const room = testRoom(['#R.......D'])
+
+  it('allows exactly that many steps, and blocks the next without costing a beat', () => {
+    const results = play(room, [EARS, ...Array.from({ length: SNEAK_STEPS }, () => move('right'))])
+    expect(results.every((r) => r.outcome === 'ok')).toBe(true)
+    const tired = results.at(-1)!.world
+    expect(tired.randy.sneakLeft).toBe(0)
+    const blocked = beat(room, tired, move('right'))
+    expect(blocked.outcome).toBe('blocked')
+    expect(blocked.world).toBe(tired)
+  })
+
+  it('costs nothing to stay hidden in place, however long', () => {
+    const results = play(room, [EARS, WAIT, WAIT, WAIT, WAIT, move('right')])
+    expect(results.at(-1)!.outcome).toBe('ok')
+    expect(results.at(-1)!.world.randy.sneakLeft).toBe(SNEAK_STEPS - 1)
+  })
+
+  it('refills when the ears go up — and again when they go back down', () => {
+    const steps = Array.from({ length: SNEAK_STEPS }, () => move('right'))
+    const results = play(room, [EARS, ...steps, EARS, EARS, move('right')])
+    expect(results.at(-1)!.outcome).toBe('ok')
+    expect(results.at(-1)!.world.randy).toMatchObject({ earsDown: true, sneakLeft: SNEAK_STEPS - 1 })
+  })
+
+  it('never limits walking with the ears up', () => {
+    const results = play(room, Array.from({ length: 7 }, () => move('right')))
+    expect(results.map((r) => r.outcome)).toEqual(['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'ok'])
   })
 })
 
