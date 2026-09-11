@@ -1,0 +1,182 @@
+/**
+ * A room of the tile-stealth prototype: one screen, 16×11 tiles of 16×16 px.
+ *
+ * Authored as text so a room can be read (and diffed) like a picture:
+ *
+ * | char | tile     | Randy | fox | sight                          |
+ * |------|----------|-------|-----|--------------------------------|
+ * | `#`  | wall     | no    | no  | blocks                         |
+ * | `.`  | floor    | yes   | yes | passes                         |
+ * | `s`  | shadow   | yes   | yes | passes; hides Randy, ears down |
+ * | `=`  | cover    | no    | no  | blocks only when ears are down |
+ * | `D`  | door     | yes   | no  | passes — stepping on it wins   |
+ * | `R`  | floor    |       |     | Randy's start                  |
+ * | `c`  | floor    |       |     | a carrot lying there           |
+ *
+ * {@link parseRoom} refuses anything a player could not rely on: a ragged grid, a
+ * missing start or door, a guard route that crosses a wall or is not a closed loop.
+ */
+import { dirBetween, sameCell, type Cell, type Dir } from './grid.js'
+
+export const ROOM_COLS = 16
+export const ROOM_ROWS = 11
+
+export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door'
+
+const LEGEND: Readonly<Record<string, TileKind>> = {
+  '#': 'wall',
+  '.': 'floor',
+  s: 'shadow',
+  '=': 'cover',
+  D: 'door',
+  R: 'floor',
+  c: 'floor',
+}
+
+export interface PatrolSource {
+  /** Waypoints `[x, y]`. Each consecutive pair — and last → first — must share a row or a column. */
+  readonly route: ReadonlyArray<readonly [number, number]>
+  /** Where a one-waypoint (standing) guard looks. Required then, ignored otherwise. */
+  readonly facing?: Dir
+}
+
+export interface RoomSource {
+  readonly name: string
+  readonly rows: readonly string[]
+  readonly patrols: readonly PatrolSource[]
+  /** Carrots Randy walks in with (default 0). `c` cells add carrots lying on the floor. */
+  readonly carrots?: number
+}
+
+export interface Patrol {
+  /** Every cell of the loop in walking order; `route[i]` and `route[(i + 1) % n]` are neighbours. */
+  readonly route: readonly Cell[]
+  /** The standing guard's facing, or the direction of a walking guard's first step. */
+  readonly facing: Dir
+}
+
+export interface Room {
+  readonly name: string
+  readonly cols: number
+  readonly rows: number
+  /** Row-major, `cols * rows`. */
+  readonly tiles: readonly TileKind[]
+  readonly spawn: Cell
+  readonly exits: readonly Cell[]
+  /** Carrots lying on the floor at the start. */
+  readonly pickups: readonly Cell[]
+  /** Carrots Randy carries at the start. */
+  readonly carrots: number
+  readonly patrols: readonly Patrol[]
+}
+
+/** The part of a room that {@link tileAt} reads. */
+export type TileGrid = Pick<Room, 'cols' | 'rows' | 'tiles'>
+
+/** The tile at `c`; anything outside the room is wall. */
+export function tileAt(grid: TileGrid, c: Cell): TileKind {
+  if (c.x < 0 || c.y < 0 || c.x >= grid.cols || c.y >= grid.rows) return 'wall'
+  return grid.tiles[c.y * grid.cols + c.x] ?? 'wall'
+}
+
+export function randyCanEnter(kind: TileKind): boolean {
+  return kind === 'floor' || kind === 'shadow' || kind === 'door'
+}
+
+export function foxCanEnter(kind: TileKind): boolean {
+  return kind === 'floor' || kind === 'shadow'
+}
+
+/** Expands waypoints into the full closed loop of neighbouring cells. */
+function expandRoute(points: readonly Cell[]): Cell[] {
+  const first = points[0]!
+  if (points.length === 1) return [first]
+  const out: Cell[] = [first]
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i]!
+    const b = points[(i + 1) % points.length]!
+    const dx = Math.sign(b.x - a.x)
+    const dy = Math.sign(b.y - a.y)
+    let c = a
+    while (!sameCell(c, b)) {
+      c = { x: c.x + dx, y: c.y + dy }
+      out.push(c)
+    }
+  }
+  out.pop() // the walk ends back on points[0], which is already out[0]
+  return out
+}
+
+function parsePatrol(grid: TileGrid, src: PatrolSource, index: number): Patrol {
+  const where = `patrol ${index}`
+  if (src.route.length === 0) throw new Error(`${where}: route has no waypoints`)
+  const points = src.route.map(([x, y]) => ({ x, y }))
+  for (let i = 0; i < points.length && points.length > 1; i++) {
+    const a = points[i]!
+    const b = points[(i + 1) % points.length]!
+    if ((a.x === b.x) === (a.y === b.y)) {
+      throw new Error(`${where}: waypoints (${a.x},${a.y}) and (${b.x},${b.y}) must differ in exactly one of x or y`)
+    }
+  }
+  const route = expandRoute(points)
+  for (const c of route) {
+    const kind = tileAt(grid, c)
+    if (!foxCanEnter(kind)) {
+      throw new Error(`${where}: the route crosses (${c.x},${c.y}), a ${kind} a guard cannot walk on`)
+    }
+  }
+  if (route.length === 1) {
+    if (!src.facing) throw new Error(`${where}: a standing guard needs a facing`)
+    return { route, facing: src.facing }
+  }
+  return { route, facing: dirBetween(route[0]!, route[1]!)! }
+}
+
+/** Parses and validates a room. Throws with the row, column or patrol at fault. */
+export function parseRoom(src: RoomSource): Room {
+  if (src.rows.length !== ROOM_ROWS) {
+    throw new Error(`${src.name}: expected ${ROOM_ROWS} rows, got ${src.rows.length}`)
+  }
+  const tiles: TileKind[] = []
+  let spawn: Cell | null = null
+  const exits: Cell[] = []
+  const pickups: Cell[] = []
+  src.rows.forEach((row, y) => {
+    if (row.length !== ROOM_COLS) {
+      throw new Error(`${src.name}: row ${y} must be ${ROOM_COLS} characters, got ${row.length}`)
+    }
+    ;[...row].forEach((ch, x) => {
+      const kind = LEGEND[ch]
+      if (!kind) throw new Error(`${src.name}: row ${y}, column ${x}: unknown tile '${ch}'`)
+      tiles.push(kind)
+      if (ch === 'R') {
+        if (spawn) throw new Error(`${src.name}: more than one start 'R'`)
+        spawn = { x, y }
+      }
+      if (ch === 'D') exits.push({ x, y })
+      if (ch === 'c') pickups.push({ x, y })
+    })
+  })
+  if (!spawn) throw new Error(`${src.name}: no start 'R'`)
+  if (exits.length === 0) throw new Error(`${src.name}: no door 'D'`)
+
+  const base = {
+    name: src.name,
+    cols: ROOM_COLS,
+    rows: ROOM_ROWS,
+    tiles,
+    spawn: spawn as Cell,
+    exits,
+    pickups,
+    carrots: src.carrots ?? 0,
+  }
+  const patrols = src.patrols.map((p, i) => parsePatrol(base, p, i))
+  const starts = patrols.map((p) => p.route[0]!)
+  starts.forEach((c, i) => {
+    if (sameCell(c, base.spawn)) throw new Error(`${src.name}: patrol ${i} starts on Randy`)
+    if (starts.findIndex((o) => sameCell(o, c)) !== i) {
+      throw new Error(`${src.name}: patrols start on the same cell (${c.x},${c.y})`)
+    }
+  })
+  return { ...base, patrols }
+}

@@ -21,6 +21,25 @@ This document defines the initial sprite atlas, procedural world assumptions, en
 11. Use `pickLocale()` for all user-visible text.
 12. The world must be compatible with procedural room generation.
 
+## Branch `proto/tile-stealth` — a different game on the same repo
+
+This branch prototypes a **top-down, beat-based tile stealth** Chaosbunny (one screen per room,
+16×11 tiles of 16×16 px): each of Randy's steps moves every fox one step; ears up shows the
+foxes' cones and next steps, ears down hides him behind low cover or in shadow; a thrown carrot
+lures a fox away. Design source: `retro/docs/sk/2026-08-25-zxart-graficky-smer-a-chaosbunny.md`.
+The platformer on `master` is untouched here and nothing on this branch imports it.
+
+- **Logic lives in `src/stealth/` and is pure** — `room.ts` (parser), `rules.ts` (the sight
+  table), `patrol.ts` (fox modes), `beat.ts` (the order of one beat — read its header first),
+  `solver.ts` (breadth-first proof that a room can be left).
+- **Rules 1–7 above do not apply**: position and contact are whole cells, so there are no pixel
+  masks to overlap. Rules 8–11 do: foxes never hurt anyone, AY music, beeper SFX, `pickLocale()`.
+- **Every shipped room carries solver tests** (`tests/stealth/room01.tests.ts`): it can be left,
+  and the verbs it is meant to teach are actually needed. When a rule change breaks one, redesign
+  the room — do not loosen the test.
+- A standing verdict is still owed: the prototype exists to answer *is this fun?* in one room.
+  If not, this branch stays as the record and `master` keeps the platformer.
+
 ## Sprite implementation format
 
 Store text art as source data first.
