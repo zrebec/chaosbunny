@@ -48,6 +48,8 @@ export interface RoomSource {
   readonly carrots?: number
   /** The fewest beats the room can be left in — the solver's answer, pinned by the room's tests. */
   readonly par?: number
+  /** Where bats roost, `[x, y]`: each hangs over a floor or shadow cell (`bat.ts`). */
+  readonly bats?: ReadonlyArray<readonly [number, number]>
 }
 
 export interface Patrol {
@@ -72,6 +74,8 @@ export interface Room {
   readonly patrols: readonly Patrol[]
   /** See {@link RoomSource.par}. */
   readonly par: number | null
+  /** Bat roosts. */
+  readonly bats: readonly Cell[]
 }
 
 /** The part of a room that {@link tileAt} reads. */
@@ -183,5 +187,14 @@ export function parseRoom(src: RoomSource): Room {
       throw new Error(`${src.name}: patrols start on the same cell (${c.x},${c.y})`)
     }
   })
-  return { ...base, patrols }
+  const bats = (src.bats ?? []).map(([x, y]) => ({ x, y }))
+  bats.forEach((c, i) => {
+    const kind = tileAt(base, c)
+    if (kind !== 'floor' && kind !== 'shadow') throw new Error(`${src.name}: bat ${i} roosts over (${c.x},${c.y}), a ${kind}`)
+    if (sameCell(c, base.spawn)) throw new Error(`${src.name}: bat ${i} roosts on Randy`)
+    if (starts.some((s) => sameCell(s, c)) || bats.findIndex((o) => sameCell(o, c)) !== i) {
+      throw new Error(`${src.name}: bat ${i} shares (${c.x},${c.y}) with another creature`)
+    }
+  })
+  return { ...base, patrols, bats }
 }

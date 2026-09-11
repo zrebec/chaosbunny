@@ -9,8 +9,10 @@
  *    with them down is free. A step onto a door wins at once; a step into a fox is
  *    being caught.
  * 2. **Noise** — a carrot that landed this beat diverts every fox that hears it.
- * 3. **Foxes move**, each by its mode (`patrol.ts`).
- * 4. **Contact** — a fox that walks onto Randy's cell catches him.
+ *    Bats (`bat.ts`) hear more: the carrot, and any step Randy took with his ears up.
+ * 3. **Foxes move**, each by its mode (`patrol.ts`); then bats fly.
+ * 4. **Contact** — a fox that walks onto Randy's cell catches him; so does a bat
+ *    that flies through it, or that Randy walks into.
  * 5. **Sight** — a fox that sees Randy right in front, or sees him for the second
  *    beat in a row, catches him (`!`). Seen once from further away: `?`, and the
  *    fox stops for a beat. Not seen while `?`: it calms down and carries on.
@@ -18,6 +20,7 @@
  * Pure and deterministic — the scene animates what this returns, the solver
  * searches it, the tests pin it.
  */
+import { advanceBat, batHears, flyTo, initialBats, type Bat } from './bat.js'
 import { sameCell, step, type Cell, type Dir } from './grid.js'
 import { advanceFox, divert, hears, initialFoxes, type Fox } from './patrol.js'
 import { randyCanEnter, tileAt, type Room } from './room.js'
@@ -50,6 +53,7 @@ export interface Randy {
 export interface World {
   readonly randy: Randy
   readonly foxes: readonly Fox[]
+  readonly bats: readonly Bat[]
   /** Carrots on the floor: the room's own and any thrown one not yet eaten. */
   readonly items: readonly Cell[]
   readonly beats: number
@@ -68,6 +72,8 @@ export type BeatEvent =
   | { readonly type: 'suspicious'; readonly fox: number }
   | { readonly type: 'calm'; readonly fox: number }
   | { readonly type: 'caught'; readonly fox: number; readonly why: 'seen' | 'bumped' }
+  | { readonly type: 'batHeard'; readonly bat: number }
+  | { readonly type: 'bitten'; readonly bat: number }
   | { readonly type: 'won' }
 
 export interface BeatResult {
@@ -80,6 +86,7 @@ export function startWorld(room: Room): World {
   return {
     randy: { cell: room.spawn, earsDown: false, carrots: room.carrots, sneakLeft: SNEAK_STEPS },
     foxes: initialFoxes(room),
+    bats: initialBats(room),
     items: room.pickups,
     beats: 0,
   }
@@ -109,8 +116,9 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
   let items: readonly Cell[] = world.items
   let noise: Cell | null = null
   const from = randy.cell
-  const done = (outcome: Outcome, foxes: readonly Fox[] = world.foxes): BeatResult => ({
-    world: { randy, foxes, items, beats: world.beats + 1 },
+  let stepNoise: Cell | null = null
+  const done = (outcome: Outcome, foxes: readonly Fox[] = world.foxes, bats: readonly Bat[] = world.bats): BeatResult => ({
+    world: { randy, foxes, bats, items, beats: world.beats + 1 },
     outcome,
     events,
   })
@@ -128,6 +136,12 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
         events.push({ type: 'caught', fox: bumped, why: 'bumped' })
         return done('caught')
       }
+      const batAt = world.bats.findIndex((b) => sameCell(b.cell, to))
+      if (batAt >= 0) {
+        events.push({ type: 'bitten', bat: batAt })
+        return done('caught')
+      }
+      if (!randy.earsDown) stepNoise = to
       if (items.some((c) => sameCell(c, to))) {
         items = without(items, to)
         randy = { ...randy, carrots: randy.carrots + 1 }
@@ -157,11 +171,17 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
       break
   }
 
-  // 2. Noise.
+  // 2. Noise. Foxes hear only a carrot landing; bats hear that and an ears-up step.
   let foxes: Fox[] = world.foxes.map((f, i) => {
     if (!noise || !hears(room, f, noise)) return f
     events.push({ type: 'heard', fox: i })
     return divert(f, noise)
+  })
+  const sound = noise ?? stepNoise
+  let bats: Bat[] = world.bats.map((b, i) => {
+    if (!sound || !batHears(b, sound)) return b
+    events.push({ type: 'batHeard', bat: i })
+    return flyTo(b, sound)
   })
 
   // 3. Foxes move.
@@ -173,12 +193,23 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
     }
     return r.fox
   })
+  const paths: Cell[][] = []
+  bats = bats.map((b) => {
+    const r = advanceBat(room, b)
+    paths.push(r.path)
+    return r.bat
+  })
 
   // 4. Contact. (Randy and a fox cannot swap cells: stepping into a fox was caught in 1.)
   const bumper = foxes.findIndex((f) => sameCell(f.cell, randy.cell))
   if (bumper >= 0) {
     events.push({ type: 'caught', fox: bumper, why: 'bumped' })
-    return done('caught', foxes)
+    return done('caught', foxes, bats)
+  }
+  const biter = paths.findIndex((path) => path.some((c) => sameCell(c, randy.cell)))
+  if (biter >= 0) {
+    events.push({ type: 'bitten', bat: biter })
+    return done('caught', foxes, bats)
   }
 
   // 5. Sight.
@@ -195,11 +226,11 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
     }
     if (f.mode === 'suspicious' || (seen.forward === 1 && seen.lateral === 0)) {
       events.push({ type: 'caught', fox: i, why: 'seen' })
-      return done('caught', foxes)
+      return done('caught', foxes, bats)
     }
     foxes[i] = { ...f, mode: 'suspicious', resume: f.mode }
     events.push({ type: 'suspicious', fox: i })
   }
 
-  return done('ok', foxes)
+  return done('ok', foxes, bats)
 }

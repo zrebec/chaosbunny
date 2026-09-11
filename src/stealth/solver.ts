@@ -10,8 +10,8 @@
  * This is the guarantee Minefield gives its fields, applied to a stealth room: a
  * room that ships has a solution, and a test says so.
  *
- * One pruning, on by default: a carrot thrown where no fox hears it is skipped.
- * Foxes react only to a carrot *landing*, never to one lying on the floor, so such a
+ * One pruning, on by default: a carrot thrown where no fox or bat hears it is skipped.
+ * They react only to a carrot *landing*, never to one lying on the floor, so such a
  * throw just moves the carrot — the same beat as waiting with it in hand, plus a
  * detour to pick it up later. Waiting dominates it: the same foxes, the same sights,
  * no fewer beats. It changes no answer (a test holds `prune: false` to that) and
@@ -31,9 +31,9 @@ export interface SolveOptions {
   readonly maxStates?: number
 }
 
-/** A throw that diverts nobody: dominated by waiting, so the search need not follow it. */
+/** A throw that diverts nobody — no fox, no bat: dominated by waiting, so the search need not follow it. */
 function pointless(action: Action, events: readonly { readonly type: string }[]): boolean {
-  return action.kind === 'throw' && !events.some((e) => e.type === 'heard')
+  return action.kind === 'throw' && !events.some((e) => e.type === 'heard' || e.type === 'batHeard')
 }
 
 export function worldKey(w: World): string {
@@ -42,7 +42,8 @@ export function worldKey(w: World): string {
   const foxes = w.foxes
     .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}`)
     .join('|')
-  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}`
+  const bats = w.bats.map((b) => `${cellKey(b.cell)}:${b.mode}:${b.timer}:${b.target ? cellKey(b.target) : '-'}`).join('|')
+  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}`
 }
 
 export function actionsFor(throws: boolean, ears: boolean): Action[] {
