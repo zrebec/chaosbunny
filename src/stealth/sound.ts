@@ -45,7 +45,11 @@ export function playEvents(events: readonly BeatEvent[]): void {
         blip(700, 40, 0, 0.2)
         break
       case 'caught':
+      case 'bitten':
         blip(1800, 60, 0, 0.6); blip(900, 140, 70, 0.6)
+        break
+      case 'batHeard':
+        blip(3200, 12, 0, 0.25); blip(3600, 12, 40, 0.25); blip(3200, 12, 80, 0.25) // a squeak
         break
       case 'won':
         blip(660, 70, 0, 0.5); blip(880, 70, 80, 0.5); blip(1320, 140, 160, 0.5)

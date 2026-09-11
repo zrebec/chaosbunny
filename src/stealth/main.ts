@@ -28,6 +28,7 @@ import { parseRoom } from './room.js'
 import { ROOM_01 } from './rooms/room01.js'
 import { ROOM_02 } from './rooms/room02.js'
 import { ROOM_03 } from './rooms/room03.js'
+import { ROOM_04 } from './rooms/room04.js'
 import { playBlocked, playEvents, playTape, stopTape } from './sound.js'
 import { STR } from './strings.js'
 import { loadStateAt } from './loader.js'
@@ -45,7 +46,7 @@ const ctx = setupCanvas(canvas, SCALE, 256, 192)
 canvas.style.width = '' // index.html's CSS fits the canvas to the window
 canvas.style.height = ''
 
-const ROOMS = [ROOM_01, ROOM_02, ROOM_03].map(parseRoom)
+const ROOMS = [ROOM_01, ROOM_02, ROOM_03, ROOM_04].map(parseRoom)
 const scenes = new Map<number, Scene>()
 let roomIndex = 0
 let room = ROOMS[roomIndex]!
@@ -66,6 +67,7 @@ let aiming = false
 let phase: 'title' | 'play' | 'caught' | 'won' = 'title'
 let phaseMs = 0
 let caughtBy: number | null = null
+let bittenBy: number | null = null
 let queued: Action | null = null
 const title = createTitle()
 const book = openRecords()
@@ -117,6 +119,7 @@ function restart(): void {
   phase = 'play'
   phaseMs = 0
   caughtBy = null
+  bittenBy = null
   queued = null
   resetInput()
 }
@@ -134,8 +137,9 @@ function play(action: Action): void {
   const toss = r.events.find((e) => e.type === 'throw')
   thrown = toss && toss.type === 'throw' ? { from: toss.from, to: toss.to } : null
   if (r.outcome === 'caught') {
-    const by = r.events.find((e) => e.type === 'caught')
-    caughtBy = by && by.type === 'caught' ? by.fox : 0
+    const by = r.events.find((e) => e.type === 'caught' || e.type === 'bitten')
+    caughtBy = by && by.type === 'caught' ? by.fox : null
+    bittenBy = by && by.type === 'bitten' ? by.bat : null
     phase = 'caught'
     phaseMs = 0
     queued = null
@@ -232,7 +236,7 @@ function frame(now: number): void {
 
   if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR)
   else render(ctx, scene, {
-      world, prev, t, thrown, aiming, caughtBy, won: phase === 'won',
+      world, prev, t, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
       record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
     }, STR)
   requestAnimationFrame(frame)

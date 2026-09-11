@@ -10,6 +10,8 @@
  */
 import { C, createBitmapFromRows, drawBitmap, mirrorBitmap, type Bitmap, type SpectrumColor } from 'zx-kit'
 import { CARROT_PICKUP } from '../art/sprites.js'
+import batFlyJson from '../art/zx/bat-td-fly.json'
+import batRoostJson from '../art/zx/bat-td-roost.json'
 import foxDownJson from '../art/zx/fox-td-down.json'
 import foxSideJson from '../art/zx/fox-td-side.json'
 import foxUpJson from '../art/zx/fox-td-up.json'
@@ -125,4 +127,8 @@ export const SPRITES = {
     left: mirrored(foxSide),
   },
   carrot: layered(CARROT_PICKUP, { G: C.B_GREEN, C: THEME_CARROT_INK }, 'carrot'),
+  bat: {
+    roost: sprite(batRoostJson, 'bat-td-roost'),
+    fly: sprite(batFlyJson, 'bat-td-fly'),
+  },
 } as const

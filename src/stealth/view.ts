@@ -8,6 +8,7 @@
  * - **Ears down**: none of that. Only the foxes themselves, and their `?`.
  * - `?` over a fox: it saw Randy last beat and is standing still. `!`: caught.
  * - A carrot over a fox's head: it is eating, and blind.
+ * - `~` over a bat: Randy is close enough for it to hear an ears-up step.
  *
  * Walls are drawn by where they are: a wall with floor below shows its face (3⁄4
  * view), a wall that touches the room shows its top, a wall deep in rock is black.
@@ -16,8 +17,9 @@ import {
   C, createLayerCache, drawChar, drawText, drawTextCentered, refreshLayer, type LayerCache, type SpectrumColor,
 } from 'zx-kit'
 import { SPRITES, TILES, drawLayered, layered, type Layered } from './art.js'
+import { BAT_HEARING } from './bat.js'
 import { SNEAK_STEPS, throwTarget, type World } from './beat.js'
-import { DIRS, sameCell, type Cell } from './grid.js'
+import { DIRS, manhattan, sameCell, type Cell } from './grid.js'
 import { advanceFox, type Fox } from './patrol.js'
 import { tileAt, type Room } from './room.js'
 import { visibleCells } from './rules.js'
@@ -42,6 +44,8 @@ export interface Frame {
   readonly aiming: boolean
   /** The fox that caught Randy, shown with `!`. */
   readonly caughtBy: number | null
+  /** The bat that bit Randy, shown with `!`. */
+  readonly bittenBy: number | null
   readonly won: boolean
   /** On the win screen: the room's record after this run, and whether this run set it. */
   readonly record: { readonly best: number; readonly isNew: boolean } | null
@@ -172,6 +176,23 @@ function actors(ctx: CanvasRenderingContext2D, f: Frame): Actor[] {
       },
     })
   })
+  f.world.bats.forEach((bat, i) => {
+    const from = f.prev.bats[i]?.cell ?? bat.cell
+    const p = lerpCell(from, bat.cell, f.t)
+    const art = bat.mode === 'roost' ? SPRITES.bat.roost : SPRITES.bat.fly
+    // Bats hang and fly above the floor: drawn a little higher than they stand, and last among equals.
+    list.push({
+      y: p.y + 0.5,
+      draw: () => {
+        drawLayered(ctx, art, p.x, p.y - SPRITE_RISE)
+        const headY = p.y - SPRITE_RISE - 8
+        if (f.bittenBy === i) drawChar(ctx, '!'.charCodeAt(0), p.x + 4, headY, C.B_RED, C.BLACK)
+        else if (bat.mode === 'roost' && manhattan(bat.cell, f.world.randy.cell) <= BAT_HEARING) {
+          drawChar(ctx, '~'.charCodeAt(0), p.x + 4, headY, C.B_MAGENTA, C.BLACK)
+        }
+      },
+    })
+  })
   return list.sort((a, b) => a.y - b.y)
 }
 
@@ -225,11 +246,12 @@ function drawHud(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Str
 export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Strings): void {
   blit(ctx, scene.roomLayer)
   const settled = f.t >= 1
-  if (settled && !f.world.randy.earsDown && f.caughtBy === null && !f.won) drawIntel(ctx, scene.room, f.world)
+  const over = f.caughtBy !== null || f.bittenBy !== null
+  if (settled && !f.world.randy.earsDown && !over && !f.won) drawIntel(ctx, scene.room, f.world)
   drawCarrots(ctx, f)
   for (const a of actors(ctx, f)) a.draw()
   if (settled && f.aiming) drawAim(ctx, scene.room, f.world)
-  if (f.caughtBy !== null) {
+  if (over) {
     blit(ctx, scene.dimLayer)
     drawTextCentered(ctx, str.caught, 80, 32, C.B_RED, C.BLACK)
   }
