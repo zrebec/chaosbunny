@@ -466,5 +466,20 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   }
   if (!patrols.length && !bats.length) { opts.onFail?.('empty'); return null }
 
+  // A wade is two beats Randy cannot react in, so water inside a guard's cone is a
+  // capture with no warning — the one thing this game promises never to do. Checked
+  // last, because a gate dressed after the water could put a pair of eyes on it.
+  if (rowsOf().join('').includes('w')) {
+    const room = parseRoom({ name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1, bats })
+    const wet: Cell[] = []
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (at(g, { x, y }) === 'w') wet.push({ x, y })
+    const watched = patrols.some((p) => {
+      const eye = { x: p.route[0]![0], y: p.route[0]![1] }
+      const facings = p.turns ?? [p.facing!]
+      return facings.some((f) => visibleCells(room, eye, f, false).some((v) => wet.some((q) => sameCell(q, v.cell))))
+    })
+    if (watched) { opts.onFail?.('water-in-sight'); return null }
+  }
+
   return { seed, src: { name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1, bats } }
 }

@@ -143,14 +143,14 @@ function say(text: string): void {
  */
 function hint(world: World, events: readonly BeatEvent[]): void {
   const randy = world.randy
-  if (!hinted.water && events.some((e) => e.type === 'wade')) {
-    hinted.water = true
-    say(STR.waterHint)
-    return
-  }
   if (!hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
     hinted.spotted = true
     say(STR.spottedHint)
+    return
+  }
+  if (!hinted.water && events.some((e) => e.type === 'wade')) {
+    hinted.water = true
+    say(STR.waterHint)
     return
   }
   if (!hinted.shadow && !randy.earsDown && tileAt(room, randy.cell) === 'shadow') {
