@@ -96,6 +96,7 @@ export type BeatEvent =
   | { readonly type: 'throw'; readonly from: Cell; readonly to: Cell }
   | { readonly type: 'pickup'; readonly at: Cell }
   | { readonly type: 'creak'; readonly at: Cell }
+  | { readonly type: 'wade'; readonly at: Cell }
   | { readonly type: 'lever'; readonly at: Cell; readonly open: boolean }
   | { readonly type: 'heard'; readonly fox: number }
   | { readonly type: 'eat'; readonly fox: number; readonly at: Cell }
@@ -269,7 +270,12 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
         return done('caught')
       }
       if (!randy.earsDown) stepNoise = to
-      if (tileAt(room, to) === 'water') wading = true
+      if (tileAt(room, to) === 'water') {
+        wading = true
+        // Heard by the player, not by the room: a fox that could hear a splash would
+        // make water a rule about sound, and it is a rule about time.
+        events.push({ type: 'wade', at: to })
+      }
       if (tileAt(room, to) === 'board') {
         creak = to
         events.push({ type: 'creak', at: to })

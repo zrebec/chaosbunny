@@ -20,6 +20,14 @@ export function play(room: Room, actions: readonly Action[], from: World = start
   return results
 }
 
+/**
+ * The beats a run takes, which is not its number of actions once water is involved:
+ * a step into it costs two (`WADE_BEATS`).
+ */
+export function beatsOf(room: Room, actions: readonly Action[]): number {
+  return play(room, actions).at(-1)?.world.beats ?? 0
+}
+
 export const move = (dir: 'up' | 'down' | 'left' | 'right'): Action => ({ kind: 'move', dir })
 export const toss = (dir: 'up' | 'down' | 'left' | 'right'): Action => ({ kind: 'throw', dir })
 export const EARS: Action = { kind: 'ears' }

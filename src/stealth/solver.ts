@@ -35,6 +35,8 @@ export interface SolveOptions {
    * answers are close is a room with a real decision in it, not one right answer.
    */
   readonly lampsOut?: boolean
+  /** Allow stepping into water (default true). Off, it asks "and if he stays dry?" */
+  readonly wade?: boolean
   /**
    * Allow working a lever (default true). Off, every grate stays as it started —
    * which, with {@link SolveOptions.lamps} off too, is how a room is asked whether
@@ -88,6 +90,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
   const prune = options.prune ?? true
   const keepLamps = options.lamps === false
   const keepGrates = options.levers === false
+  const keepDry = options.wade === false
   const darkOnly = options.lampsOut === true
   const start = startWorld(room)
   const cost = new Map<string, number>([[worldKey(start), 0]])
@@ -102,6 +105,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
         if (result.outcome === 'blocked' || result.outcome === 'caught') continue
         if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
         if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
+        if (keepDry && result.events.some((e) => e.type === 'wade')) continue
         // A winning step ends the beat before any fox looks, so it adds no sighting.
         if (result.outcome === 'won') {
           if (!darkOnly || result.world.lamps === 0) return q
@@ -120,38 +124,55 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
   return null
 }
 
-/** The shortest winning action sequence, or `null` if the room cannot be left. */
+/**
+ * The **fewest-beats** winning action sequence, or `null` if the room cannot be left.
+ *
+ * Beats, not actions: they were the same number until water arrived, and a step into
+ * water costs two (`WADE_BEATS`). So the search is a bucket queue over the clock rather
+ * than a plain breadth-first walk — the first way out it reaches is the one the game's
+ * own beat counter, and therefore `par` and every record, will agree with.
+ */
 export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
   const keepLamps = options.lamps === false
   const keepGrates = options.levers === false
+  const keepDry = options.wade === false
   const darkOnly = options.lampsOut === true
   const start = startWorld(room)
   const parent = new Map<string, { prev: string; action: Action } | null>([[worldKey(start), null]])
-  const queue: World[] = [start]
+  const cost = new Map<string, number>([[worldKey(start), 0]])
+  const buckets: World[][] = [[start]]
 
-  for (let head = 0; head < queue.length; head++) {
-    const world = queue[head]!
-    const key = worldKey(world)
-    for (const action of actions) {
-      const result = beat(room, world, action)
-      if (result.outcome === 'blocked' || result.outcome === 'caught') continue
-      if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
-      if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
-      if (result.outcome === 'won') {
-        if (darkOnly && result.world.lamps !== 0) continue // only the dark counts here
-        const path: Action[] = [action]
-        for (let at = parent.get(key); at; at = parent.get(at.prev)) path.push(at.action)
-        return path.reverse()
+  for (let q = 0; q < buckets.length; q++) {
+    const bucket = buckets[q] ?? []
+    for (let i = 0; i < bucket.length; i++) {
+      const world = bucket[i]!
+      const key = worldKey(world)
+      if (cost.get(key)! < q) continue // reached in fewer beats since it was queued
+      for (const action of actions) {
+        const result = beat(room, world, action)
+        if (result.outcome === 'blocked' || result.outcome === 'caught') continue
+        if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
+        if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
+        if (keepDry && result.events.some((e) => e.type === 'wade')) continue
+        if (result.outcome === 'won') {
+          if (darkOnly && result.world.lamps !== 0) continue // only the dark counts here
+          const path: Action[] = [action]
+          for (let at = parent.get(key); at; at = parent.get(at.prev)) path.push(at.action)
+          return path.reverse()
+        }
+        if (prune && pointless(action, result.events)) continue
+        const next = worldKey(result.world)
+        const spent = result.world.beats - world.beats
+        const c = q + spent
+        if ((cost.get(next) ?? Infinity) <= c) continue
+        if (cost.size >= maxStates) throw new Error(`${room.name}: more than ${maxStates} states — is the room too open?`)
+        cost.set(next, c)
+        parent.set(next, { prev: key, action })
+        ;(buckets[c] ??= []).push(result.world)
       }
-      if (prune && pointless(action, result.events)) continue
-      const next = worldKey(result.world)
-      if (parent.has(next)) continue
-      if (parent.size >= maxStates) throw new Error(`${room.name}: more than ${maxStates} states — is the room too open?`)
-      parent.set(next, { prev: key, action })
-      queue.push(result.world)
     }
   }
   return null

@@ -38,6 +38,10 @@ export function playEvents(events: readonly BeatEvent[]): void {
         blip(2600, 14, 95, 0.5); blip(1900, 14, 113, 0.45); blip(2300, 12, 131, 0.4)
         blip(150, 110, 155, 0.45)
         break
+      case 'wade':
+        // A foot going in and the water closing over it: low, wet, and not a warning.
+        blip(240, 40, 0, 0.3); blip(180, 60, 40, 0.25); blip(150, 50, 100, 0.2)
+        break
       case 'creak':
         // Old wood bending: two low tones that slide the wrong way, and loud enough to worry.
         blip(190, 55, 0, 0.4); blip(150, 70, 50, 0.4)

@@ -19,7 +19,8 @@
  * KIND=route GATES=grate,board npm run roomgen  # a planned route, one gate per corridor
  *   gates: grate (a lever to find), board (a plank a guard hears), dark (a lit shadow
  *   with the guard walled in behind the lamp), bat (a corridor to cross in silence),
- *   sentry (a corridor open only on the beats a turning guard looks away)
+ *   sentry (a corridor open only on the beats a turning guard looks away),
+ *   water (a corridor that costs two beats a step and that no fox will follow you down)
  * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
  * KIND=lever  npm run roomgen             # rooms where a grate has to be opened
  * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
@@ -182,6 +183,23 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
       marks: m,
       score: 100 - spread * 10 + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5,
       note: `lit ${lit} against dark ${dark}: two plans, ${spread} beats apart`,
+    }
+  }
+  if (kind === 'fork' && src.rows.join('').includes('w')) {
+    // A wet way and a dry way. The question is whether staying dry is worth its walk:
+    // far apart and the room has an answer, close and it has a choice.
+    if (m.dry === null || m.par === null) return null
+    const spread = m.dry - m.par
+    if (spread < 1 || spread > 3) return null
+    // And the flood must actually be paid for: drain it and the room has to get
+    // cheaper, or the water is scenery the best line never touches.
+    const drained = mark({ ...src, name: `${src.name} (drained)`, rows: src.rows.map((r) => r.split('w').join('.')) }, MAX_STATES)
+    if (!drained?.par || drained.par >= m.par) return null
+    return {
+      src,
+      marks: m,
+      score: 100 - spread * 10 + (m.par - drained.par) * 5 + (m.fewest ?? 0) * 5,
+      note: `wet ${m.par}, dry ${m.dry}, drained ${drained.par}`,
     }
   }
   if (kind === 'fork') {

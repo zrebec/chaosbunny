@@ -24,7 +24,7 @@ import { visibleCells } from '../../src/stealth/rules.js'
 import { rng, W, H, type Candidate } from './gen.js'
 
 /** What a corridor can be made to cost. */
-export type Gate = 'grate' | 'board' | 'dark' | 'bat' | 'sentry' | 'open'
+export type Gate = 'grate' | 'board' | 'dark' | 'bat' | 'sentry' | 'water' | 'open'
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -67,6 +67,27 @@ function carve(g: Grid, r: Rect): Cell[] {
       g[y]![x] = '.'
       cells.push({ x, y })
     }
+  }
+  return cells
+}
+
+/** Every cell an L-shaped walk from `a` to `b` passes through, carved or not. */
+function pathCells(a: Cell, b: Cell, horizFirst: boolean): Cell[] {
+  const cells: Cell[] = []
+  let { x, y } = a
+  const walk = (tx: number, ty: number): void => {
+    while (x !== tx || y !== ty) {
+      if (x !== tx) x += Math.sign(tx - x)
+      else y += Math.sign(ty - y)
+      cells.push({ x, y })
+    }
+  }
+  if (horizFirst) {
+    walk(b.x, y)
+    walk(b.x, b.y)
+  } else {
+    walk(x, b.y)
+    walk(b.x, b.y)
   }
   return cells
 }
@@ -310,7 +331,24 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
     const b = centre(rooms[rooms.length - 1]!)
     if (Math.abs(a.x - b.x) < 2 || Math.abs(a.y - b.y) < 2) { opts.onFail?.('fork-square'); return null }
     const first = corridors[corridors.length - 1]!
-    forked = dig(g, a, b, !(first.length > 0 && first[0]!.y === a.y))
+    // Both ways round a rectangle are the same length, which is fine when the two
+    // gates cost differently (a lamp against a plank) and useless when one of them
+    // costs *beats*: wading a way that is no shorter is never worth it. So when water
+    // is in the fork, the other way is dug the long way about, through a corner.
+    const straightFirst = first.length > 0 && first[0]!.y === a.y
+    if (opts.fork.includes('water')) {
+      const far = [{ x: 1, y: 1 }, { x: W - 2, y: 1 }, { x: 1, y: H - 2 }, { x: W - 2, y: H - 2 }]
+        .map((c) => ({ c, d: manhattan(c, a) + manhattan(c, b) }))
+        .sort((p, q) => q.d - p.d)[0]!.c
+      // The long way must not walk over the short one, or the two are one corridor.
+      const detour = [...pathCells(a, far, true), ...pathCells(far, b, true)]
+      const direct = pathCells(a, b, straightFirst)
+      const shared = detour.some((c) => direct.some((q) => sameCell(c, q) && !sameCell(c, a) && !sameCell(c, b)))
+      if (shared) { opts.onFail?.('fork-overlap'); return null }
+      forked = [...dig(g, a, far, true), ...dig(g, far, b, true)]
+    } else {
+      forked = dig(g, a, b, !straightFirst)
+    }
     if (forked.length < 2) { opts.onFail?.('fork-short'); return null }
     // The two ways must be genuinely separate, or the fork is one corridor with a bulge.
     if (forked.some((c) => first.some((q) => sameCell(q, c)))) { opts.onFail?.('fork-overlap'); return null }
@@ -335,6 +373,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
 
   /** Puts one gate on one corridor. False when this shape cannot carry that gate. */
   const dress = (gate: Gate, corridor: readonly Cell[], cell: Cell): boolean => {
+    if (gate === 'open') return true // a way with nothing on it is still a way
     if (gate === 'grate') {
       put(g, cell, '+')
       // The lever must be on Randy's side of the grate, or the room is a locked door,
@@ -351,6 +390,13 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       if (!lever || best < 4) return false
       put(g, lever, '/')
       taken.add(`${lever.x},${lever.y}`)
+      return true
+    }
+    if (gate === 'water') {
+      // Two cells at the middle, not the whole corridor: flooding the lot costs more
+      // beats than the short way can ever save, and the room stops being a choice.
+      const mid = corridor.indexOf(cell)
+      for (const c2 of corridor.slice(Math.max(0, mid - 1), mid + 1)) if (at(g, c2) === '.') put(g, c2, 'w')
       return true
     }
     if (gate === 'sentry') {
@@ -400,6 +446,13 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   }
   if (opts.fork) {
     const ways = [corridors[corridors.length - 1]!, forked!]
+    // Water goes on the *shorter* way, or it is never worth wading: short and slow
+    // against long and dry is the choice; long and slow is no choice at all.
+    if (opts.fork.includes('water') && opts.fork[0] !== opts.fork[1]) {
+      const wetFirst = opts.fork[0] === 'water'
+      const shorterIsFirst = ways[0]!.length <= ways[1]!.length
+      if (wetFirst !== shorterIsFirst) ways.reverse()
+    }
     for (let k = 0; k < 2; k++) {
       const gate = opts.fork[k]!
       const way = ways[k]!

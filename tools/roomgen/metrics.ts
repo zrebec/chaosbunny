@@ -8,6 +8,7 @@
  * **Never print a way through.** `solve()` returns an action list; nothing in this
  * file may put one on screen, in a file, or in a commit message.
  */
+import { beat, startWorld, type Action } from '../../src/stealth/beat.js'
 import { parseRoom, type Room, type RoomSource } from '../../src/stealth/room.js'
 import { fewestSightings, solve } from '../../src/stealth/solver.js'
 
@@ -23,13 +24,34 @@ export interface Marks {
   readonly lampsOn: number | null
   /** Par counting only ways out that leave every lamp dark — the other half of the plan. */
   readonly dark: number | null
+  /** Par for a Randy who refuses to get his feet wet, or `null` if the room will not have it. */
+  readonly dry: number | null
+  /** Water cells in the room — `dry` means nothing without them. */
+  readonly water: number
   /** Lamps in the room — `lampsOn` means nothing without it. */
   readonly lamps: number
   /** How long the marking took, in ms — the search's own budget depends on it. */
   readonly ms: number
 }
 
-const par = (room: Room, options: Parameters<typeof solve>[1]): number | null => solve(room, options)?.length ?? null
+/**
+ * Beats, not actions. They were the same number until water arrived — a step into it
+ * costs two — and it is beats the game counts, so it is beats a room's par must mean.
+ */
+function beatsOf(room: Room, actions: readonly Action[]): number {
+  let world = startWorld(room)
+  for (const action of actions) {
+    const r = beat(room, world, action)
+    if (r.outcome === 'blocked') continue
+    world = r.world
+  }
+  return world.beats
+}
+
+const par = (room: Room, options: Parameters<typeof solve>[1]): number | null => {
+  const best = solve(room, options)
+  return best === null ? null : beatsOf(room, best)
+}
 
 /** Marks one room, or `null` if it does not parse or the search runs away. */
 export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
@@ -43,7 +65,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
   try {
     const best = par(room, { maxStates })
     if (best === null) {
-      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, lamps: room.lamps.length, ms: Date.now() - t0 }
+      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, dry: null, water: 0, lamps: room.lamps.length, ms: Date.now() - t0 }
     }
     const hasCarrot = room.carrots + room.pickups.length > 0
     return {
@@ -54,6 +76,8 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
       noThrow: hasCarrot ? par(room, { throws: false, maxStates }) : null,
       lampsOn: room.lamps.length ? par(room, { lamps: false, maxStates }) : null,
       dark: room.lamps.length ? par(room, { lampsOut: true, maxStates }) : null,
+      dry: src.rows.join('').includes('w') ? par(room, { wade: false, maxStates }) : null,
+      water: src.rows.join('').split('w').length - 1,
       lamps: room.lamps.length,
       ms: Date.now() - t0,
     }
@@ -67,7 +91,8 @@ const n = (v: number | null): string => (v === null ? 'NONE' : String(v))
 /** One line of marks, for a search's report. */
 export function line(m: Marks): string {
   return `${m.name}: par ${n(m.par)} | fewest? ${n(m.fewest)} | noEars ${n(m.noEars)} | noThrow ${n(m.noThrow)}`
-    + `${m.lamps ? ` | lampsOn ${n(m.lampsOn)} | dark ${n(m.dark)}` : ''} | ${m.ms} ms`
+    + `${m.lamps ? ` | lampsOn ${n(m.lampsOn)} | dark ${n(m.dark)}` : ''}`
+    + `${m.water ? ` | dry ${n(m.dry)}` : ''} | ${m.ms} ms`
 }
 
 /** The room as text, with its guards — enough to paste into `src/stealth/rooms/`. */
