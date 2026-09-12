@@ -15,6 +15,7 @@
  * It only proposes rooms. The solver still decides, and nothing here prints a way
  * through: layouts and numbers only.
  */
+import { BAT_HEARING } from '../../src/stealth/bat.js'
 import { CREAK_HEARING, THROW_RANGE } from '../../src/stealth/beat.js'
 import { DIRS, manhattan, sameCell, step, type Cell, type Dir } from '../../src/stealth/grid.js'
 import { allLampsOn, cellIndex, litCells } from '../../src/stealth/light.js'
@@ -23,7 +24,7 @@ import { visibleCells } from '../../src/stealth/rules.js'
 import { rng, W, H, type Candidate } from './gen.js'
 
 /** What a corridor can be made to cost. */
-export type Gate = 'grate' | 'board' | 'dark' | 'open'
+export type Gate = 'grate' | 'board' | 'dark' | 'bat' | 'open'
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -268,6 +269,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   // 4. Each corridor gets its gate — but only where cutting it really does cut the room.
   const taken = new Set<string>([`${start.x},${start.y}`])
   const patrols: PatrolSource[] = []
+  const bats: Array<[number, number]> = []
   const rowsOf = (): string[] => g.map((row) => row.join(''))
   for (let i = 0; i < opts.gates.length; i++) {
     const gate = opts.gates[i]!
@@ -292,6 +294,15 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       if (!lever || best < 4) return null
       put(g, lever, '/')
       taken.add(`${lever.x},${lever.y}`)
+    } else if (gate === 'bat') {
+      // A bat hanging in the next chamber: it cannot see, but it hears an ears-up step
+      // from BAT_HEARING away, so the corridor has to be crossed in silence.
+      const roosts = chambers.flat().filter((q) => at(g, q) === '.' && !taken.has(`${q.x},${q.y}`)
+        && manhattan(q, cell) <= BAT_HEARING && manhattan(q, start) >= 4)
+      const roost = roosts[Math.floor(r.next() * roosts.length)]
+      if (!roost) return null
+      bats.push([roost.x, roost.y])
+      taken.add(`${roost.x},${roost.y}`)
     } else if (gate === 'board') {
       put(g, cell, '~')
       const guard = listener(src(), cell, taken)
@@ -308,7 +319,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       taken.add(`${pocket.guard.route[0]![0]},${pocket.guard.route[0]![1]}`)
     }
   }
-  if (!patrols.length) return null
+  if (!patrols.length && !bats.length) return null
 
-  return { seed, src: { name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1 } }
+  return { seed, src: { name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1, bats } }
 }

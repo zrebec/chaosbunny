@@ -28,12 +28,15 @@ export interface Strings {
   /** The command a Spectrum owner typed to load a tape — the same in every language. */
   readonly loadCommand: string
   readonly startPrompt: string
-  /** The screen before the first room: why Randy is down there. Lines of at most 32. */
+  /**
+   * The screen before the first room: why Randy is down there, told for a cellar of
+   * `rooms` rooms so the number is never a lie. Lines of at most 32.
+   */
   readonly storyTitle: string
-  readonly story: readonly string[]
+  readonly story: (rooms: number) => readonly string[]
   /** The screen after the last room, and the beats the whole cellar took. */
   readonly endingTitle: string
-  readonly ending: readonly string[]
+  readonly ending: (rooms: number) => readonly string[]
   readonly wholeCellar: (n: number) => string
   readonly record: (n: number) => string
   readonly newRecord: string
@@ -68,25 +71,25 @@ const EN: Strings = {
   loadCommand: 'LOAD ""',
   startPrompt: 'PRESS ANY KEY',
   storyTitle: 'UNDER THE HILL',
-  story: [
+  story: (rooms) => [
     'THE FOXES KEEP THEIR LARDER',
     'DEEP UNDER THE HILL. RANDY',
     'WENT IN FOR ONE CARROT AND',
     'THE DOOR SHUT BEHIND HIM.',
     '',
-    'ELEVEN CELLARS TO THE NIGHT',
-    'AIR. NOBODY MUST SEE HIM GO.',
+    `${rooms} CELLARS TO THE NIGHT AIR.`,
+    'NOBODY MUST SEE HIM GO.',
   ],
   record: (n) => `BEST ${n}`,
   newRecord: 'NEW BEST!',
   replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
   replaying: 'REPLAY - ANY KEY STOPS',
   endingTitle: 'THE NIGHT AIR',
-  ending: [
+  ending: (rooms) => [
     'RANDY CAME UP INTO THE GRASS',
-    'BEHIND THE HILL. ELEVEN QUIET',
-    'CELLARS BELOW HIM - AND THE',
-    'ONE CARROT HE NEVER FOUND.',
+    'BEHIND THE HILL.',
+    `${rooms} QUIET CELLARS BELOW HIM -`,
+    'AND THE CARROT HE NEVER FOUND.',
   ],
   wholeCellar: (n) => `THE WHOLE CELLAR: ${n} BEATS`,
   cellar: 'THE CELLAR',
@@ -115,26 +118,25 @@ const SK: Strings = {
   loadCommand: 'LOAD ""',
   startPrompt: 'STLAC KLAVESU',
   storyTitle: 'POD KOPCOM',
-  story: [
+  story: (rooms) => [
     'LISKY MAJU SPIZ HLBOKO POD',
     'KOPCOM. RANDY SIEL DNU PRE',
     'JEDNU MRKVU A DVERE SA ZA',
     'NIM ZAVRELI.',
     '',
-    'JEDENAST PIVNIC K NOCNEMU',
-    'VZDUCHU. NIKTO HO NESMIE',
-    'VIDIET ODIST.',
+    `${rooms} PIVNIC K NOCNEMU VZDUCHU.`,
+    'NIKTO HO NESMIE VIDIET ODIST.',
   ],
   record: (n) => `REKORD ${n}`,
   newRecord: 'NOVY REKORD!',
   replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),
   replaying: 'ZAZNAM - KLAVESA ZASTAVI',
   endingTitle: 'NOCNY VZDUCH',
-  ending: [
+  ending: (rooms) => [
     'RANDY VYLIEZOL DO TRAVY ZA',
-    'KOPCOM. POD NIM JEDENAST',
-    'TICHYCH PIVNIC - A JEDNA',
-    'MRKVA, KTORU NIKDY NENASIEL.',
+    `KOPCOM. POD NIM ${rooms} TICHYCH`,
+    'PIVNIC - A JEDNA MRKVA, KTORU',
+    'NIKDY NENASIEL.',
   ],
   wholeCellar: (n) => `CELA PIVNICA: ${n} BEATOV`,
   cellar: 'PIVNICA',

@@ -71,6 +71,8 @@ export function renderTitle(
   ctx: CanvasRenderingContext2D, title: Title, mode: TitleMode, loadMs: number, now: number, str: Strings,
   /** Beats for the whole cellar, when every room has a record — shown on the ending. */
   total: number | null = null,
+  /** How many rooms the cellar holds, so the tale can count them honestly. */
+  rooms = 0,
 ): void {
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, 256, 192)
@@ -90,7 +92,7 @@ export function renderTitle(
   // Two colours and the ROM font: the screens a cassette game gave you at either end.
   if (mode === 'story' || mode === 'ending') {
     const ending = mode === 'ending'
-    const lines = ending ? str.ending : str.story
+    const lines = ending ? str.ending(rooms) : str.story(rooms)
     drawTextCentered(ctx, ending ? str.endingTitle : str.storyTitle, 24, 32, ending ? C.B_GREEN : C.B_YELLOW, C.BLACK)
     // 14 px a line leaves the prompt its own air, however long the tale runs.
     lines.forEach((line: string, i: number) => drawTextCentered(ctx, line, 56 + i * 14, 32, C.B_WHITE, C.BLACK))

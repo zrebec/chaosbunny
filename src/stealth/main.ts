@@ -404,7 +404,7 @@ function frame(now: number): void {
     }
   }
 
-  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats())
+  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length)
   else if (phase === 'map') {
     renderCellar(ctx, { names: ROOMS.map((r) => r.name), current: roomIndex, records: book.records(), now }, STR)
   }

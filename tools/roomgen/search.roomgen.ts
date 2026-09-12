@@ -8,6 +8,8 @@
  * KIND=decision npm run roomgen            # rooms with two plans that cost the same
  * KIND=lampboard npm run roomgen           # rooms where a lamp AND a plank are both load-bearing
  * KIND=route GATES=grate,board npm run roomgen  # a planned route, one gate per corridor
+ *   gates: grate (a lever to find), board (a plank a guard hears), dark (a lit shadow
+ *   with the guard walled in behind the lamp), bat (a corridor to cross in silence)
  * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
  * KIND=lever  npm run roomgen             # rooms where a grate has to be opened
  * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
@@ -178,6 +180,13 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     if (room.grates.length && mark({ ...src, name: `${src.name} (walled)`, rows: src.rows.map((r) => r.split('+').join('#').split('/').join('.')) }, MAX_STATES)?.par !== null) return null
     if (room.lamps.length && m.lampsOn !== null) return null
     let note = ''
+    if (src.bats?.length) {
+      const quiet = mark({ ...src, name: `${src.name} (no bat)`, bats: [] }, MAX_STATES)
+      if (!quiet?.par) return null
+      const gain = m.par! - quiet.par
+      if (gain < GAIN && quiet.noEars !== null) return null
+      note += `without the bat par ${quiet.par}, noEars ${quiet.noEars ?? 'NONE'}; `
+    }
     if (src.rows.join('').includes('~')) {
       const silent = mark({ ...src, name: `${src.name} (silent)`, rows: src.rows.map((r) => r.split('~').join('.')) }, MAX_STATES)
       if (!silent?.par || m.par! - silent.par < GAIN) return null

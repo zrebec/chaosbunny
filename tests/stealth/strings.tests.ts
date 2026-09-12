@@ -8,8 +8,12 @@ function lines(s: Strings): [string, string][] {
     if (typeof value === 'string') out.push([name, value])
     else if (Array.isArray(value)) value.forEach((line, i) => out.push([`${name}[${i}]`, String(line)]))
     else if (typeof value === 'function') {
-      const f = value as (n: number | boolean) => string
-      out.push([name, f(88)], [`${name}(true)`, f(true)], [`${name}(false)`, f(false)])
+      const f = value as (n: number | boolean) => string | readonly string[]
+      for (const [label, arg] of [['', 88], ['(true)', true], ['(false)', false]] as const) {
+        const got = f(arg)
+        if (typeof got === 'string') out.push([`${name}${label}`, got])
+        else got.forEach((line, i) => out.push([`${name}${label}[${i}]`, line]))
+      }
     }
   }
   return out
@@ -38,10 +42,10 @@ describe('the strings', () => {
 
 describe('the screens at either end', () => {
   it('both fit above the prompt, however long the tale is', () => {
-    const storyBottom = 56 + (STR.story.length - 1) * 14 + 8
-    expect(storyBottom, `story: ${STR.story.length} lines reach ${storyBottom}px`).toBeLessThan(176)
+    const storyBottom = 56 + (STR.story(12).length - 1) * 14 + 8
+    expect(storyBottom, `story: ${STR.story(12).length} lines reach ${storyBottom}px`).toBeLessThan(176)
     // The ending carries one more line under it: the beats for the whole cellar.
-    const endBottom = 56 + STR.ending.length * 14 + 8 + 8
-    expect(endBottom, `ending: ${STR.ending.length} lines reach ${endBottom}px`).toBeLessThan(176)
+    const endBottom = 56 + STR.ending(12).length * 14 + 8 + 8
+    expect(endBottom, `ending: ${STR.ending(12).length} lines reach ${endBottom}px`).toBeLessThan(176)
   })
 })
