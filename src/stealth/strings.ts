@@ -46,6 +46,11 @@ export interface Strings {
   /** The map between rooms: its title, and how to leave it. */
   readonly cellar: string
   readonly cellarHint: string
+  /**
+   * What each cellar is called, in the order they are played — the map and the line
+   * over the room use it. A room with no name here shows its number alone.
+   */
+  readonly roomNames: readonly string[]
   /** Short lines that appear over the room for a moment. */
   readonly roomToast: (n: number) => string
   readonly musicOn: string
@@ -94,6 +99,11 @@ const EN: Strings = {
   wholeCellar: (n) => `THE WHOLE CELLAR: ${n} BEATS`,
   cellar: 'THE CELLAR',
   cellarHint: 'ANY KEY: ON',
+  roomNames: [
+    'THE PANTRY CORRIDOR', 'THE DARK CORRIDOR', 'THE JUNCTION', "THE BAT'S LARDER",
+    "THE BAT'S HALL", 'THE SENTRY', 'THE LIT CORNER', 'THE PLANK',
+    'THE HANDLE', 'THE LONG WAY ROUND', 'THE WINDOW', 'THE ROOST',
+  ],
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
@@ -141,9 +151,23 @@ const SK: Strings = {
   wholeCellar: (n) => `CELA PIVNICA: ${n} BEATOV`,
   cellar: 'PIVNICA',
   cellarHint: 'KLAVESA: DALEJ',
+  roomNames: [
+    'SPIZOVA CHODBA', 'TMAVA CHODBA', 'KRIZOVATKA', 'NETOPIERIA KOMORA',
+    'NETOPIERIA SIEN', 'STRAZNIK', 'OSVETLENY KUT', 'DOSKA',
+    'PAKA', 'OKLUKA', 'OKNO', 'HNIEZDO',
+  ],
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',
 }
 
+/** Both tongues, for the tests that hold them to the same shape. */
+export const LOCALES = { en: EN, sk: SK } as const
+
 export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)
+
+/** A room's name, or its number when the cellar has grown past the names. */
+export function roomLabel(str: Strings, index: number): string {
+  const name = str.roomNames[index]
+  return name ? `${index + 1} ${name}` : str.roomToast(index + 1)
+}

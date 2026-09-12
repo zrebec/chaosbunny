@@ -11,7 +11,7 @@
  */
 import { C, drawBlinkingText, drawText, drawTextCentered } from 'zx-kit'
 import type { Records } from './records.js'
-import type { Strings } from './strings.js'
+import { roomLabel, type Strings } from './strings.js'
 import { PLAY_H, PLAY_W } from './view.js'
 
 /** Rooms across before the chain turns back. */
@@ -63,6 +63,8 @@ export function renderCellar(
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, PLAY_W, 192)
   drawTextCentered(ctx, str.cellar, 16, 32, C.B_CYAN, C.BLACK)
+  // The room just left, by name: a cellar with names is a place, not a list.
+  drawTextCentered(ctx, roomLabel(str, current), 32, 32, C.WHITE, C.BLACK)
 
   const nodes = mapNodes(names.length)
   for (let i = 0; i + 1 < nodes.length; i++) {

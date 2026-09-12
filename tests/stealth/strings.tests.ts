@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { STR, type Strings } from '../../src/stealth/strings.js'
+import { LOCALES, roomLabel, STR, type Strings } from '../../src/stealth/strings.js'
+import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 
 /** Every line the game draws, with sample numbers where a line takes one. */
 function lines(s: Strings): [string, string][] {
@@ -47,5 +48,27 @@ describe('the screens at either end', () => {
     // The ending carries one more line under it: the beats for the whole cellar.
     const endBottom = 56 + STR.ending(12).length * 14 + 8 + 8
     expect(endBottom, `ending: ${STR.ending(12).length} lines reach ${endBottom}px`).toBeLessThan(176)
+  })
+})
+
+describe('the cellar has names', () => {
+  it('names every room that ships, in both tongues', () => {
+    for (const [code, s] of Object.entries(LOCALES)) {
+      expect(s.roomNames.length, `${code} names`).toBe(ROOM_SOURCES.length)
+      for (const [i, name] of s.roomNames.entries()) expect(name.length, `${code} ${i}`).toBeGreaterThan(2)
+    }
+  })
+
+  it('fits a name and its number across the screen', () => {
+    for (const [code, s] of Object.entries(LOCALES)) {
+      for (let i = 0; i < s.roomNames.length; i++) {
+        const label = roomLabel(s, i)
+        expect(label.length, `${code}: "${label}"`).toBeLessThanOrEqual(32)
+      }
+    }
+  })
+
+  it('falls back to the number when a room has outgrown the names', () => {
+    expect(roomLabel(STR, 99)).toBe(STR.roomToast(100))
   })
 })

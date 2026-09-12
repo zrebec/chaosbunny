@@ -37,7 +37,7 @@ import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom } from './room.js'
 import { ROOM_SOURCES } from './rooms/index.js'
 import { playBlocked, playEvents, playTape, playUndo, stopTape } from './sound.js'
-import { STR } from './strings.js'
+import { roomLabel, STR } from './strings.js'
 import { loadStateAt } from './loader.js'
 import { renderCellar } from './cellar.js'
 import { createTitle, renderTitle, setBorder, type TitleMode } from './title.js'
@@ -158,7 +158,7 @@ function goToRoom(i: number): void {
   scene = sceneFor(roomIndex)
   restart()
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
-  say(STR.roomToast(roomIndex + 1))
+  say(roomLabel(STR, roomIndex))
 }
 
 function restart(): void {
