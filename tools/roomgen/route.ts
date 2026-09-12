@@ -393,10 +393,12 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       return true
     }
     if (gate === 'water') {
-      // Two cells at the middle, not the whole corridor: flooding the lot costs more
-      // beats than the short way can ever save, and the room stops being a choice.
+      // On a fork, two cells at the middle: flooding the lot costs more beats than the
+      // short way can ever save. On the only way through, the lot — because there the
+      // point is not the choice but the tax, and every cell of it moves the world twice.
       const mid = corridor.indexOf(cell)
-      for (const c2 of corridor.slice(Math.max(0, mid - 1), mid + 1)) if (at(g, c2) === '.') put(g, c2, 'w')
+      const flood = opts.fork ? corridor.slice(Math.max(0, mid - 1), mid + 1) : corridor
+      for (const c2 of flood) if (at(g, c2) === '.') put(g, c2, 'w')
       return true
     }
     if (gate === 'sentry') {

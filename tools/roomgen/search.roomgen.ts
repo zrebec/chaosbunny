@@ -220,6 +220,13 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     if (room.grates.length && mark({ ...src, name: `${src.name} (walled)`, rows: src.rows.map((r) => r.split('+').join('#').split('/').join('.')) }, MAX_STATES)?.par !== null) return null
     if (room.lamps.length && m.lampsOn !== null) return null
     let note = ''
+    if (src.rows.join('').includes('w')) {
+      // Water on the only way through is a tax, and it has to be one: drain it and the
+      // room must get markedly cheaper, or the flood is scenery.
+      const drained = mark({ ...src, name: `${src.name} (drained)`, rows: src.rows.map((r) => r.split('w').join('.')) }, MAX_STATES)
+      if (!drained?.par || m.par! - drained.par < GAIN) return null
+      note += `drained it is par ${drained.par}; `
+    }
     if (src.patrols.some((p) => p.turns)) {
       // A sentry earns its place only if its turning is the way through: freeze every
       // one of them on its first facing and the room must close.
@@ -241,7 +248,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     if (src.rows.join('').includes('~')) {
       const silent = mark({ ...src, name: `${src.name} (silent)`, rows: src.rows.map((r) => r.split('~').join('.')) }, MAX_STATES)
       if (!silent?.par || m.par! - silent.par < GAIN) return null
-      note = `silent floor is par ${silent.par}; `
+      note += `silent floor is par ${silent.par}; `
     }
     return { src, marks: m, score: m.par! + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5, note: `${note}gates ${GATES.join('+')}` }
   }

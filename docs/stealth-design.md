@@ -189,6 +189,14 @@ written. Two things came out of building it that the proposal did not see:
   needs a shape the planner does not draw — a straight run against a detour. room16 was
   drawn by hand and judged by the solver, which is the same discipline by other means.
 
+**Water has a second face the ladder has not used.** On the only way through rather than
+on a fork, a flood is not a choice but a **tax with teeth**: every cell of it moves the
+world twice, so a patrol's timing shifts under Randy while he wades. The planner does
+make those — `KIND=route GATES=water,board`, fifty-two rooms in six thousand seeds, the
+best of them par 34 with the flood worth eight beats and a plank at the far end. None is
+shipped: sixteen rooms is a cellar's worth already, and the next one should be asked for
+by play rather than by a search. The seeds are in the report if it is.
+
 **What a second cellar would be built on.** Fifteen rooms is one cellar's worth, and
 every verb in it is now taught, combined and finished with. A second one wants a spine
 of its own, and the best candidate is **water**: cells Randy can wade into, which cost
