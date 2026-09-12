@@ -11,7 +11,8 @@
  * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
- * - C on the loaded picture: the cellar map, where the arrows pick a room
+ * - C: the cellar map, where the arrows pick a room — from the loaded picture or from
+ *   inside a room, where Esc puts you back exactly where you left off
  * - (after a win, any key goes on to the next room)
  *
  * After a win, P plays the run back and B the run that holds the room's record
@@ -110,6 +111,8 @@ const hinted = { spotted: false, shadow: false, bat: false }
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
 let escaped = false
+/** Where Esc goes from the map: back to the picture, or back into the room being played. */
+let mapBack: 'title' | 'room' = 'title'
 let toast: { text: string; ms: number } | null = null
 const TOAST_MS = 1400
 
@@ -347,7 +350,11 @@ window.addEventListener('keydown', (e) => {
       if (escaped && mapPick === roomIndex) goToTitle('ending')
       else goToRoom(mapPick)
     }
-    else if (e.key === 'Escape') goToTitle('ready')
+    // Peeked at from inside a room, Esc costs nothing: the beat you were on is still there.
+    else if (e.key === 'Escape') {
+      if (mapBack === 'room') phase = 'play'
+      else goToTitle('ready')
+    }
     resetInput()
     e.preventDefault()
     return
@@ -370,8 +377,20 @@ window.addEventListener('keydown', (e) => {
     const next = ROOMS.findIndex((r) => records[r.name] === undefined)
     phase = 'map'
     escaped = false
+    mapBack = 'title'
     mapPick = next < 0 ? 0 : next
     roomIndex = mapPick
+    phaseMs = WON_GRACE_MS
+    resetInput()
+    return
+  }
+  // The cellar from inside a room: a look at where you are, and a way to leave for
+  // another one. Esc comes back to the beat you were standing on.
+  if (phase === 'play' && (e.key === 'c' || e.key === 'C')) {
+    phase = 'map'
+    escaped = false
+    mapBack = 'room'
+    mapPick = roomIndex
     phaseMs = WON_GRACE_MS
     resetInput()
     return
@@ -482,6 +501,7 @@ function frame(now: number): void {
     // Keys during the grace are dropped, not kept for later — or they would skip the screen the moment it ends.
     if (phase === 'won' && consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
       phase = 'map' // the cellar, with the room just escaped lit up
+      mapBack = 'title'
       escaped = roomIndex === ROOMS.length - 1
       mapPick = escaped ? roomIndex : roomIndex + 1
       phaseMs = 0
