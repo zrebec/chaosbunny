@@ -30,17 +30,18 @@ either cannot be finished or collapses to something much shorter.
 | # | Name | New verb | Ablation in its test |
 |---|---|---|---|
 | 1 | the pantry corridor | throw a carrot, hide behind a crate | no carrot: impossible |
-| 2 | the dark corridor | the dribble (2 steps with the ears down) | no ears: impossible |
-| 3 | the junction | two cones at once | — |
-| 4 | the bat's larder | silence: a bat hears ears-up steps | without the bat, ears are unnecessary |
-| 5 | the bat's hall | a bat and two foxes | without the bat, par 22 |
-| 6 | the sentry | the window when a sentry looks away | freeze the sentry: impossible |
-| 7 | the lit corner | **the lamp: light kills shadow** | leave the lamp burning: impossible |
-| 8 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
-| 9 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
-| 10 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
-| 11 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
-| 12 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
+| 2 | the crossing | **a `?` is a warning, not a capture** | it cannot be walked unseen, and nothing else in it is needed |
+| 3 | the dark corridor | the dribble (2 steps with the ears down) | no ears: impossible |
+| 4 | the junction | two cones at once | — |
+| 5 | the bat's larder | silence: a bat hears ears-up steps | without the bat, ears are unnecessary |
+| 6 | the bat's hall | a bat and two foxes | without the bat, par 22 |
+| 7 | the sentry | the window when a sentry looks away | freeze the sentry: impossible |
+| 8 | the lit corner | **the lamp: light kills shadow** | leave the lamp burning: impossible |
+| 9 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
+| 10 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
+| 11 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
+| 12 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
+| 13 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
 
 Where the ladder should go next (a proposal, not a promise):
 
