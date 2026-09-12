@@ -38,6 +38,7 @@ either cannot be finished or collapses to something much shorter.
 | 7 | the lit corner | **the lamp: light kills shadow** | leave the lamp burning: impossible |
 | 8 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
 | 9 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
+| 10 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
 
 Where the ladder should go next (a proposal, not a promise):
 
@@ -91,12 +92,21 @@ guard the dark was meant to hide you from**. A room where darkening is a real op
 has to give that guard somewhere else to be, or give Randy somewhere to be while it
 comes and looks.
 
-**Two things at once is rarer still.** `KIND=lampboard` asks for a room where the lamp
-makes it impossible *and* the plank costs it four beats or more. 3000 seeds, nothing.
-Each requirement alone is roughly one room in a few thousand, so their intersection is
-out of reach of this generator's shapes — a room with two load-bearing mechanics will
-have to be built from a room that already has one, or from a generator that plans a
-route first and dresses it afterwards.
+**Two things at once is rarer still — until you stop rolling dice.** `KIND=lampboard`
+asks for a room where the lamp makes it impossible *and* the plank costs four beats or
+more: 3000 seeds, nothing. Each requirement alone is about one room in a few thousand,
+so their intersection is out of reach of a generator that throws shapes and hopes.
+
+So the second generator goes the other way about (`tools/roomgen/route.ts`,
+`KIND=route`): lay a **chain** of chambers from Randy to the door, join each pair with
+exactly one corridor, and the map is a path — every corridor is a bridge, and cutting
+it really does cut the room. The property a mechanic needs is then true **by
+construction**. Twelve rooms in three hundred seeds, in thirteen seconds, each with two
+load-bearing gates. room10 is the first of them.
+
+Its lesson generalises: **the expensive part of room design was never the search, it
+was the shape.** A generator that plans the route can also plan where the player will
+be standing when a noise goes off — which is what the decision room still needs.
 
 **Lessons that cost time:**
 - More than **two moving** foxes means hundreds of thousands of states (every `?`
