@@ -11,6 +11,37 @@ carrot** to open the moon-lit exit, and escape to the surface — past spiders,
 outline-wing bats, crumbling ledges and a ladder or two. Dark, atmospheric,
 *never cruel*: creatures retreat and curl, they are never killed.
 
+## Two games, one repo — read this first
+
+On these branches `index.html` loads **`src/stealth/main.ts`**: chaosBunny is a
+**beat-based tile stealth game** now (owner's call, 2026-09-11). One screen is one
+room, 16×11 tiles, and every action you take moves the whole world one beat. The verb
+is **slip past**: fourteen rooms, each proved solvable by a solver in its own test.
+
+The **cave climber** described further down is what `master` still holds; nothing of it
+was deleted, and `src/main.ts` still builds. Which of the two chaosBunny is, is the
+owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
+
+### The stealth game's keys
+
+| Key | Action |
+|---|---|
+| `←` `↑` `→` `↓` / d-pad | Step one cell — and one beat for everyone else |
+| `Z` | Ears up / down. Up: you see every cone. Down: the dark hides you, for two steps |
+| `X` / `F` / gamepad A, then an arrow | Throw the carrot that way (`X` again cancels) |
+| `Space` | Wait a beat |
+| `U` | Take the last beat back — including the one a fox caught you on |
+| `C` | The cellar map: arrows pick a room, `Enter` goes in, `Esc` back to where you were |
+| `M` | The cellar hum on / off |
+| `R` | Start the room again |
+| `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) |
+| `S` (on the loaded picture) | The sound bench: twelve sounds on twelve keys |
+| `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
+
+Three rules the rooms rely on, said once in-game the first time each bites: **a `?` is a
+warning, not a capture** (the second sighting in a row is what ends the room), the dark
+hides only lowered ears, and a bat hears the ones that are up.
+
 ## Play
 
 ```bash
@@ -29,7 +60,7 @@ bumps `package.json`, prepends `CHANGELOG.md`, tags `vX.Y.Z` and pushes a
 before committing more. The deploy builds the post-release tip, so the in-game
 version readout matches the new release immediately.
 
-## Controls
+## The cave climber's controls (`master`)
 
 | Key | Action |
 |-----|--------|
