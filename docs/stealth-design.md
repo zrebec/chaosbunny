@@ -208,31 +208,33 @@ feet, which is how it was noticed at all. It sits straight after the wade, so th
 asks the two halves of one question — what a route is worth, and what it costs when
 there is no other.
 
-**What a second cellar would be built on.** Seventeen rooms is one cellar's worth, and
-every verb in it is now taught, combined and finished with. A second one wants a spine
-of its own, and the best candidate is **water**: cells Randy can wade into, which cost
-**two beats a step instead of one**, and which no fox will follow him into.
+**What a second cellar would be built on.** Eighteen rooms is one cellar's worth, and
+every verb in it is taught, combined and finished with. The paragraph that used to sit
+here proposed water as the spine of a second one; water is built now, and the two rooms
+it produced say something the proposal could not.
 
-Why that one, out of everything on the list below:
+What water actually taught, once it existed:
 
-- It is the first thing to touch the **beat economy** rather than sight or sound. Every
-  rule so far answers "can they see or hear me"; water answers "how much is this route
-  worth", which is a different question and the one a second cellar needs.
-- It is cheap and true to the game: one tile kind, one line in the step, no new state
-  for the solver to carry — par simply counts differently, so every existing test, room
-  and ablation keeps working.
-- It cuts both ways on its own. A fox cannot follow, so water is safety; you are slow in
-  it, so water is exposure. That is the same shape as the ears (see and be seen) and the
-  carrot (distract or darken), which is why those two carried a cellar between them.
-- The route generator already knows how to lay a gate on a corridor; a water gate is a
-  corridor that costs double, and the ablation is the one it already runs — dry floor in
-  its place, and how many beats that saves.
+- **The beat economy is a real second axis.** Every rule before it answers "can they see
+  or hear me". Water answers "how much is this route worth", and the two rooms it made
+  are the only two in the cellar whose question is arithmetic. That was the bet, and it
+  paid.
+- **But one tile is not a spine.** The wade is a choice between two prices and the flood
+  is a tax you cannot refuse, and that is the whole of what a single tile can ask. A
+  cellar needs a rule that keeps producing questions after the third room, and water
+  produced two.
+- **What made the pair work was not the tile but the clock.** A wade moves the world
+  twice while Randy moves once, so what actually changes is *when* he arrives. The
+  interesting half of water is the patrol phase it shifts, not the beats it spends.
 
-What it would need: a `water` tile (Randy yes, fox no, light yes, sight yes), a step onto
-it costing two beats — which means `beat()` returning how many beats it consumed, the one
-piece of the rulebook that assumes one — and a `KIND=water` search. Half a day, and the
-half that matters is the beat count, because everything that reads `world.beats` (par,
-records, the map, the ending) has to keep meaning the same thing.
+So the candidate for a second cellar is no longer a tile but that clock, used on purpose:
+a cellar where **the guards are on a longer loop than the room is wide**, so a room cannot
+be read in one pass and the question is always "where will it be in six beats", not "can
+it see me now". Nothing new is needed in the rulebook for it — patrols already walk any
+closed loop, and `fewestSightings` already prices the answer. What it would need is a
+generator kind that builds long loops and a way to *show* a loop the player has not walked
+yet, which the ears already half do: with them up you see a fox's next two steps, and a
+cellar built on timing would want that number to be its main dial.
 
 Two of the ideas below are now built — kept in the table with what they actually cost, so
 the next estimate has something to stand on.
