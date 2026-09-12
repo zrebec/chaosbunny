@@ -12,6 +12,7 @@
  * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
+ * - H on the loaded picture: the rules the rooms are built on
  * - C: the cellar map, where the arrows pick a room — from the loaded picture or from
  *   inside a room, where Esc puts you back exactly where you left off
  * - (after a win, any key goes on to the next room)
@@ -371,6 +372,16 @@ window.addEventListener('keydown', (e) => {
     return
   }
   // The sound bench: each key plays its own sound, Esc goes back to the picture.
+  if (phase === 'title' && titleMode === 'rules') {
+    titleMode = 'ready'
+    resetInput()
+    return
+  }
+  if (phase === 'title' && titleMode === 'ready' && (e.key === 'h' || e.key === 'H')) {
+    titleMode = 'rules'
+    resetInput()
+    return
+  }
   if (phase === 'title' && titleMode === 'sound') {
     if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
       pauseMusic() // the bench is for the beeper; the hum stops when you leave
@@ -501,7 +512,7 @@ function frame(now: number): void {
     phaseMs += dt
     consumeAnyKey() // the map's keys are handled on keydown; nothing here may advance it
   } else if (phase === 'title') {
-    if (titleMode === 'sound') {
+    if (titleMode === 'sound' || titleMode === 'rules') {
       setBorder(null, now)
       renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL)
       requestAnimationFrame(frame)

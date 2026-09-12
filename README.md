@@ -35,7 +35,8 @@ owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
 | `M` | The cellar hum on / off |
 | `R` | Start the room again |
 | `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) |
-| `S` (on the loaded picture) | The sound bench: twelve sounds on twelve keys |
+| `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum |
+| `H` (on the loaded picture) | What the cellar knows: the rules the rooms are built on |
 | `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
 
 On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it) and

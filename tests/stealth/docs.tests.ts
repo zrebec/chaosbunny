@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
+import designDoc from '../../docs/stealth-design.md?raw'
+import readme from '../../README.md?raw'
+import roadmap from '../../docs/ROADMAP.md?raw'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { LOCALES } from '../../src/stealth/strings.js'
 
@@ -15,10 +17,9 @@ const REGENERATE = `run \`KIND=ladder npm run roomgen\` and paste the table into
 interface Row { readonly place: number; readonly name: string; readonly id: string; readonly par: number }
 
 function tableRows(): Row[] {
-  const doc = readFileSync(DOC, 'utf8')
-  return doc
+  return designDoc
     .split('\n')
-    .map((line) => /^\| (\d+) \| ([^|]+) \| `([^`]+)` \| (\d+) \|/.exec(line))
+    .map((line: string) => /^\| (\d+) \| ([^|]+) \| `([^`]+)` \| (\d+) \|/.exec(line))
     .filter((m): m is RegExpExecArray => m !== null)
     .map((m) => ({ place: Number(m[1]), name: m[2]!.trim(), id: m[3]!, par: Number(m[4]) }))
 }
@@ -55,8 +56,7 @@ describe('the documents that count the rooms', () => {
     'nineteen', 'twenty',
   ]
 
-  it.each(['README.md', 'docs/ROADMAP.md'])('%s says how many rooms there really are', (file) => {
-    const text = readFileSync(file, 'utf8')
+  it.each([['README.md', readme], ['docs/ROADMAP.md', roadmap]])('%s says how many rooms there really are', (file, text) => {
     const counts = [...text.matchAll(/\*{0,2}(\w+) rooms\*{0,2}/g)]
       .map((m) => WORDS.indexOf(m[1]!.toLowerCase()))
       .filter((n) => n > 0)

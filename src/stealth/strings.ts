@@ -43,6 +43,9 @@ export interface Strings {
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
   readonly replayHint: (withBest: boolean) => string
   readonly replaying: string
+  /** The rules screen: `H` on the loaded picture. One line a rule, in the order taught. */
+  readonly rulesTitle: string
+  readonly rules: readonly string[]
   /** The sound bench: its title, the name of each sound in key order, and how to leave. */
   readonly soundTitle: string
   readonly soundNames: readonly string[]
@@ -113,6 +116,20 @@ const EN: Strings = {
     'AND THE CARROT HE NEVER FOUND.',
   ],
   wholeCellar: (n) => `THE WHOLE CELLAR: ${n} BEATS`,
+  rulesTitle: 'WHAT THE CELLAR KNOWS',
+  rules: [
+    'EARS UP: YOU SEE THE CONES',
+    'EARS DOWN: THE DARK HIDES YOU',
+    'AND ONLY FOR TWO STEPS',
+    'A ? IS A WARNING. A SECOND',
+    'SIGHTING IN A ROW IS THE END',
+    'A CRATE HIDES LOWERED EARS ONLY',
+    'A CARROT FLIES 3, IS HEARD 5',
+    'LIGHT KILLS SHADOW',
+    'A BOARD CREAKS EITHER WAY',
+    'A BAT HEARS EARS-UP STEPS',
+    'WATER COSTS TWO BEATS A STEP',
+  ],
   soundTitle: 'THE SOUND BENCH',
   soundNames: [
     'STEP', 'EARS', 'THROW', 'CARROT LANDS', 'LAMP OUT', 'CREAK',
@@ -175,6 +192,20 @@ const SK: Strings = {
     'NIKDY NENASIEL.',
   ],
   wholeCellar: (n) => `CELA PIVNICA: ${n} BEATOV`,
+  rulesTitle: 'CO VIE PIVNICA',
+  rules: [
+    'USI HORE: VIDIS KUZELE',
+    'USI DOLE: TMA TA SKRYJE,',
+    'ALE LEN NA DVA KROKY',
+    '? JE VAROVANIE. DRUHE ZBADANIE',
+    'HNED PO NOM JE KONIEC',
+    'DEBNA KRYJE LEN SKLOPENE USI',
+    'MRKVA LETI 3, POCUT JU NA 5',
+    'SVETLO RUSI TIEN',
+    'DOSKA VRZGNE TAK CI TAK',
+    'NETOPIER POCUJE USI HORE',
+    'VODA STOJI DVA BEATY ZA KROK',
+  ],
   soundTitle: 'SKUSOBNA ZVUKOV',
   soundNames: [
     'KROK', 'USI', 'HOD', 'DOPAD MRKVY', 'SKLO LAMPY', 'VRZGNUTIE',

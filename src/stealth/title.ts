@@ -12,6 +12,8 @@
  *    whole climb took if every room has a record.
  * 6. `sound` — the bench: every sound in the game on a key of its own, for tuning by
  *    ear. `S` from the picture, Esc back.
+ * 7. `rules` — the ten lines the rooms are built on, for a player who forgot one.
+ *    `H` from the picture, Esc back.
  *
  * The screen is a native `.scr` inlined by `scripts/screen-import.mjs` and decoded
  * with zx-kit's `parseSCR`; both finished looks are drawn once to offscreen layers
@@ -26,7 +28,7 @@ import { loadStateAt, screenRowOfMemoryRow, type LoadPhase } from './loader.js'
 import { SOUND_BENCH } from './sound.js'
 import type { Strings } from './strings.js'
 
-export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound'
+export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound' | 'rules'
 
 export interface Title {
   /** The bitmap alone, white ink on black paper — what a screen shows before its attributes arrive. */
@@ -92,6 +94,12 @@ export function renderTitle(
     const s = loadStateAt(loadMs)
     for (let m = 0; m < s.memoryRows; m++) rows(ctx, title.mono, screenRowOfMemoryRow(m), 1)
     for (let r = 0; r < s.attrRows; r++) rows(ctx, title.colour, r * 8, 8)
+    return
+  }
+  if (mode === 'rules') {
+    drawTextCentered(ctx, str.rulesTitle, 16, 32, C.B_CYAN, C.BLACK)
+    str.rules.forEach((line, i) => drawTextCentered(ctx, line, 40 + i * 12, 32, C.B_WHITE, C.BLACK))
+    drawTextCentered(ctx, str.soundHint.split(' - ').at(-1) ?? 'ESC', 176, 32, C.WHITE, C.BLACK)
     return
   }
   if (mode === 'sound') {
