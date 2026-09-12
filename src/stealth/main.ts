@@ -12,7 +12,8 @@
  * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
- * - H on the loaded picture: the rules the rooms are built on
+ * - H: the rules the rooms are built on — from the picture or from inside a room,
+ *   where any key puts you back on the beat you left
  * - C: the cellar map, where the arrows pick a room — from the loaded picture or from
  *   inside a room, where Esc puts you back exactly where you left off
  * - (after a win, any key goes on to the next room)
@@ -119,6 +120,8 @@ let mapPick = 0
 let escaped = false
 /** Where Esc goes from the map: back to the picture, or back into the room being played. */
 let mapBack: 'title' | 'room' = 'title'
+/** The same for the rules screen, which a stuck player wants without losing the room. */
+let rulesBack: 'title' | 'room' = 'title'
 let toast: { text: string; ms: number } | null = null
 const TOAST_MS = 1400
 
@@ -373,11 +376,15 @@ window.addEventListener('keydown', (e) => {
   }
   // The sound bench: each key plays its own sound, Esc goes back to the picture.
   if (phase === 'title' && titleMode === 'rules') {
-    titleMode = 'ready'
+    // Any key leaves; a player who came from a room lands back on the beat they left.
+    if (rulesBack === 'room') phase = 'play'
+    else titleMode = 'ready'
     resetInput()
     return
   }
-  if (phase === 'title' && titleMode === 'ready' && (e.key === 'h' || e.key === 'H')) {
+  if ((e.key === 'h' || e.key === 'H') && (phase === 'play' || (phase === 'title' && titleMode === 'ready'))) {
+    rulesBack = phase === 'play' ? 'room' : 'title'
+    phase = 'title'
     titleMode = 'rules'
     resetInput()
     return
