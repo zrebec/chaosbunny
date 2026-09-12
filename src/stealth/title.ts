@@ -10,6 +10,8 @@
  *    before it let you play. A key from here starts the first room.
  * 5. `ending` — the night air, once the last cellar is behind him, with the beats the
  *    whole climb took if every room has a record.
+ * 6. `sound` — the bench: every sound in the game on a key of its own, for tuning by
+ *    ear. `S` from the picture, Esc back.
  *
  * The screen is a native `.scr` inlined by `scripts/screen-import.mjs` and decoded
  * with zx-kit's `parseSCR`; both finished looks are drawn once to offscreen layers
@@ -21,9 +23,10 @@ import {
 } from 'zx-kit'
 import { CHAOSBUNNY_STEALTH_LOADING_SCR } from '../art/zx/chaosbunny-stealth-loading.js'
 import { loadStateAt, screenRowOfMemoryRow, type LoadPhase } from './loader.js'
+import { SOUND_BENCH } from './sound.js'
 import type { Strings } from './strings.js'
 
-export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending'
+export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound'
 
 export interface Title {
   /** The bitmap alone, white ink on black paper — what a screen shows before its attributes arrive. */
@@ -87,6 +90,16 @@ export function renderTitle(
     const s = loadStateAt(loadMs)
     for (let m = 0; m < s.memoryRows; m++) rows(ctx, title.mono, screenRowOfMemoryRow(m), 1)
     for (let r = 0; r < s.attrRows; r++) rows(ctx, title.colour, r * 8, 8)
+    return
+  }
+  if (mode === 'sound') {
+    drawTextCentered(ctx, str.soundTitle, 16, 32, C.B_CYAN, C.BLACK)
+    SOUND_BENCH.forEach((sound, i) => {
+      const x = i % 2 === 0 ? 16 : 136
+      const y = 40 + Math.floor(i / 2) * 16
+      drawText(ctx, `${sound.key} ${str.soundNames[i] ?? ''}`, x, y, C.B_WHITE, C.BLACK)
+    })
+    drawTextCentered(ctx, str.soundHint, 168, 32, C.WHITE, C.BLACK)
     return
   }
   // Two colours and the ROM font: the screens a cassette game gave you at either end.

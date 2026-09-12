@@ -8,7 +8,7 @@
  * - X or F (gamepad A): aim a carrot, then an arrow throws it that way; X or Esc cancels
  * - Space: wait a beat
  * - U: take the last beat back (and, while a fox has you, the one that lost the room)
- * - M: the cellar hum on or off
+ * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
  * - (after a win, any key goes on to the next room)
@@ -36,7 +36,7 @@ import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom } from './room.js'
 import { ROOM_SOURCES } from './rooms/index.js'
-import { playBlocked, playEvents, playTape, playUndo, stopTape } from './sound.js'
+import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape } from './sound.js'
 import { roomLabel, STR } from './strings.js'
 import { loadStateAt } from './loader.js'
 import { renderCellar } from './cellar.js'
@@ -296,6 +296,18 @@ const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab']
 
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return
+  // The sound bench: each key plays its own sound, Esc goes back to the picture.
+  if (phase === 'title' && titleMode === 'sound') {
+    if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') titleMode = 'ready'
+    else SOUND_BENCH.find((s) => s.key === e.key.toUpperCase())?.play()
+    resetInput()
+    return
+  }
+  if (phase === 'title' && titleMode === 'ready' && (e.key === 's' || e.key === 'S')) {
+    titleMode = 'sound'
+    resetInput()
+    return
+  }
   const digit = e.key === '0' ? 10 : Number(e.key) // 0 is the tenth room, as on a Spectrum menu
   if (Number.isInteger(digit) && digit >= 1 && digit <= ROOMS.length) {
     goToRoom(digit - 1)
@@ -386,6 +398,12 @@ function frame(now: number): void {
       else goToRoom(roomIndex + 1)
     }
   } else if (phase === 'title') {
+    if (titleMode === 'sound') {
+      setBorder(null, now)
+      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length)
+      requestAnimationFrame(frame)
+      return // its keys are handled on keydown, so no key may advance the title here
+    }
     if (titleMode === 'loading') {
       loadMs += dt
       if (loadStateAt(loadMs).phase === 'done') titleMode = 'ready'

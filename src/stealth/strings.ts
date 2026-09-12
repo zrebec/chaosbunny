@@ -43,6 +43,10 @@ export interface Strings {
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
   readonly replayHint: (withBest: boolean) => string
   readonly replaying: string
+  /** The sound bench: its title, the name of each sound in key order, and how to leave. */
+  readonly soundTitle: string
+  readonly soundNames: readonly string[]
+  readonly soundHint: string
   /** The map between rooms: its title, and how to leave it. */
   readonly cellar: string
   readonly cellarHint: string
@@ -97,6 +101,12 @@ const EN: Strings = {
     'AND THE CARROT HE NEVER FOUND.',
   ],
   wholeCellar: (n) => `THE WHOLE CELLAR: ${n} BEATS`,
+  soundTitle: 'THE SOUND BENCH',
+  soundNames: [
+    'STEP', 'EARS', 'THROW', 'CARROT LANDS', 'LAMP OUT', 'CREAK',
+    'LEVER', 'PICKUP', 'SPOTTED', 'CAUGHT', 'BAT', 'ESCAPED',
+  ],
+  soundHint: 'ESC: BACK',
   cellar: 'THE CELLAR',
   cellarHint: 'ANY KEY: ON',
   roomNames: [
@@ -149,6 +159,12 @@ const SK: Strings = {
     'NIKDY NENASIEL.',
   ],
   wholeCellar: (n) => `CELA PIVNICA: ${n} BEATOV`,
+  soundTitle: 'SKUSOBNA ZVUKOV',
+  soundNames: [
+    'KROK', 'USI', 'HOD', 'DOPAD MRKVY', 'SKLO LAMPY', 'VRZGNUTIE',
+    'PAKA', 'ZOBRAL MRKVU', 'VSIMOL SI TA', 'CHYTENY', 'NETOPIER', 'PREKLZOL',
+  ],
+  soundHint: 'ESC: SPAT',
   cellar: 'PIVNICA',
   cellarHint: 'KLAVESA: DALEJ',
   roomNames: [

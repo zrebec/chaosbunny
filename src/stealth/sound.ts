@@ -76,6 +76,27 @@ export function playEvents(events: readonly BeatEvent[]): void {
   }
 }
 
+/**
+ * The sounds, one key each, for the screen that plays them back to back (`title.ts`,
+ * mode `sound`). Tuning a beeper means hearing two of them next to each other, which
+ * is hard to do while playing — so this is the tuning bench: every number that makes
+ * a sound is in `playEvents` above, and this list is how you audition a change.
+ */
+export const SOUND_BENCH: ReadonlyArray<{ readonly key: string; readonly play: () => void }> = [
+  { key: '1', play: () => playEvents([{ type: 'step' }]) },
+  { key: '2', play: () => playEvents([{ type: 'ears', down: true }]) },
+  { key: '3', play: () => playEvents([{ type: 'throw', from: { x: 0, y: 0 }, to: { x: 0, y: 0 } }]) },
+  { key: '4', play: () => playEvents([{ type: 'heard', fox: 0 }]) },
+  { key: '5', play: () => playEvents([{ type: 'lampOut', lamp: 0, at: { x: 0, y: 0 } }]) },
+  { key: '6', play: () => playEvents([{ type: 'creak', at: { x: 0, y: 0 } }]) },
+  { key: '7', play: () => playEvents([{ type: 'lever', at: { x: 0, y: 0 }, open: true }]) },
+  { key: '8', play: () => playEvents([{ type: 'pickup', at: { x: 0, y: 0 } }]) },
+  { key: '9', play: () => playEvents([{ type: 'suspicious', fox: 0 }]) },
+  { key: '0', play: () => playEvents([{ type: 'caught', fox: 0, why: 'seen' }]) },
+  { key: 'A', play: () => playEvents([{ type: 'batHeard', bat: 0 }]) },
+  { key: 'B', play: () => playEvents([{ type: 'won' }]) },
+]
+
 /** A step into a wall, or a throw with nowhere to go: a dull knock, and no beat. */
 export function playBlocked(): void {
   blip(110, 40, 0, 0.3)
