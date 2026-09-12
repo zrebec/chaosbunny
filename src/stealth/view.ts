@@ -72,7 +72,8 @@ export interface Scene {
   readonly number: number
   readonly roomLayer: LayerCache
   readonly dimLayer: LayerCache
-  readonly glowLayer: GlowLayer
+  /** Only rooms with a lamp carry one; the rest never draw a halo. */
+  readonly glowLayer: GlowLayer | null
   /** The lamps the cached room was drawn with; when the world's differ, it is redrawn. */
   lamps: number
   /** The same for the grates: shut or open in the cached picture. */
@@ -130,27 +131,40 @@ function drawRoom(scene: Scene, lamps: number, pulled: boolean): void {
   })
 }
 
+/**
+ * The 50% checker is the same picture in every room, so every room shares one — with
+ * sixteen of them, sixteen private copies were sixteen canvases doing one canvas's work.
+ */
+let sharedDim: LayerCache | null = null
+
+function dimLayer(): LayerCache {
+  if (!sharedDim) {
+    sharedDim = createLayerCache(PLAY_W, PLAY_H)
+    refreshLayer(sharedDim, (ctx) => {
+      ctx.fillStyle = C.BLACK
+      for (let y = 0; y < PLAY_H; y++) for (let x = y % 2; x < PLAY_W; x += 2) ctx.fillRect(x, y, 1, 1)
+    })
+  }
+  return sharedDim
+}
+
 export function createScene(room: Room, number: number): Scene {
   const roomLayer = createLayerCache(PLAY_W, PLAY_H)
-  // A 50% black checker over the play area — how the room dims when caught or out.
-  const dimLayer = createLayerCache(PLAY_W, PLAY_H)
-  refreshLayer(dimLayer, (ctx) => {
-    ctx.fillStyle = C.BLACK
-    for (let y = 0; y < PLAY_H; y++) for (let x = y % 2; x < PLAY_W; x += 2) ctx.fillRect(x, y, 1, 1)
-  })
-  // The bloom is emissive only — nothing else in the room is drawn into it, so a
-  // room without lamps never touches it (zx-kit's glow, the additive twin of lighting).
-  const glowLayer = createGlowLayer(PLAY_W, PLAY_H, { downscale: 4, alpha: 0.55 })
-  const scene: Scene = { room, number, roomLayer, dimLayer, glowLayer, lamps: allLampsOn(room), pulled: false }
+  // The bloom is emissive only — nothing else in the room is drawn into it, so a room
+  // without lamps does not need one at all (zx-kit's glow, the additive twin of lighting).
+  const glowLayer = room.lamps.length > 0 ? createGlowLayer(PLAY_W, PLAY_H, { downscale: 4, alpha: 0.55 }) : null
+  const scene: Scene = {
+    room, number, roomLayer, dimLayer: dimLayer(), glowLayer, lamps: allLampsOn(room), pulled: false,
+  }
   drawRoom(scene, scene.lamps, false)
   return scene
 }
 
 /** The halo of every burning lamp, added over the finished room. */
 function drawGlow(ctx: CanvasRenderingContext2D, scene: Scene, world: World): void {
-  const { room } = scene
-  if (!room.lamps.some((_, i) => lampOn(world.lamps, i))) return
-  renderGlow(scene.glowLayer, ctx, (g) => {
+  const { room, glowLayer } = scene
+  if (!glowLayer || !room.lamps.some((_, i) => lampOn(world.lamps, i))) return
+  renderGlow(glowLayer, ctx, (g) => {
     room.lamps.forEach((lamp, i) => {
       if (!lampOn(world.lamps, i)) return
       drawGlowSource(g, { x: lamp.x * TILE + TILE / 2, y: lamp.y * TILE + 5, radius: 30, color: C.B_YELLOW, intensity: 0.9 })
