@@ -36,7 +36,7 @@ import {
 } from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
 import { BAT_HEARING } from './bat.js'
-import { beat, startWorld, type Action, type World } from './beat.js'
+import { beat, startWorld, type Action, type BeatEvent, type World } from './beat.js'
 import { manhattan } from './grid.js'
 import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
@@ -109,7 +109,7 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
  * The rules the game states nowhere else, each said once per visit to a room, at the
  * moment it first matters. A player who already knows them never sees them twice.
  */
-const hinted = { spotted: false, shadow: false, bat: false }
+const hinted = { spotted: false, shadow: false, bat: false, water: false }
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -141,8 +141,13 @@ function say(text: string): void {
  * things a player can stand in the middle of without being told: the dark only hides
  * lowered ears, and a bat hears the ones that are up.
  */
-function hint(world: World): void {
+function hint(world: World, events: readonly BeatEvent[]): void {
   const randy = world.randy
+  if (!hinted.water && events.some((e) => e.type === 'wade')) {
+    hinted.water = true
+    say(STR.waterHint)
+    return
+  }
   if (!hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
     hinted.spotted = true
     say(STR.spottedHint)
@@ -204,6 +209,7 @@ function goToRoom(i: number): void {
   hinted.spotted = false
   hinted.shadow = false
   hinted.bat = false
+  hinted.water = false
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
   say(roomLabel(STR, roomIndex))
 }
@@ -301,7 +307,7 @@ function play(action: Action): void {
     return
   }
   playEvents(r.events)
-  if (r.outcome === 'ok') hint(r.world)
+  if (r.outcome === 'ok') hint(r.world, r.events)
   runActions.push(action)
   history.push(world)
   prev = world

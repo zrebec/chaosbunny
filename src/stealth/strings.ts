@@ -65,6 +65,8 @@ export interface Strings {
   readonly shadowHint: string
   /** Said once, the first time a roosting bat is close enough to hear him walk. */
   readonly batHint: string
+  /** Said once, the first time he puts a foot in the water. */
+  readonly waterHint: string
   /** Short lines that appear over the room for a moment. */
   readonly roomToast: (n: number) => string
   readonly musicOn: string
@@ -127,6 +129,7 @@ const EN: Strings = {
   spottedHint: 'SPOTTED - HIDE THIS BEAT',
   shadowHint: 'THE DARK HIDES EARS DOWN ONLY',
   batHint: 'THE BAT HEARS EARS-UP STEPS',
+  waterHint: 'WADING COSTS TWO BEATS A STEP',
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
@@ -188,6 +191,7 @@ const SK: Strings = {
   spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
   shadowHint: 'TIEN SKRYJE LEN SKLOPENE USI',
   batHint: 'NETOPIER POCUJE KROKY S USAMI',
+  waterHint: 'BRODENIE STOJI DVA BEATY',
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',

@@ -252,9 +252,9 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    under the hill, Randy went in for one carrot, the door shut. So many cellars to the
    night air (the screen counts them, so a new room cannot make it lie) — and, once the
    last one is behind him, the grass, with the beats the whole cellar took.
-3. ~~**The rules a player cannot see**~~ — three of them are now said once each, at the
+3. ~~**The rules a player cannot see**~~ — four of them are now said once each, at the
    beat they first bite: a `?` is a warning and not a capture, the dark hides only
-   lowered ears, and a bat hears the ones that are up. This list came from a real player
+   lowered ears, a bat hears the ones that are up, and wading costs two beats a step. This list came from a real player
    stuck in a room that was provably passable: **anything the game expects and never
    says is a bug in the teaching, not in the player.**
 4. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
