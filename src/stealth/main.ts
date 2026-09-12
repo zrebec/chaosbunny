@@ -31,11 +31,13 @@
  */
 import { consumeAnyKey, consumeFlag, initInput, resetInput, SCALE, setupCanvas, tickMovement } from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
+import { BAT_HEARING } from './bat.js'
 import { beat, startWorld, type Action, type World } from './beat.js'
+import { manhattan } from './grid.js'
 import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
-import { parseRoom } from './room.js'
+import { parseRoom, tileAt } from './room.js'
 import { ROOM_SOURCES } from './rooms/index.js'
 import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape } from './sound.js'
 import { roomLabel, STR } from './strings.js'
@@ -99,8 +101,11 @@ let wonWorld: World | null = null
  */
 const history: World[] = []
 let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: number } | null = null
-/** Whether this visit to a room has already said what a `?` means. */
-let spottedHinted = false
+/**
+ * The rules the game states nowhere else, each said once per visit to a room, at the
+ * moment it first matters. A player who already knows them never sees them twice.
+ */
+const hinted = { spotted: false, shadow: false, bat: false }
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -122,6 +127,31 @@ function wholeCellarBeats(): number | null {
 
 function say(text: string): void {
   toast = { text, ms: TOAST_MS }
+}
+
+/**
+ * Says a rule the moment it first bites, and only then. The `?` is the one that cost a
+ * player a room: being noticed is a warning, not a capture. The other two are the
+ * things a player can stand in the middle of without being told: the dark only hides
+ * lowered ears, and a bat hears the ones that are up.
+ */
+function hint(world: World): void {
+  const randy = world.randy
+  if (!hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
+    hinted.spotted = true
+    say(STR.spottedHint)
+    return
+  }
+  if (!hinted.shadow && !randy.earsDown && tileAt(room, randy.cell) === 'shadow') {
+    hinted.shadow = true
+    say(STR.shadowHint)
+    return
+  }
+  const heard = world.bats.some((b) => b.mode === 'roost' && manhattan(b.cell, randy.cell) <= BAT_HEARING)
+  if (!hinted.bat && !randy.earsDown && heard) {
+    hinted.bat = true
+    say(STR.batHint)
+  }
 }
 let titleMode: TitleMode = 'prompt'
 let loadMs = 0
@@ -165,7 +195,9 @@ function goToRoom(i: number): void {
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
-  spottedHinted = false
+  hinted.spotted = false
+  hinted.shadow = false
+  hinted.bat = false
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
   say(roomLabel(STR, roomIndex))
 }
@@ -263,12 +295,7 @@ function play(action: Action): void {
     return
   }
   playEvents(r.events)
-  // The first `?` of a room is the one rule the game never told anyone: it is a warning,
-  // not a capture. Say it once, where it happens.
-  if (!spottedHinted && r.outcome === 'ok' && r.events.some((e) => e.type === 'suspicious')) {
-    spottedHinted = true
-    say(STR.spottedHint)
-  }
+  if (r.outcome === 'ok') hint(r.world)
   runActions.push(action)
   history.push(world)
   prev = world

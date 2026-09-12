@@ -61,6 +61,10 @@ export interface Strings {
    * game ever says so.
    */
   readonly spottedHint: string
+  /** Said once, the first time Randy stands in the dark with his ears up. */
+  readonly shadowHint: string
+  /** Said once, the first time a roosting bat is close enough to hear him walk. */
+  readonly batHint: string
   /** Short lines that appear over the room for a moment. */
   readonly roomToast: (n: number) => string
   readonly musicOn: string
@@ -121,6 +125,8 @@ const EN: Strings = {
     'THE HANDLE', 'THE LONG WAY ROUND', 'THE WINDOW', 'THE ROOST',
   ],
   spottedHint: 'SPOTTED - HIDE THIS BEAT',
+  shadowHint: 'THE DARK HIDES EARS DOWN ONLY',
+  batHint: 'THE BAT HEARS EARS-UP STEPS',
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
@@ -180,6 +186,8 @@ const SK: Strings = {
     'PAKA', 'OKLUKA', 'OKNO', 'HNIEZDO',
   ],
   spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
+  shadowHint: 'TIEN SKRYJE LEN SKLOPENE USI',
+  batHint: 'NETOPIER POCUJE KROKY S USAMI',
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',
