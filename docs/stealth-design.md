@@ -42,14 +42,15 @@ either cannot be finished or collapses to something much shorter.
 | 11 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
 | 12 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 | 13 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
+| 14 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
 
 The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
 room's name is only the key its record is filed under, so the second room is `room1b`.
 
-Where the ladder should go next (a proposal, not a promise):
-
-14. **A decision**: two plans that cost the same — a room with no single "right"
-    answer. The search for it now exists and has not found one yet; see below.
+Where the ladder should go next: nothing is queued. Every idea in §5 that was worth
+building is built, and the last of them — the decision room — took a change of shape
+rather than another search. What is left is play: rooms are cheap now, so the next ones
+should come from what the game turns out to need, not from what the generator can make.
 
 ## 3. The rules that already hold, one line each
 
@@ -84,19 +85,24 @@ Where the ladder should go next (a proposal, not a promise):
    and the test fails until the numbers are recomputed. (That is exactly what caught
    the move to `SNEAK_STEPS = 2`.)
 
-**The decision room, and why there is not one yet.** Every way out either leaves the
-lamps burning or puts one out, so `solve({lamps: false})` and `solve({lampsOut: true})`
-are the two halves of a room's plans and their pars say what it really offers: far
-apart is a right answer and a wrong one, close together is a choice. `KIND=decision`
-keeps rooms where they tie within two beats and the carrot is needed at all.
+**The decision room, and what it took.** Every way out either leaves the lamps burning
+or puts one out, so `solve({lamps: false})` and `solve({lampsOut: true})` are the two
+halves of a room's plans and their pars say what it really offers: far apart is a right
+answer and a wrong one, close together is a choice.
 
-Searched: 2500 seeds with the extra requirement that the room also **press** (need the
-ears, or notice even the most careful player) — nothing. Two rooms tie without pressing;
-a thin room is worse than none, so neither shipped. One hand-drawn attempt failed for a
-reason worth keeping: **putting a lamp out is a noise, and the noise pulls the very
-guard the dark was meant to hide you from**. A room where darkening is a real option
-has to give that guard somewhere else to be, or give Randy somewhere to be while it
-comes and looks.
+Two searches for that on the shape-rolling generator found nothing in 2500 seeds, and a
+hand-drawn attempt failed for a reason worth keeping: **putting a lamp out is a noise,
+and the noise pulls the very guard the dark was meant to hide you from.** What finally
+worked was neither — it was digging the last corridor **twice**, once round each corner,
+so the room has two ways and neither is a bridge (`KIND=fork`). Six rooms in six thousand
+seeds, in fourteen seconds; room14 is one of them.
+
+The fork also caught a bug that had been hiding in plain sight: the planner's structural
+check asked whether the door could still be reached with a cell cut, and its idea of a
+walkable cell did not include the door. So it answered "no" for every room and passed
+every shape. The chain rooms were bridges by construction and each one's test proves its
+own ablation, so nothing that shipped was wrong — but **a check that cannot fail is not a
+check**, and the fork could not be built until it worked.
 
 **Two things at once is rarer still — until you stop rolling dice.** `KIND=lampboard`
 asks for a room where the lamp makes it impossible *and* the plank costs four beats or
