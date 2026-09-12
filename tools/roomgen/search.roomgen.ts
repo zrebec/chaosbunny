@@ -3,6 +3,8 @@
  * thing being looked for is the reason the room is hard.
  *
  * ```bash
+ * KIND=ladder npm run roomgen              # mark the rooms that ship, in play order,
+ *   and print the table — the numbers in docs/stealth-design.md come from here
  * npm run roomgen                          # general rooms that need the ears
  * KIND=gentle npm run roomgen              # a short room whose only lesson is that a
  *   `?` is survivable: it must be seen exactly once, and needs neither ears nor carrot
@@ -37,9 +39,10 @@ import { generate, withTiles, type Candidate } from './gen.js'
 import { generateRoute, type Gate } from './route.js'
 import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
+import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'gentle' | 'dribble' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route' | 'fork'
+type Kind = 'ladder' | 'plain' | 'gentle' | 'dribble' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route' | 'fork'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -303,7 +306,35 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
   return m.noEars === null ? { src, marks: m, score: m.par!, note: 'the ears are needed' } : null
 }
 
+/** Marks the shipped ladder and prints it as a table. Numbers, never a way through. */
+function markLadder(): string {
+  const rows = ROOM_SOURCES.map((src, i) => {
+    const m = mark(src, 500_000)
+    if (!m) return `| ${i + 1} | ${src.name} | — | — | could not be marked |`
+    const needs = [
+      m.noEars === null ? 'ears' : '',
+      m.noThrow === null && (src.carrots ?? 0) + (src.rows.join('').split('c').length - 1) > 0 ? 'carrot' : '',
+      m.lamps > 0 && m.lampsOn === null ? 'the dark' : '',
+    ].filter(Boolean)
+    return `| ${i + 1} | ${src.name} | ${m.par} | ${m.fewest} | ${needs.join(' + ') || '—'} |`
+  })
+  return [
+    `The ladder as the solver sees it, ${new Date().toISOString().slice(0, 10)}.`,
+    '',
+    '| # | id | par | fewest ? | cannot be done without |',
+    '|---|---|---:|---:|---|',
+    ...rows,
+  ].join('\n')
+}
+
 test(`roomgen: ${KIND}`, () => {
+  if (KIND === 'ladder') {
+    const report = markLadder()
+    fs.mkdirSync(path.dirname(OUT), { recursive: true })
+    fs.writeFileSync(OUT, report)
+    console.log(report)
+    return
+  }
   const t0 = Date.now()
   const hits: Hit[] = []
   let seen = 0

@@ -45,6 +45,27 @@ either cannot be finished or collapses to something much shorter.
 | 14 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
 | 15 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 
+And the same ladder as the solver sees it — regenerate with `KIND=ladder npm run roomgen`
+rather than editing by hand, because these numbers are the room, not the prose:
+
+| # | id | par | fewest ? | cannot be done without |
+|---|---|---:|---:|---|
+| 1 | room01 | 13 | 0 | carrot |
+| 2 | room1b | 15 | 1 | — |
+| 3 | room2b | 21 | 1 | ears |
+| 4 | room02 | 30 | 1 | ears + carrot |
+| 5 | room03 | 26 | 2 | ears + carrot |
+| 6 | room04 | 28 | 0 | ears + carrot |
+| 7 | room05 | 35 | 1 | ears + carrot |
+| 8 | room06 | 28 | 2 | ears |
+| 9 | room07 | 22 | 2 | ears + carrot + the dark |
+| 10 | room08 | 35 | 0 | carrot |
+| 11 | room09 | 27 | 2 | ears |
+| 12 | room10 | 28 | 1 | carrot |
+| 13 | room14 | 19 | 0 | carrot |
+| 14 | room12 | 33 | 1 | ears + carrot + the dark |
+| 15 | room11 | 32 | 1 | ears + carrot + the dark |
+
 The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
 room's name is only the key its record is filed under, so the second room is `room1b`.
 
