@@ -37,12 +37,13 @@ either cannot be finished or collapses to something much shorter.
 | 6 | the sentry | the window when a sentry looks away | freeze the sentry: impossible |
 | 7 | the lit corner | **the lamp: light kills shadow** | leave the lamp burning: impossible |
 | 8 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
+| 9 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 
 Where the ladder should go next (a proposal, not a promise):
 
-9. **A decision**: two carrots, two lamps, and two plans that cost the same — a room
-   with no single "right" answer.
-10. **A lever and a grate**: the first switch that changes the room somewhere else.
+10. **A decision**: two carrots, two lamps, and two plans that cost the same — a room
+    with no single "right" answer. It needs no new rule at all, only a search that
+    can tell one plan from another.
 
 ## 3. The rules that already hold, one line each
 
@@ -58,6 +59,7 @@ Where the ladder should go next (a proposal, not a promise):
 | bat | blind; hears the carrot and **ears-up steps** | forces the dark even where there is light |
 | sentry | stands and turns, 2 beats a facing | time as a passage, not as an obstacle |
 | lamp | lights 3 steps out; **light kills shadow**; a carrot puts it out for good | one carrot, two uses, never both |
+| lever and grate | a grate is a wall Randy sees through and a fox never fits through; stepping on the lever works every grate, and works them back | the first thing that changes the room somewhere you are not |
 | creaky board | creaks under Randy's step, ears up or down; heard 3 away, nothing there to find | the first thing the dribble cannot save you from |
 | listening | a fox that hears a creak stands still one beat, then comes | the noise is under Randy's own foot: without the pause it would be one chance, not two |
 
@@ -93,15 +95,16 @@ next estimate has something to stand on.
 |---|---|---|---|---|
 | ~~**Creaky board** `~`~~ **built** | routes get planned; shadow stops being universal | stepping on it is a noise, ears down or not | XS as estimated — one tile, one branch, plus the listening beat play needed | without it, par drops by five or more |
 | ~~**Undo**~~ **built** | the prototype plays like a puzzle, not a reflex game | outside the rules — a stack of worlds in `main.ts` | XS as estimated | — (not a mechanic) |
-| **Lever and grate** | the first switch that changes the room elsewhere | a world bit like the lamps; a shut grate is wall | S | with the grate shut: impossible |
+| ~~**Lever and grate**~~ **built** | the first switch that changes the room elsewhere | a world bit like the lamps; a shut grate is wall | S as estimated — two tiles, a bit of world, a `KIND=lever` search | wall the grate up: impossible |
 | **Two carrots, two lamps** | a decision instead of a puzzle | no new rule at all, only design | S | both plans cost the same par |
 | **Ceiling spider** | punishes long straight corridors taken ears-up | drops when you pass under it with the ears up | S | without it the straight way works |
 | **A candle a fox relights** | the dark is not forever: pressure on tempo | a patrol passing brings the lamp back in N beats | M (lamp state becomes a timer, more states) | without relighting, par drops |
 | **A chain of rooms (the escape)** | the prototype becomes a game: carrots carry over | the world carries `carrots` between rooms | M (records, replay, saves) | — |
 | **A dog on the scent** | a chase; punishes standing still | walks your own cells N beats behind | L (state grows a trail; the solver pays) | — |
 
-My own view was **board → undo → lever**; the first two are done, and the lever is
-still the one that opens a whole class of rooms (and it is a Spectrum classic).
+My own view was **board → undo → lever**, and all three are now done. What the lever
+opens is a class of rooms rather than a single trick: a grate that shuts behind you,
+two grates on one handle, a handle a guard walks past. None of those need new code.
 
 ## 6. What is missing before this is a game
 
