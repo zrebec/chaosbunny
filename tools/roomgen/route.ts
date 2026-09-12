@@ -139,6 +139,85 @@ function lampFor(g: Grid, target: Cell): Cell | null {
   return null
 }
 
+/**
+ * The shape room07 has by accident, built on purpose: a pocket beside the end of a
+ * corridor with a **lamp as the only window in it**. The lamp is solid, so the guard
+ * in the pocket can never walk out and can never be lured by a carrot; it is
+ * transparent to sight and to light, so the guard watches a run of the corridor and
+ * the lamp lights exactly that run. Put the lamp out and the run goes dark; leave it
+ * and the run cannot be crossed.
+ *
+ * Randy needs somewhere safe to throw from, which is why the corridor must run three
+ * cells past the lamp: the third is out of the cone (a cone reaches four) and still
+ * within a carrot's throw (three).
+ *
+ * Returns the lamp and the guard, having carved the pocket, or `null` if the corridor
+ * has no room for one.
+ */
+function carveLampPocket(
+  g: Grid,
+  corridor: readonly Cell[],
+  seed: number,
+): { lamp: Cell; guard: PatrolSource } | null {
+  const dirs: Array<[Cell, Cell]> = [
+    [{ x: 0, y: -1 }, { x: -1, y: 0 }], [{ x: 0, y: -1 }, { x: 1, y: 0 }],
+    [{ x: 0, y: 1 }, { x: -1, y: 0 }], [{ x: 0, y: 1 }, { x: 1, y: 0 }],
+    [{ x: -1, y: 0 }, { x: 0, y: -1 }], [{ x: -1, y: 0 }, { x: 0, y: 1 }],
+    [{ x: 1, y: 0 }, { x: 0, y: -1 }], [{ x: 1, y: 0 }, { x: 0, y: 1 }],
+  ]
+  const add = (a: Cell, b: Cell, k = 1): Cell => ({ x: a.x + b.x * k, y: a.y + b.y * k })
+  const facingOf = (d: Cell): Dir =>
+    d.y < 0 ? 'up' : d.y > 0 ? 'down' : d.x < 0 ? 'left' : 'right'
+
+  for (const c of corridor) {
+    for (const [u, v] of dirs) {
+      // The lamp stands one step off the corridor's end, in what is now wall.
+      const lamp = c
+      if (at(g, lamp) === '#') continue // the lamp replaces a corridor cell's neighbour, not itself
+      const run = [add(lamp, u), add(lamp, u, 2), add(lamp, u, 3)]
+      if (!run.every((r) => corridor.some((q) => sameCell(q, r)) || '.s'.includes(at(g, r)))) continue
+      const pocket = [add(lamp, v), add(add(lamp, v), u, -1), add(add(lamp, v), u, -2), add(lamp, u, -1)]
+      if (!pocket.every((q) => inside(q) && at(g, q) === '#')) continue
+      const before = pocket.map((q) => at(g, q))
+      for (const q of pocket) put(g, q, '.')
+      const wasLamp = at(g, lamp)
+      put(g, lamp, 'L')
+      const guardCell = pocket[2]!
+      const facing = facingOf(u)
+      const src: RoomSource = { name: `route${seed}`, rows: g.map((row) => row.join('')), patrols: [], carrots: 1 }
+      let room
+      try {
+        room = parseRoom(src)
+      } catch {
+        pocket.forEach((q, i) => put(g, q, before[i]!))
+        put(g, lamp, wasLamp)
+        continue
+      }
+      // The guard must be walled in: a fox that can walk to the corridor can be lured,
+      // and then the lamp costs nothing.
+      const reach = new Set<string>([`${guardCell.x},${guardCell.y}`])
+      const queue = [guardCell]
+      for (let head = 0; head < queue.length; head++) {
+        for (const dir of DIRS) {
+          const n = step(queue[head]!, dir)
+          if (reach.has(`${n.x},${n.y}`) || !foxCanEnter(tileAt(room, n))) continue
+          reach.add(`${n.x},${n.y}`)
+          queue.push(n)
+        }
+      }
+      const sealed = !run.some((r) => reach.has(`${r.x},${r.y}`))
+      const seen = visibleCells(room, guardCell, facing, false).filter((sg) => run.some((r) => sameCell(sg.cell, r)))
+      const watched = seen.length >= 2 && seen.every((sg) => sg.forward > 1)
+      const lit = litCells(room, allLampsOn(room))
+      const dark = seen.every((sg) => lit.has(cellIndex(room, sg.cell)))
+      if (sealed && watched && dark) return { lamp, guard: { route: [[guardCell.x, guardCell.y]], facing } }
+      pocket.forEach((q, i) => put(g, q, before[i]!))
+      put(g, lamp, wasLamp)
+    }
+  }
+  return null
+}
+
 export interface RouteOptions {
   /** One gate per corridor, in order from Randy to the door. */
   readonly gates: readonly Gate[]
@@ -220,40 +299,13 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       patrols.push(guard)
       taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
     } else {
-      // dark: the corridor is shadow, a guard watches a run of it, and a lamp spoils
-      // exactly that run — the lamp goes where the eyes are, not where the corridor is.
-      for (const c of corridor) if (at(g, c) === '.') put(g, c, 's')
-      const guard = watcher(src(), corridor, taken)
-      if (!guard) return null
-      const gcell = { x: guard.route[0]![0], y: guard.route[0]![1] }
-      const dressed0 = parseRoom({ name: `route${seed}`, rows: rowsOf(), patrols: [guard], carrots: 1 })
-      const watched = visibleCells(dressed0, gcell, guard.facing!, false)
-        .map((v) => v.cell)
-        .filter((v) => corridor.some((c) => sameCell(c, v)))
-      const lamp = watched.map((c) => lampFor(g, c)).find((c): c is Cell => c !== null)
-      if (!lamp) return null
-      put(g, lamp, 'L')
-      const dressed = parseRoom({ name: `route${seed}`, rows: rowsOf(), patrols: [guard], carrots: 1 })
-      const lit = litCells(dressed, allLampsOn(dressed))
-      if (!watched.every((c) => lit.has(cellIndex(dressed, c)))) return null
-      patrols.push(guard)
-      taken.add(`${gcell.x},${gcell.y}`)
-      // A lamp that can only be reached from inside the cone cannot be put out at all:
-      // the beat spent throwing is a second sighting. Somewhere safe must be able to
-      // hit it — the lesson of the hand-drawn room in docs/stealth-design.md.
-      const cone = new Set(visibleCells(dressed, gcell, guard.facing!, false).map((s2) => `${s2.cell.x},${s2.cell.y}`))
-      const canDouse = corridor.concat(chambers.flat()).some((c) => {
-        if (cone.has(`${c.x},${c.y}`) || !walkable(at(g, c))) return false
-        for (const dir of DIRS) {
-          for (let k = 1; k <= THROW_RANGE; k++) {
-            const t = step(c, dir, k)
-            if (sameCell(t, lamp)) return true
-            if (!walkable(at(g, t))) break
-          }
-        }
-        return false
-      })
-      if (!canDouse) return null
+      // dark: a shadow corridor, and a guard walled into a pocket whose only window
+      // is the lamp — see carveLampPocket. Nothing else makes a lamp worth putting out.
+      for (const c2 of corridor) if (at(g, c2) === '.') put(g, c2, 's')
+      const pocket = carveLampPocket(g, corridor, seed)
+      if (!pocket) return null
+      patrols.push(pocket.guard)
+      taken.add(`${pocket.guard.route[0]![0]},${pocket.guard.route[0]![1]}`)
     }
   }
   if (!patrols.length) return null
