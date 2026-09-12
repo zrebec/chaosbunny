@@ -16,7 +16,7 @@ outline-wing bats, crumbling ledges and a ladder or two. Dark, atmospheric,
 On these branches `index.html` loads **`src/stealth/main.ts`**: chaosBunny is a
 **beat-based tile stealth game** now (owner's call, 2026-09-11). One screen is one
 room, 16×11 tiles, and every action you take moves the whole world one beat. The verb
-is **slip past**: sixteen rooms, each proved solvable by a solver in its own test.
+is **slip past**: seventeen rooms, each proved solvable by a solver in its own test.
 
 The **cave climber** described further down is what `master` still holds; nothing of it
 was deleted, and `src/main.ts` still builds. Which of the two chaosBunny is, is the

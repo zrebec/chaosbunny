@@ -42,9 +42,10 @@ either cannot be finished or collapses to something much shorter.
 | 11 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 | 12 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
 | 13 | the wade | **water**: two beats a cell, and no fox will follow | drained, the room is three beats cheaper; dry, three dearer |
-| 14 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
-| 15 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
-| 16 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
+| 14 | the flood | **water as the only door**: not a choice but a tax with teeth | keep his feet dry: no way out; drained, the room is four beats cheaper |
+| 15 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
+| 16 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
+| 17 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 
 And the same ladder as the solver sees it — regenerate with `KIND=ladder npm run roomgen`
 rather than editing by hand, because these numbers are the room, not the prose:
@@ -61,12 +62,13 @@ rather than editing by hand, because these numbers are the room, not the prose:
 | 8 | the sentry | `room06` | 28 | 2 | ears |
 | 9 | the lit corner | `room07` | 22 | 2 | ears + carrot + the dark |
 | 10 | the plank | `room08` | 35 | 0 | carrot |
-| 11 | the handle | `room09` | 27 | 2 | ears |
-| 12 | the long way round | `room10` | 28 | 1 | carrot |
+| 11 | the handle | `room09` | 27 | 2 | ears + the lever |
+| 12 | the long way round | `room10` | 28 | 1 | carrot + the lever |
 | 13 | the wade | `room16` | 15 | 0 | — |
-| 14 | the fork | `room14` | 19 | 0 | carrot |
-| 15 | the roost | `room12` | 33 | 1 | ears + carrot + the dark |
-| 16 | the window | `room11` | 32 | 1 | ears + carrot + the dark |
+| 14 | the flood | `room13` | 20 | 0 | wet feet |
+| 15 | the fork | `room14` | 19 | 0 | carrot |
+| 16 | the roost | `room12` | 33 | 1 | ears + carrot + the dark |
+| 17 | the window | `room11` | 32 | 1 | ears + carrot + the dark + the lever |
 
 The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
 room's name is only the key its record is filed under, so the second room is `room1b`.
@@ -195,12 +197,17 @@ written. Two things came out of building it that the proposal did not see:
 **Water has a second face the ladder has not used.** On the only way through rather than
 on a fork, a flood is not a choice but a **tax with teeth**: every cell of it moves the
 world twice, so a patrol's timing shifts under Randy while he wades. The planner does
-make those — `KIND=route GATES=water,board`, fifty-two rooms in six thousand seeds, the
-best of them par 34 with the flood worth eight beats and a plank at the far end. None is
-shipped: sixteen rooms is a cellar's worth already, and the next one should be asked for
-by play rather than by a search. The seeds are in the report if it is.
+make those, and **one is shipped now**: "the flood" (`room13`, seed 1218 of
+`KIND=route GATES=water,sentry GAIN=3`), three cells of flooded stair on the only way
+out of the first chamber, par 20 against 16 drained. It is the first room in the cellar
+that `solve(room, { wade: false })` calls impossible — which is why it was built. Water
+had shipped as a rule the game teaches and no room ever demanded, and a rule like that
+is a promise the cellar does not keep: the `wants` tally counted zero rooms wanting wet
+feet, which is how it was noticed at all. It sits straight after the wade, so the pair
+asks the two halves of one question — what a route is worth, and what it costs when
+there is no other.
 
-**What a second cellar would be built on.** Fifteen rooms is one cellar's worth, and
+**What a second cellar would be built on.** Seventeen rooms is one cellar's worth, and
 every verb in it is now taught, combined and finished with. A second one wants a spine
 of its own, and the best candidate is **water**: cells Randy can wade into, which cost
 **two beats a step instead of one**, and which no fox will follow him into.
@@ -272,7 +279,7 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    the tool and never the hand, and there are as many wrong ways to use the right verb
    as there ever were. The cellar as it stands wants
    the ears down in ten rooms, a carrot in eleven, a lamp out in three, the lever in
-   three, wet feet in zero, and nothing but timing in two — a tally the doc test keeps
+   three, wet feet in one, and nothing but timing in two — a tally the doc test keeps
    true, since a new room would quietly age it.
 4. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
    There is a bench for it now: `S` on the loaded picture puts all twelve sounds on

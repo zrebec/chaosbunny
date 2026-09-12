@@ -12,7 +12,7 @@
 chaosBunny turned into a **beat-based tile stealth game** on 2026-09-11 (owner's call,
 after the platformer's charge-jump failed twice). One screen is one room, 16×11 tiles;
 every action moves the whole world one beat; the verb is **slip past**. It is not a
-sketch any more: **sixteen rooms**, each proved solvable by a solver in its own test,
+sketch any more: **seventeen rooms**, each proved solvable by a solver in its own test,
 a cellar map that is also the room chooser, a story and an ending, records and replays.
 
 - Where it lives: `src/stealth/` (`beat.ts` is the rulebook, `solver.ts` the guarantee),

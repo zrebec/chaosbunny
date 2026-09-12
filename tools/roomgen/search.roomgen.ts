@@ -40,6 +40,7 @@ import { generate, withTiles, type Candidate } from './gen.js'
 import { generateRoute, type Gate } from './route.js'
 import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
+import { wantsOf, type Want } from '../../src/stealth/wants.js'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { LOCALES } from '../../src/stealth/strings.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
@@ -55,6 +56,8 @@ const MAX_PAR = Number(process.env.MAX_PAR ?? 40)
 const GAIN = Number(process.env.GAIN ?? 5)
 const MAX_STATES = Number(process.env.MAX_STATES ?? 120_000)
 const OUT = process.env.OUT ?? path.join(import.meta.dirname, 'out', `${KIND}.txt`)
+/** How many marked rooms the report lists before the picture sheets (`LINES`). */
+const LINES = Number(process.env.LINES ?? 12)
 const GATES = (process.env.GATES ?? 'grate,board').split(',') as Gate[]
 const FORK = (process.env.FORK ?? 'dark,board').split(',') as [Gate, Gate]
 
@@ -337,11 +340,14 @@ function markLadder(): string {
   const rows = ROOM_SOURCES.map((src, i) => {
     const m = mark(src, 500_000)
     if (!m) return `| ${i + 1} | ${src.name} | — | — | could not be marked |`
-    const needs = [
-      m.noEars === null ? 'ears' : '',
-      m.noThrow === null && (src.carrots ?? 0) + (src.rows.join('').split('c').length - 1) > 0 ? 'carrot' : '',
-      m.lamps > 0 && m.lampsOn === null ? 'the dark' : '',
-    ].filter(Boolean)
+    // The column used to be assembled by hand from three of the marks, and so it could
+    // not see the lever or the water: two rooms that cannot be left without a handle
+    // and one that cannot be left dry all read as asking for nothing. `wants.ts` is the
+    // same question asked properly, and `wants.tests.ts` holds every room to it.
+    const WORDS: Readonly<Record<Want, string>> = {
+      dark: 'ears', carrot: 'carrot', lampOut: 'the dark', lever: 'the lever', water: 'wet feet',
+    }
+    const needs = wantsOf(parseRoom(src)).map((w) => WORDS[w])
     const name = LOCALES.en.roomNames[i] ?? '—'
     return `| ${i + 1} | ${name.toLowerCase()} | \`${src.name}\` | ${m.par} | ${m.fewest} | ${needs.join(' + ') || '—'} |`
   })
@@ -366,11 +372,17 @@ test(`roomgen: ${KIND}`, () => {
   const hits: Hit[] = []
   let seen = 0
   let marked = 0
+  // Why the planner threw a shape away, tallied. `route.ts` has always offered this and
+  // nothing read it; a search that finds nothing should be able to say what it was
+  // short of — too little wall for a guard's pocket, a gate that can be walked round,
+  // water somebody can be seen standing in.
+  const fails = new Map<string, number>()
+  const onFail = (why: string): void => { fails.set(why, (fails.get(why) ?? 0) + 1) }
   for (let seed = FROM; seed < FROM + N && Date.now() - t0 < BUDGET_MS; seed++) {
     const c = KIND === 'fork'
-      ? generateRoute(seed, { gates: [...GATES, FORK[0]], fork: FORK })
+      ? generateRoute(seed, { gates: [...GATES, FORK[0]], fork: FORK, onFail })
       : KIND === 'route'
-      ? generateRoute(seed, { gates: GATES })
+      ? generateRoute(seed, { gates: GATES, onFail })
       : generate(seed, { sentries: KIND === 'sentry', bats: KIND === 'bat' })
     if (!c || c.src.patrols.length > 2) continue
     seen++
@@ -390,8 +402,9 @@ test(`roomgen: ${KIND}`, () => {
   const report = [
     `roomgen ${KIND}: seeds ${FROM}..${FROM + N - 1}, ${seen} candidates, ${marked} rooms marked, ${hits.length} kept`,
     `par ${MIN_PAR}..${MAX_PAR}, ${Math.round((Date.now() - t0) / 1000)} s`,
+    fails.size ? `shapes thrown away: ${[...fails].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`).join(', ')}` : '',
     '',
-    ...hits.slice(0, 12).map((h) => `${line(h.marks)} — ${h.note}`),
+    ...hits.slice(0, LINES).map((h) => `${line(h.marks)} — ${h.note}`),
     '',
     ...hits.slice(0, 5).map((h) => `${sheet(h.src, h.marks)}\n  ${h.note}\n`),
   ].join('\n')

@@ -27,10 +27,11 @@ import { ROOM_10 } from './room10.js'
 import { ROOM_11 } from './room11.js'
 import { ROOM_12 } from './room12.js'
 import { ROOM_14 } from './room14.js'
+import { ROOM_13 } from './room13.js'
 import { ROOM_16 } from './room16.js'
 
 export const ROOM_SOURCES: readonly RoomSource[] = [
   ROOM_01, ROOM_1B, ROOM_2B, ROOM_02, ROOM_03, ROOM_04, ROOM_05, ROOM_06, ROOM_07, ROOM_08, ROOM_09, ROOM_10,
   // A breather with a decision in it, then the two that ask for everything at once.
-  ROOM_16, ROOM_14, ROOM_12, ROOM_11,
+  ROOM_16, ROOM_13, ROOM_14, ROOM_12, ROOM_11,
 ]

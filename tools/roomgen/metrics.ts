@@ -28,6 +28,8 @@ export interface Marks {
   readonly dry: number | null
   /** Water cells in the room — `dry` means nothing without them. */
   readonly water: number
+  /** Carrots in the room, carried or lying: without one, `noThrow` has nothing to ask. */
+  readonly carrots: number
   /** Lamps in the room — `lampsOn` means nothing without it. */
   readonly lamps: number
   /** How long the marking took, in ms — the search's own budget depends on it. */
@@ -65,7 +67,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
   try {
     const best = par(room, { maxStates })
     if (best === null) {
-      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, dry: null, water: 0, lamps: room.lamps.length, ms: Date.now() - t0 }
+      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, dry: null, water: 0, carrots: 0, lamps: room.lamps.length, ms: Date.now() - t0 }
     }
     const hasCarrot = room.carrots + room.pickups.length > 0
     return {
@@ -78,6 +80,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
       dark: room.lamps.length ? par(room, { lampsOut: true, maxStates }) : null,
       dry: src.rows.join('').includes('w') ? par(room, { wade: false, maxStates }) : null,
       water: src.rows.join('').split('w').length - 1,
+      carrots: room.carrots + room.pickups.length,
       lamps: room.lamps.length,
       ms: Date.now() - t0,
     }
@@ -90,7 +93,11 @@ const n = (v: number | null): string => (v === null ? 'NONE' : String(v))
 
 /** One line of marks, for a search's report. */
 export function line(m: Marks): string {
-  return `${m.name}: par ${n(m.par)} | fewest? ${n(m.fewest)} | noEars ${n(m.noEars)} | noThrow ${n(m.noThrow)}`
+  // `NONE` means "there is no way out without it". A room with nothing to throw has no
+  // such question to answer, and printing NONE there read as "the carrot is the room" —
+  // exactly backwards. So the column only appears when the room has a carrot at all.
+  return `${m.name}: par ${n(m.par)} | fewest? ${n(m.fewest)} | noEars ${n(m.noEars)}`
+    + `${m.carrots ? ` | noThrow ${n(m.noThrow)}` : ''}`
     + `${m.lamps ? ` | lampsOn ${n(m.lampsOn)} | dark ${n(m.dark)}` : ''}`
     + `${m.water ? ` | dry ${n(m.dry)}` : ''} | ${m.ms} ms`
 }
