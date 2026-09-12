@@ -32,13 +32,7 @@ import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom } from './room.js'
-import { ROOM_01 } from './rooms/room01.js'
-import { ROOM_02 } from './rooms/room02.js'
-import { ROOM_03 } from './rooms/room03.js'
-import { ROOM_04 } from './rooms/room04.js'
-import { ROOM_05 } from './rooms/room05.js'
-import { ROOM_06 } from './rooms/room06.js'
-import { ROOM_07 } from './rooms/room07.js'
+import { ROOM_SOURCES } from './rooms/index.js'
 import { playBlocked, playEvents, playTape, playUndo, stopTape } from './sound.js'
 import { STR } from './strings.js'
 import { loadStateAt } from './loader.js'
@@ -64,7 +58,7 @@ const ctx = setupCanvas(canvas, SCALE, 256, 192)
 canvas.style.width = '' // index.html's CSS fits the canvas to the window
 canvas.style.height = ''
 
-const ROOMS = [ROOM_01, ROOM_02, ROOM_03, ROOM_04, ROOM_05, ROOM_06, ROOM_07].map(parseRoom)
+const ROOMS = ROOM_SOURCES.map(parseRoom)
 const scenes = new Map<number, Scene>()
 let roomIndex = 0
 let room = ROOMS[roomIndex]!
