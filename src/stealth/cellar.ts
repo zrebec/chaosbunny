@@ -15,6 +15,7 @@
  */
 import { C, drawBlinkingText, drawText, drawTextCentered } from 'zx-kit'
 import type { Records } from './records.js'
+import type { Room } from './room.js'
 import { roomLabel, type Strings } from './strings.js'
 import { PLAY_H, PLAY_W } from './view.js'
 
@@ -56,7 +57,8 @@ function corridor(ctx: CanvasRenderingContext2D, a: MapNode, b: MapNode, lit: bo
 export function renderCellar(
   ctx: CanvasRenderingContext2D,
   opts: {
-    readonly names: readonly string[]
+    /** The rooms themselves, in the order they are played. */
+    readonly rooms: readonly Room[]
     /** The room just left, or being played — it blinks. */
     readonly current: number
     /** The room the arrows are resting on — it is framed, and it is the one that opens. */
@@ -66,12 +68,20 @@ export function renderCellar(
   },
   str: Strings,
 ): void {
-  const { names, current, selected, records, now } = opts
+  const { rooms, current, selected, records, now } = opts
+  const names = rooms.map((r) => r.name)
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, PLAY_W, 192)
   drawTextCentered(ctx, str.cellar, 16, 32, C.B_CYAN, C.BLACK)
   // The room just left, by name: a cellar with names is a place, not a list.
   drawTextCentered(ctx, roomLabel(str, selected), 32, 32, C.WHITE, C.BLACK)
+  // What the marked cellar costs at best, and what it has cost you.
+  const par = rooms[selected]?.par
+  const best = records[names[selected]!]
+  const line = [par === null || par === undefined ? '' : str.par(par), best === undefined ? '' : str.record(best)]
+    .filter(Boolean)
+    .join('  ')
+  if (line) drawTextCentered(ctx, line, 152, 32, C.CYAN, C.BLACK)
 
   const nodes = mapNodes(names.length)
   for (let i = 0; i + 1 < nodes.length; i++) {
@@ -116,5 +126,5 @@ export function renderCellar(
     }
   })
 
-  drawTextCentered(ctx, str.cellarHint, 168, 32, C.WHITE, C.BLACK)
+  drawTextCentered(ctx, str.cellarHint, 176, 32, C.WHITE, C.BLACK)
 }

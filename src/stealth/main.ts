@@ -457,7 +457,7 @@ function frame(now: number): void {
   else if (phase === 'map') {
     renderCellar(
       ctx,
-      { names: ROOMS.map((r) => r.name), current: roomIndex, selected: mapPick, records: book.records(), now },
+      { rooms: ROOMS, current: roomIndex, selected: mapPick, records: book.records(), now },
       STR,
     )
   }

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mapNodes } from '../../src/stealth/cellar.js'
 import { PLAY_H, PLAY_W } from '../../src/stealth/view.js'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
+import { STR } from '../../src/stealth/strings.js'
 
 describe('the cellar map', () => {
   const nodes = mapNodes(ROOM_SOURCES.length)
@@ -29,6 +30,13 @@ describe('the cellar map', () => {
     expect(first[0]!.x).toBeLessThan(first[3]!.x) // left to right
     expect(first[4]!.x).toBeGreaterThan(first[7]!.x) // and back again
     expect(first[4]!.y).toBeGreaterThan(first[0]!.y)
+  })
+
+  it("has room on one line for the marked cellar's par and record", () => {
+    for (const src of ROOM_SOURCES) {
+      const line = `${STR.par(src.par!)}  ${STR.record(999)}`
+      expect(line.length, `"${line}"`).toBeLessThanOrEqual(32)
+    }
   })
 
   it('lays out a short cellar and a long one without stacking rows off screen', () => {
