@@ -18,8 +18,8 @@
  * view), a wall that touches the room shows its top, a wall deep in rock is black.
  */
 import {
-  C, createGlowLayer, createLayerCache, drawChar, drawGlowSource, drawText, drawTextCentered, refreshLayer, renderGlow,
-  type GlowLayer, type LayerCache, type SpectrumColor,
+  C, createGlowLayer, createLayerCache, drawChar, drawGlowSource, drawText, drawTextCentered, invalidateLayer,
+  refreshLayer, renderGlow, type GlowLayer, type LayerCache, type SpectrumColor,
 } from 'zx-kit'
 import { SPRITES, TILES, drawLayered, layered, type Layered } from './art.js'
 import { BAT_HEARING } from './bat.js'
@@ -109,6 +109,7 @@ function drawRoom(scene: Scene, lamps: number): void {
   const { room } = scene
   const lit = litCells(room, lamps)
   scene.lamps = lamps
+  invalidateLayer(scene.roomLayer) // the cache only re-runs the draw while it is dirty
   refreshLayer(scene.roomLayer, (ctx) => {
     ctx.fillStyle = C.BLACK
     ctx.fillRect(0, 0, PLAY_W, PLAY_H)
