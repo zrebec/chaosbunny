@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import type { Action } from '../../src/stealth/beat.js'
 import { decodeRun, encodeRun, playRun, runWins } from '../../src/stealth/replay.js'
 import { testRoom } from './helpers.js'
+import { parseRoom } from '../../src/stealth/room.js'
+import { solve } from '../../src/stealth/solver.js'
+import { ROOM_10 } from '../../src/stealth/rooms/room10.js'
+import { ROOM_14 } from '../../src/stealth/rooms/room14.js'
 
 describe('encodeRun and decodeRun', () => {
   const every: Action[] = [
@@ -41,5 +45,23 @@ describe('playRun', () => {
   it('makes the same beats every time', () => {
     const run = decodeRun('RE.RR')
     expect(playRun(room, run).map((r) => r.world)).toEqual(playRun(room, run).map((r) => r.world))
+  })
+})
+
+describe('a run through everything the cellar has', () => {
+  // A record is stored as its actions, so anything a room can do has to survive the
+  // round trip. room14 is the room that uses the most of them at once — a lamp put out
+  // with a carrot, a plank, and two guards — and room10 adds a lever and a grate.
+  it.each([['room14', ROOM_14], ['room10', ROOM_10]])('replays %s beat for beat', (_name, source) => {
+    const room = parseRoom(source)
+    const best = solve(room)!
+    const run = decodeRun(encodeRun(best))
+    expect(run).toEqual(best)
+    expect(runWins(room, run)).toBe(true)
+  })
+
+  it('keeps the run in the alphabet a save will accept', () => {
+    const room = parseRoom(ROOM_14)
+    expect(encodeRun(solve(room)!)).toMatch(/^[URDLurdlE.]+$/)
   })
 })

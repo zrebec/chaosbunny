@@ -135,6 +135,13 @@ Its lesson generalises: **the expensive part of room design was never the search
 was the shape.** A generator that plans the route can also plan where the player will
 be standing when a noise goes off — which is what the decision room still needs.
 
+**What it costs to run.** Measured on 2026-09-12 in the browser: 16.7 ms a frame in a
+plain room, and the same in the two rooms with a burning lamp — the glow is a downscale
+and two `drawImage`s, so it is free at this size. Worst frame over two seconds: 17.6 ms.
+The rule that earned this (`CLAUDE.md`) still holds: anything static that would be
+redrawn per frame goes in a layer cache, and the room's cache is only rebuilt when the
+room itself changes — a lamp going out, a grate opening.
+
 **Lessons that cost time:**
 - More than **two moving** foxes means hundreds of thousands of states (every `?`
   shifts every fox's phase). Hence standing guards and short routes.
