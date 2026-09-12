@@ -69,6 +69,25 @@ been passing every shape for nothing.
 4. If the tool found a piece the room does not need (a guard that changes no number),
    take it out. A guard the player must respect while the room does not need it is a lie.
 
+## Checking the game agrees with the solver
+
+`play.roomgen.ts` writes the keys that play a room, for a browser driver to press:
+
+```bash
+OUT=/some/scratch/play.json ROOMS=room3b,room13 \
+  npx vitest run --config tools/roomgen/vitest.config.ts tools/roomgen/play.roomgen.ts
+```
+
+It exists because the solver and the game are two implementations of one rulebook and
+have disagreed before — the solver counted actions while the game counted beats, and
+nothing noticed until water made a step cost two. No test can catch that: a test asks
+`beat.ts` the same question twice. The real page is the only second opinion, and the
+win screen's beat count is the answer.
+
+`OUT` is required and must be **outside the repository**. This is the one thing here
+that writes a way through a room down, and the rule above still holds: the file is
+scratch, the driver reads it, and what comes back is a number.
+
 ## Why it is a vitest file
 
 Vitest is what runs TypeScript in this repo, so the search is a `*.roomgen.ts` file
