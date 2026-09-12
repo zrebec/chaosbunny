@@ -104,6 +104,15 @@ it really does cut the room. The property a mechanic needs is then true **by
 construction**. Twelve rooms in three hundred seeds, in thirteen seconds, each with two
 load-bearing gates. room10 is the first of them.
 
+**The dark gate is not built yet, and the reason is worth keeping.** `GATES=dark` lays
+a shadow corridor, a guard that watches a run of it, and a lamp that lights exactly what
+the guard watches — and every room it makes is still walkable with the light on, because
+*the carrot lures the guard away*. A lamp only matters when the guard behind it cannot be
+bought off. room07 has that by accident: its guard sits in a corner it cannot leave,
+because what separates the corner from the shaft is **the lamp itself** — solid to a fox,
+transparent to its eyes and its light. That is the shape the route generator would have to
+build on purpose: a pocket for the guard, with the lamp as the bars of its window.
+
 Its lesson generalises: **the expensive part of room design was never the search, it
 was the shape.** A generator that plans the route can also plan where the player will
 be standing when a noise goes off — which is what the decision room still needs.

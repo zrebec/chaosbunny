@@ -15,9 +15,9 @@
  * It only proposes rooms. The solver still decides, and nothing here prints a way
  * through: layouts and numbers only.
  */
-import { CREAK_HEARING } from '../../src/stealth/beat.js'
+import { CREAK_HEARING, THROW_RANGE } from '../../src/stealth/beat.js'
 import { DIRS, manhattan, sameCell, step, type Cell, type Dir } from '../../src/stealth/grid.js'
-import { LAMP_REACH } from '../../src/stealth/light.js'
+import { allLampsOn, cellIndex, litCells } from '../../src/stealth/light.js'
 import { foxCanEnter, parseRoom, tileAt, type PatrolSource, type RoomSource } from '../../src/stealth/room.js'
 import { visibleCells } from '../../src/stealth/rules.js'
 import { rng, W, H, type Candidate } from './gen.js'
@@ -90,17 +90,24 @@ function dig(g: Grid, a: Cell, b: Cell, horizFirst: boolean): Cell[] {
   return cut
 }
 
-/** A guard placed so that `target` is inside its cone, or `null` if nowhere works. */
-function watcher(src: RoomSource, target: Cell, taken: Set<string>): PatrolSource | null {
+/**
+ * A guard placed to watch a stretch of corridor: at least two of `cells` inside its
+ * cone, and none of them right in front of it. Two matters — one cone cell costs a
+ * player a single `?` and he walks on, so a corridor with one watched cell is not a
+ * gate. Right in front is the opposite mistake: an instant catch is a wall.
+ */
+function watcher(src: RoomSource, cells: readonly Cell[], taken: Set<string>): PatrolSource | null {
   const room = parseRoom(src)
   for (let y = 1; y < H - 1; y++) {
     for (let x = 1; x < W - 1; x++) {
       const cell = { x, y }
       if (taken.has(`${x},${y}`) || !foxCanEnter(tileAt(room, cell))) continue
       for (const facing of DIRS) {
-        const seen = visibleCells(room, cell, facing, false)
-        // Not right in front: that is an instant catch, which is a wall, not a gate.
-        if (seen.some((s) => sameCell(s.cell, target) && s.forward > 1)) return { route: [[x, y]], facing }
+        const seen = visibleCells(room, cell, facing, false).filter((s) => cells.some((c) => sameCell(s.cell, c)))
+        // Two *neighbouring* cells: a player who can step out of the cone between two
+        // sightings is never caught by them, so only a run of watched cells is a gate.
+        const run = seen.some((a) => seen.some((b) => manhattan(a.cell, b.cell) === 1))
+        if (run && seen.every((s) => s.forward > 1)) return { route: [[x, y]], facing }
       }
     }
   }
@@ -213,15 +220,40 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       patrols.push(guard)
       taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
     } else {
-      // dark: the corridor is shadow, a guard watches it, and a lamp spoils the dark.
+      // dark: the corridor is shadow, a guard watches a run of it, and a lamp spoils
+      // exactly that run — the lamp goes where the eyes are, not where the corridor is.
       for (const c of corridor) if (at(g, c) === '.') put(g, c, 's')
-      const guard = watcher(src(), cell, taken)
+      const guard = watcher(src(), corridor, taken)
       if (!guard) return null
-      patrols.push(guard)
-      taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
-      const lamp = lampFor(g, cell)
-      if (!lamp || manhattan(lamp, cell) > LAMP_REACH) return null
+      const gcell = { x: guard.route[0]![0], y: guard.route[0]![1] }
+      const dressed0 = parseRoom({ name: `route${seed}`, rows: rowsOf(), patrols: [guard], carrots: 1 })
+      const watched = visibleCells(dressed0, gcell, guard.facing!, false)
+        .map((v) => v.cell)
+        .filter((v) => corridor.some((c) => sameCell(c, v)))
+      const lamp = watched.map((c) => lampFor(g, c)).find((c): c is Cell => c !== null)
+      if (!lamp) return null
       put(g, lamp, 'L')
+      const dressed = parseRoom({ name: `route${seed}`, rows: rowsOf(), patrols: [guard], carrots: 1 })
+      const lit = litCells(dressed, allLampsOn(dressed))
+      if (!watched.every((c) => lit.has(cellIndex(dressed, c)))) return null
+      patrols.push(guard)
+      taken.add(`${gcell.x},${gcell.y}`)
+      // A lamp that can only be reached from inside the cone cannot be put out at all:
+      // the beat spent throwing is a second sighting. Somewhere safe must be able to
+      // hit it — the lesson of the hand-drawn room in docs/stealth-design.md.
+      const cone = new Set(visibleCells(dressed, gcell, guard.facing!, false).map((s2) => `${s2.cell.x},${s2.cell.y}`))
+      const canDouse = corridor.concat(chambers.flat()).some((c) => {
+        if (cone.has(`${c.x},${c.y}`) || !walkable(at(g, c))) return false
+        for (const dir of DIRS) {
+          for (let k = 1; k <= THROW_RANGE; k++) {
+            const t = step(c, dir, k)
+            if (sameCell(t, lamp)) return true
+            if (!walkable(at(g, t))) break
+          }
+        }
+        return false
+      })
+      if (!canDouse) return null
     }
   }
   if (!patrols.length) return null
