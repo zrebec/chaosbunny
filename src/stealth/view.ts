@@ -9,6 +9,7 @@
  * - `?` over a fox: it saw Randy last beat and is standing still. `!`: caught.
  * - A carrot over a fox's head: it is eating, and blind.
  * - `~` over a bat: Randy is close enough for it to hear an ears-up step.
+ * - `^ v < >` over a sentry, ears up: the way it will look next beat.
  *
  * Walls are drawn by where they are: a wall with floor below shows its face (3⁄4
  * view), a wall that touches the room shows its top, a wall deep in rock is black.
@@ -19,7 +20,7 @@ import {
 import { SPRITES, TILES, drawLayered, layered, type Layered } from './art.js'
 import { BAT_HEARING } from './bat.js'
 import { SNEAK_STEPS, throwTarget, type World } from './beat.js'
-import { DIRS, manhattan, sameCell, type Cell } from './grid.js'
+import { DIRS, manhattan, sameCell, type Cell, type Dir } from './grid.js'
 import { advanceFox, type Fox } from './patrol.js'
 import { tileAt, type Room } from './room.js'
 import { visibleCells } from './rules.js'
@@ -131,6 +132,8 @@ function nextSteps(room: Room, fox: Fox, world: World): Cell[] {
   return [one.cell, two.cell]
 }
 
+const TURN_CHAR: Readonly<Record<Dir, string>> = { up: '^', down: 'v', left: '<', right: '>' }
+
 function drawIntel(ctx: CanvasRenderingContext2D, room: Room, world: World): void {
   for (const fox of world.foxes) {
     if (fox.mode === 'eat') continue
@@ -138,6 +141,11 @@ function drawIntel(ctx: CanvasRenderingContext2D, room: Room, world: World): voi
     const [one, two] = nextSteps(room, fox, world)
     if (one && !sameCell(one, fox.cell)) mark(ctx, one, 4, C.B_YELLOW)
     if (two && !sameCell(two, fox.cell) && !(one && sameCell(two, one))) mark(ctx, two, 2, C.B_YELLOW)
+    const next = advanceFox(room, fox, world.items).fox
+    if (sameCell(next.cell, fox.cell) && next.facing !== fox.facing) {
+      // A sentry about to turn: say which way, so the window can be counted rather than guessed.
+      drawChar(ctx, TURN_CHAR[next.facing].charCodeAt(0), fox.cell.x * TILE + 4, fox.cell.y * TILE - TILE, C.B_YELLOW, C.BLACK)
+    }
   }
 }
 

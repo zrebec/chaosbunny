@@ -40,7 +40,7 @@ export function worldKey(w: World): string {
   const r = w.randy
   const items = w.items.map(cellKey).sort().join(';')
   const foxes = w.foxes
-    .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}`)
+    .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}:${f.phase}`)
     .join('|')
   const bats = w.bats.map((b) => `${cellKey(b.cell)}:${b.mode}:${b.timer}:${b.target ? cellKey(b.target) : '-'}`).join('|')
   return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}`

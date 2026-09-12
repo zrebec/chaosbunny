@@ -115,6 +115,14 @@ describe('contact and sight', () => {
     expect(kinds(r!)).toContain('suspicious')
   })
 
+  it('a sentry sees only the way it faces: slip by while it looks away', () => {
+    // The sentry at (4,0) looks right, then left, two beats each. Randy at (1,0), three to its left.
+    const room = testRoom(['#R.....D'], [{ route: [[4, 0]], turns: ['right', 'left'], hold: 2 }])
+    const [a, b] = play(room, [WAIT, WAIT]) // beat 1: still right; beat 2: turns left and sees him
+    expect(kinds(a!)).not.toContain('suspicious')
+    expect(kinds(b!)).toContain('suspicious')
+  })
+
   it('an eating fox sees nothing, and looks again when it is done', () => {
     const room = testRoom(['#R..D'], [{ route: [[3, 0]], facing: 'left' }])
     const start = startWorld(room)

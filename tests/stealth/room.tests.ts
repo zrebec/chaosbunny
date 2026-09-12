@@ -46,9 +46,14 @@ describe('parseRoom', () => {
     })
   })
 
+  it('reads a sentry: its facings in order, the first one first, two beats each by default', () => {
+    const room = testRoom(['#R..D'], [{ route: [[3, 0]], turns: ['left', 'up', 'right'] }])
+    expect(room.patrols[0]).toEqual({ route: [{ x: 3, y: 0 }], facing: 'left', turns: ['left', 'up', 'right'], hold: 2 })
+  })
+
   it('keeps a standing guard where it is, facing the way it was told', () => {
     const room = testRoom(['#R..D'], [{ route: [[3, 0]], facing: 'left' }])
-    expect(room.patrols[0]).toEqual({ route: [{ x: 3, y: 0 }], facing: 'left' })
+    expect(room.patrols[0]).toEqual({ route: [{ x: 3, y: 0 }], facing: 'left', turns: null, hold: 2 })
   })
 
   it.each<[string, RoomSource, RegExp]>([
@@ -63,6 +68,9 @@ describe('parseRoom', () => {
     ['diagonal waypoints', withRows((r) => { r[2] = '#.....##########' }, { patrols: [{ route: [[2, 1], [3, 2]] }] }), /exactly one of x or y/],
     ['a standing guard without facing', withRows(() => {}, { patrols: [{ route: [[3, 1]] }] }), /needs a facing/],
     ['a guard on the start', withRows(() => {}, { patrols: [{ route: [[1, 1], [3, 1]] }] }), /starts on Randy/],
+    ['a walking guard that turns', withRows(() => {}, { patrols: [{ route: [[2, 1], [4, 1]], turns: ['up', 'down'] }] }), /only a standing guard can turn/],
+    ['a sentry with one facing', withRows(() => {}, { patrols: [{ route: [[3, 1]], turns: ['up'] }] }), /at least two facings/],
+    ['a sentry holding for no time', withRows(() => {}, { patrols: [{ route: [[3, 1]], turns: ['up', 'down'], hold: 0 }] }), /hold must be/],
     ['two guards on one cell', withRows(() => {}, { patrols: [{ route: [[3, 1]], facing: 'up' }, { route: [[3, 1]], facing: 'down' }] }), /same cell/],
   ])('refuses %s', (_label, src, message) => {
     expect(() => parseRoom(src)).toThrow(message)

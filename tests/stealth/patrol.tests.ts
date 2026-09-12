@@ -38,6 +38,22 @@ describe('patrolling', () => {
     expect(steps.every((f) => at(f) === '4,2' && f.facing === 'up')).toBe(true)
   })
 
+  it('a sentry turns on the spot, holding each facing, round and round', () => {
+    const room = testRoom(OPEN, [{ route: [[4, 2]], turns: ['left', 'right'], hold: 2 }])
+    const [fox] = initialFoxes(room)
+    expect(fox!.facing).toBe('left')
+    const steps = run(room, fox!, 6)
+    expect(steps.every((f) => at(f) === '4,2')).toBe(true)
+    expect(steps.map((f) => f.facing)).toEqual(['left', 'right', 'right', 'left', 'left', 'right'])
+  })
+
+  it('a suspicious sentry stops turning, and picks up where it stopped', () => {
+    const room = testRoom(OPEN, [{ route: [[4, 2]], turns: ['left', 'up', 'right'], hold: 1 }])
+    const fox = { ...initialFoxes(room)[0]!, mode: 'suspicious' as const, resume: 'patrol' as const }
+    expect(advanceFox(room, fox, []).fox).toEqual(fox)
+    expect(advanceFox(room, { ...fox, mode: 'patrol' }, []).fox.facing).toBe('up')
+  })
+
   it('a suspicious fox stands still', () => {
     const room = testRoom(OPEN, [{ route: [[2, 1], [5, 1]] }])
     const fox = { ...initialFoxes(room)[0]!, mode: 'suspicious' as const }

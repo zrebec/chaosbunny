@@ -5,6 +5,8 @@
  *
  * Modes:
  * - `patrol`     — walks its loop one cell a beat; faces the way it last stepped.
+ *                  A sentry (a standing guard with `turns`) instead turns on the spot,
+ *                  holding each facing for `hold` beats.
  * - `suspicious` — `?`: saw Randy last beat. Stands still. Seeing him again is `!`.
  * - `divert`     — heard a carrot land; walks the shortest way to it.
  * - `eat`        — on the carrot, blind, for {@link EAT_BEATS} beats.
@@ -37,6 +39,8 @@ export interface Fox {
   readonly timer: number
   /** The carrot a diverting fox walks to. */
   readonly target: Cell | null
+  /** A sentry's beats into its turning cycle; always 0 for a guard that does not turn. */
+  readonly phase: number
 }
 
 export function initialFoxes(room: Room): Fox[] {
@@ -49,6 +53,7 @@ export function initialFoxes(room: Room): Fox[] {
     resume: 'patrol',
     timer: 0,
     target: null,
+    phase: 0,
   }))
 }
 
@@ -116,8 +121,14 @@ function moveTo(fox: Fox, to: Cell): Fox {
 }
 
 function patrolStep(room: Room, fox: Fox): Fox {
-  const route = room.patrols[fox.patrol]!.route
-  if (route.length === 1) return { ...fox, mode: 'patrol', resume: 'patrol', facing: room.patrols[fox.patrol]!.facing }
+  const patrol = room.patrols[fox.patrol]!
+  const route = patrol.route
+  if (patrol.turns) {
+    // A sentry: one beat further round its cycle of facings, never a step.
+    const phase = (fox.phase + 1) % (patrol.turns.length * patrol.hold)
+    return { ...fox, mode: 'patrol', resume: 'patrol', phase, facing: patrol.turns[Math.floor(phase / patrol.hold)]! }
+  }
+  if (route.length === 1) return { ...fox, mode: 'patrol', resume: 'patrol', facing: patrol.facing }
   const next = (fox.routeIndex + 1) % route.length
   return { ...moveTo(fox, route[next]!), mode: 'patrol', resume: 'patrol', routeIndex: next }
 }

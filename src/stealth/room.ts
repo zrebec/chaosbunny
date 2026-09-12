@@ -36,8 +36,15 @@ const LEGEND: Readonly<Record<string, TileKind>> = {
 export interface PatrolSource {
   /** Waypoints `[x, y]`. Each consecutive pair — and last → first — must share a row or a column. */
   readonly route: ReadonlyArray<readonly [number, number]>
-  /** Where a one-waypoint (standing) guard looks. Required then, ignored otherwise. */
+  /** Where a one-waypoint (standing) guard looks. Required then (unless it turns), ignored otherwise. */
   readonly facing?: Dir
+  /**
+   * A standing guard that turns — a sentry: the facings it looks through, in order,
+   * round and round. Only for a one-waypoint route; its first facing is `turns[0]`.
+   */
+  readonly turns?: readonly Dir[]
+  /** Beats a sentry holds each facing (default 2). */
+  readonly hold?: number
 }
 
 export interface RoomSource {
@@ -57,6 +64,10 @@ export interface Patrol {
   readonly route: readonly Cell[]
   /** The standing guard's facing, or the direction of a walking guard's first step. */
   readonly facing: Dir
+  /** A sentry's facings, or `null` for a guard that does not turn. */
+  readonly turns: readonly Dir[] | null
+  /** Beats a sentry holds each facing. */
+  readonly hold: number
 }
 
 export interface Room {
@@ -133,11 +144,18 @@ function parsePatrol(grid: TileGrid, src: PatrolSource, index: number): Patrol {
       throw new Error(`${where}: the route crosses (${c.x},${c.y}), a ${kind} a guard cannot walk on`)
     }
   }
+  const hold = src.hold ?? 2
+  if (src.turns !== undefined) {
+    if (route.length !== 1) throw new Error(`${where}: only a standing guard can turn`)
+    if (src.turns.length < 2) throw new Error(`${where}: a sentry needs at least two facings`)
+    if (!Number.isInteger(hold) || hold < 1) throw new Error(`${where}: hold must be a whole number of beats, 1 or more`)
+    return { route, facing: src.turns[0]!, turns: [...src.turns], hold }
+  }
   if (route.length === 1) {
     if (!src.facing) throw new Error(`${where}: a standing guard needs a facing`)
-    return { route, facing: src.facing }
+    return { route, facing: src.facing, turns: null, hold }
   }
-  return { route, facing: dirBetween(route[0]!, route[1]!)! }
+  return { route, facing: dirBetween(route[0]!, route[1]!)!, turns: null, hold }
 }
 
 /** Parses and validates a room. Throws with the row, column or patrol at fault. */
