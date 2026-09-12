@@ -36,7 +36,7 @@ either cannot be finished or collapses to something much shorter.
 | 5 | the bat's hall | a bat and two foxes | without the bat, par 22 |
 | 6 | the sentry | the window when a sentry looks away | freeze the sentry: impossible |
 | 7 | the lit corner | **the lamp: light kills shadow** | leave the lamp burning: impossible |
-| 8 | *(in progress)* | **the creaky board**: a noise the ears cannot hide | plain floor instead: much shorter |
+| 8 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
 
 Where the ladder should go next (a proposal, not a promise):
 
@@ -112,9 +112,7 @@ still the one that opens a whole class of rooms (and it is a Spectrum classic).
 3. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
 4. **Resolution** — staying at 256×192; hi-res is a question for a sports game, not
    for this one.
-5. **A generator that lives in the repo** — the rooms are designed by a script in a
-   scratchpad, which means the next room cannot be designed without rebuilding it.
-   It should move into `tools/` with the ablation runner beside it. Say the word.
+5. ~~**A generator that lives in the repo**~~ — done: `tools/roomgen`, `npm run roomgen`.
 
 ## 7. Where it all lives
 
