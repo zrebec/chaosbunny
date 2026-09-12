@@ -28,6 +28,10 @@ and the gamepad can move and throw but not lower the rabbit's ears. A general
 `consumeButton('b' | 'x' | 'y')`, or a way to register a key/button pair, would make
 gamepad play possible for anything with more than one verb.
 
+The game works around it by spending the pause button: `consumePause` (P / Start) is the
+ears, since a beat-based game has nothing to pause. That is two verbs on a pad and one
+still missing (waiting a beat), which is about as far as the workaround goes.
+
 ## What worked exactly as advertised
 
 - **`glow`** — dropped in for a burning lamp and cost nothing measurable: 16.7 ms a

@@ -4,7 +4,8 @@
  *
  * Controls — every action is one beat, and a beat moves every fox:
  * - arrows / WASD / d-pad: step
- * - Z: ears up / down
+ * - Z, or P / gamepad Start: ears up / down (the kit's pad has one action button,
+ *   which the throw already uses — see docs/zx-kit-findings.md)
  * - X or F (gamepad A): aim a carrot, then an arrow throws it that way; X or Esc cancels
  * - Space: wait a beat
  * - U: take the last beat back (and, while a fox has you, the one that lost the room)
@@ -30,7 +31,9 @@
  * A step is animated for {@link BEAT_MS}; a key pressed during it is kept and played
  * when it ends, so a held arrow walks at the key-repeat pace without dropping beats.
  */
-import { consumeAnyKey, consumeFlag, initInput, resetInput, SCALE, setupCanvas, tickMovement } from 'zx-kit'
+import {
+  consumeAnyKey, consumeFlag, consumePause, initInput, resetInput, SCALE, setupCanvas, tickMovement,
+} from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
 import { BAT_HEARING } from './bat.js'
 import { beat, startWorld, type Action, type World } from './beat.js'
@@ -466,6 +469,9 @@ function frame(now: number): void {
   }
 
   if (phase === 'play') {
+    // The pad has one action button and the throw has it, so the ears take Start —
+    // otherwise a gamepad can walk Randy into a room it cannot get him out of.
+    if (consumePause()) request({ kind: 'ears' })
     if (flag) toggleAim()
     if (dir) {
       request(aiming ? { kind: 'throw', dir } : { kind: 'move', dir })

@@ -27,7 +27,7 @@ owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
 | Key | Action |
 |---|---|
 | `←` `↑` `→` `↓` / d-pad | Step one cell — and one beat for everyone else |
-| `Z` | Ears up / down. Up: you see every cone. Down: the dark hides you, for two steps |
+| `Z` / `P` / gamepad Start | Ears up / down. Up: you see every cone. Down: the dark hides you, for two steps |
 | `X` / `F` / gamepad A, then an arrow | Throw the carrot that way (`X` again cancels) |
 | `Space` | Wait a beat |
 | `U` | Take the last beat back — including the one a fox caught you on |
@@ -37,6 +37,10 @@ owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
 | `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) |
 | `S` (on the loaded picture) | The sound bench: twelve sounds on twelve keys |
 | `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
+
+On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it) and
+**Start** works the ears — the kit's pad has one action button and the throw already has
+it (`docs/zx-kit-findings.md`). Waiting a beat is still the space bar.
 
 Three rules the rooms rely on, said once in-game the first time each bites: **a `?` is a
 warning, not a capture** (the second sighting in a row is what ends the room), the dark
