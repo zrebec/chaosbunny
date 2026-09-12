@@ -41,9 +41,10 @@ either cannot be finished or collapses to something much shorter.
 | 10 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
 | 11 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 | 12 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
-| 13 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
-| 14 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
-| 15 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
+| 13 | the wade | **water**: two beats a cell, and no fox will follow | drained, the room is three beats cheaper; dry, three dearer |
+| 14 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
+| 15 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
+| 16 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 
 And the same ladder as the solver sees it — regenerate with `KIND=ladder npm run roomgen`
 rather than editing by hand, because these numbers are the room, not the prose:
@@ -62,9 +63,10 @@ rather than editing by hand, because these numbers are the room, not the prose:
 | 10 | room08 | 35 | 0 | carrot |
 | 11 | room09 | 27 | 2 | ears |
 | 12 | room10 | 28 | 1 | carrot |
-| 13 | room14 | 19 | 0 | carrot |
-| 14 | room12 | 33 | 1 | ears + carrot + the dark |
-| 15 | room11 | 32 | 1 | ears + carrot + the dark |
+| 13 | room16 | 15 | 0 | — |
+| 14 | room14 | 19 | 0 | carrot |
+| 15 | room12 | 33 | 1 | ears + carrot + the dark |
+| 16 | room11 | 32 | 1 | ears + carrot + the dark |
 
 The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
 room's name is only the key its record is filed under, so the second room is `room1b`.
@@ -173,6 +175,19 @@ room itself changes — a lamp going out, a grate opening.
   the tree by an order of magnitude.
 
 ## 5. Ideas, ranked by what they give against what they cost
+
+**Water is in, and what it cost.** The proposal below was taken up the same day it was
+written. Two things came out of building it that the proposal did not see:
+
+- **The solver was counting actions, and the game counts beats.** Identical numbers for
+  fifteen rooms, so nobody noticed; a step that costs two beats separates them at once.
+  `solve` is now a bucket queue over the clock and `par` means what the HUD means. The
+  fix was safe because every room's par is pinned: all fifteen came out unchanged.
+- **The route generator cannot make a water room.** Both ways round a rectangle are the
+  same length, so a flooded short way is never worth wading; flooding only part of it
+  does not help either. Water pays only where the wet way is *genuinely* shorter, which
+  needs a shape the planner does not draw — a straight run against a detour. room16 was
+  drawn by hand and judged by the solver, which is the same discipline by other means.
 
 **What a second cellar would be built on.** Fifteen rooms is one cellar's worth, and
 every verb in it is now taught, combined and finished with. A second one wants a spine
