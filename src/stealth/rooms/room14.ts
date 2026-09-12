@@ -28,6 +28,7 @@ export const ROOM_14: RoomSource = {
   name: 'room14',
   carrots: 1,
   par: 19,
+  wants: ['carrot'],
   patrols: [
     { route: [[9, 9]], facing: 'up' },
     { route: [[11, 2]], facing: 'up' },

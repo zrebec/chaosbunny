@@ -5,6 +5,7 @@ import roadmap from '../../docs/ROADMAP.md?raw'
 import main from '../../src/stealth/main.ts?raw'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { LOCALES } from '../../src/stealth/strings.js'
+import type { Want } from '../../src/stealth/wants.js'
 
 /**
  * The design doc carries a table generated from the rooms themselves
@@ -13,6 +14,14 @@ import { LOCALES } from '../../src/stealth/strings.js'
  * says how to put it right.
  */
 const DOC = 'docs/stealth-design.md'
+
+/** Both documents and the design doc's tally count in words, as prose does. */
+const WORDS = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+  'nineteen', 'twenty',
+]
+
 const REGENERATE = `run \`KIND=ladder npm run roomgen\` and paste the table into ${DOC}`
 
 interface Row { readonly place: number; readonly name: string; readonly id: string; readonly par: number }
@@ -51,18 +60,29 @@ describe('the design doc', () => {
  * in prose is the first thing to rot. Any "<word> rooms" in them has to be the truth.
  */
 describe('the documents that count the rooms', () => {
-  const WORDS = [
-    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
-    'nineteen', 'twenty',
-  ]
-
   it.each([['README.md', readme], ['docs/ROADMAP.md', roadmap]])('%s says how many rooms there really are', (file, text) => {
     const counts = [...text.matchAll(/\*{0,2}(\w+) rooms\*{0,2}/g)]
       .map((m) => WORDS.indexOf(m[1]!.toLowerCase()))
       .filter((n) => n > 0)
     expect(counts.length, `${file} should count the rooms somewhere`).toBeGreaterThan(0)
     for (const n of counts) expect(n, `${file}: says ${WORDS[n]} rooms`).toBe(ROOM_SOURCES.length)
+  })
+})
+
+/**
+ * The design doc counts, in prose, how many rooms want each verb — the kind of sentence
+ * a new room ages the moment it ships. The tally is short enough to write out and cheap
+ * enough to rebuild from the rooms' own declarations (no solver: `wants.tests.ts` is
+ * what proves those honest), so the doc is held to the exact sentence.
+ */
+describe('the design doc tally of what rooms want', () => {
+  it('counts each want the way the rooms declare it', () => {
+    const n = (want: Want): string => WORDS[ROOM_SOURCES.filter((r) => (r.wants ?? []).includes(want)).length]!
+    const timing = WORDS[ROOM_SOURCES.filter((r) => (r.wants ?? []).length === 0).length]!
+    const sentence =
+      `the ears down in ${n('dark')} rooms, a carrot in ${n('carrot')}, a lamp out in ${n('lampOut')}, the lever in\n` +
+      `   ${n('lever')}, wet feet in ${n('water')}, and nothing but timing in ${timing}`
+    expect(designDoc, `${DOC} should say: ${sentence.replace(/\n +/, ' ')}`).toContain(sentence)
   })
 })
 

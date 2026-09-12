@@ -118,6 +118,14 @@ const hinted = { spotted: false, shadow: false, bat: false, water: false }
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
 let escaped = false
+/**
+ * Times a fox or a bat has ended this room since it was entered. Three is where being
+ * unlucky turns into being stuck, and the room starts saying what it wants (`wants.ts`).
+ */
+let caughtHere = 0
+/** Catches before the room names the verb it cannot be left without. */
+const NUDGE_AFTER = 3
+
 /** Where Esc goes from the map: back to the picture, or back into the room being played. */
 let mapBack: 'title' | 'room' = 'title'
 /** The same for the rules screen, which a stuck player wants without losing the room. */
@@ -212,12 +220,26 @@ function goToRoom(i: number): void {
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
+  caughtHere = 0
   hinted.spotted = false
   hinted.shadow = false
   hinted.bat = false
   hinted.water = false
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
   say(roomLabel(STR, roomIndex))
+}
+
+/**
+ * What the caught overlay says to a player who keeps losing this room: nothing for the
+ * first two catches, then the verb the room is built on, and one more of them each time
+ * he is caught again — a room with several wants gives them up one at a time, in the
+ * order a player would think of them, and starts over rather than running out.
+ */
+function nudge(): string | null {
+  if (caughtHere < NUDGE_AFTER) return null
+  const wants = room.wants
+  if (wants.length === 0) return STR.wants.none
+  return STR.wants[wants[(caughtHere - NUDGE_AFTER) % wants.length]!]
 }
 
 function restart(): void {
@@ -327,6 +349,7 @@ function play(action: Action): void {
     bittenBy = by && by.type === 'bitten' ? by.bat : null
     phase = 'caught'
     phaseMs = 0
+    caughtHere++
     queued = null
     aiming = false
   } else if (r.outcome === 'won') {
@@ -534,7 +557,8 @@ function frame(now: number): void {
   } else {
     t = Math.min(1, t + dt / BEAT_MS)
     phaseMs += dt
-    if (phase === 'caught' && phaseMs >= CAUGHT_MS) restart()
+    // Advice needs longer on screen than a shrug does.
+    if (phase === 'caught' && phaseMs >= (nudge() ? CAUGHT_MS + 1400 : CAUGHT_MS)) restart()
     // Keys during the grace are dropped, not kept for later — or they would skip the screen the moment it ends.
     if (phase === 'won' && consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
       phase = 'map' // the cellar, with the room just escaped lit up
@@ -561,6 +585,7 @@ function frame(now: number): void {
       bestRunKept: book.bestRun(room.name) !== null,
       toast: toast?.text ?? null,
       canUndo: history.length > 0,
+      nudge: phase === 'caught' ? nudge() : null,
     }, STR)
   requestAnimationFrame(frame)
 }

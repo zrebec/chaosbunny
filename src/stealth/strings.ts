@@ -6,6 +6,7 @@
  */
 import { pickLocale } from 'zx-kit'
 import { LANGUAGE_CODE } from '../config.js'
+import type { Want } from './wants.js'
 
 export interface Strings {
   readonly earsUp: string
@@ -17,6 +18,12 @@ export interface Strings {
   readonly caught: string
   /** Under `caught`: the two ways out of a lost room. */
   readonly caughtHint: string
+  /**
+   * Under `caughtHint`, for a player caught three times in the same room: the verb the
+   * room cannot be left without (`wants.ts`), or `none` for a room that wants no tool
+   * at all. One line each, at most 32 columns, and never a step of the way through.
+   */
+  readonly wants: Readonly<Record<Want | 'none', string>>
   /** Toast after a beat is taken back. */
   readonly undone: string
   readonly won: string
@@ -85,6 +92,14 @@ const EN: Strings = {
   aimHints: 'THROW: PICK A DIRECTION  X NO',
   caught: 'CAUGHT!',
   caughtHint: 'U ONE BEAT BACK - ANY KEY AGAIN',
+  wants: {
+    dark: 'THIS ROOM WANTS YOUR EARS DOWN',
+    carrot: 'THIS ROOM WANTS A CARROT THROWN',
+    lampOut: 'THIS ROOM WANTS THE LAMP OUT',
+    lever: 'THIS ROOM WANTS THE LEVER',
+    water: 'THIS ROOM WANTS WET FEET',
+    none: 'THIS ROOM WANTS ONLY TIMING',
+  },
   undone: 'ONE BEAT BACK',
   won: 'SLIPPED OUT',
   wonBeats: (n) => `IN ${n} BEATS`,
@@ -161,6 +176,14 @@ const SK: Strings = {
   aimHints: 'HOD: VYBER SMER SIPKOU  X NIE',
   caught: 'CHYTENY!',
   caughtHint: 'U BEAT SPAT - KLAVESA ZNOVA',
+  wants: {
+    dark: 'TATO IZBA CHCE SKLOPENE USI',
+    carrot: 'TATO IZBA CHCE HOD MRKVOU',
+    lampOut: 'TATO IZBA CHCE ZHASNUTU LAMPU',
+    lever: 'TATO IZBA CHCE PAKU',
+    water: 'TATO IZBA CHCE MOKRE NOHY',
+    none: 'TATO IZBA CHCE LEN NACASOVANIE',
+  },
   undone: 'O BEAT SPAT',
   won: 'PREKLZOL SI',
   wonBeats: (n) => `ZA ${n} BEATOV`,

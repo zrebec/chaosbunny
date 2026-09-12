@@ -24,6 +24,7 @@ export const ROOM_2B: RoomSource = {
   name: 'room2b',
   carrots: 0,
   par: 21,
+  wants: ['dark'],
   patrols: [{ route: [[13, 2], [10, 2]] }],
   rows: [
     '################',

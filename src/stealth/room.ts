@@ -22,6 +22,7 @@
  * missing start or door, a guard route that crosses a wall or is not a closed loop.
  */
 import { dirBetween, sameCell, type Cell, type Dir } from './grid.js'
+import type { Want } from './wants.js'
 
 export const ROOM_COLS = 16
 export const ROOM_ROWS = 11
@@ -68,6 +69,13 @@ export interface RoomSource {
   readonly par?: number
   /** Where bats roost, `[x, y]`: each hangs over a floor or shadow cell (`bat.ts`). */
   readonly bats?: ReadonlyArray<readonly [number, number]>
+  /**
+   * The verbs the room cannot be left without (`wants.ts`) — what a stuck player is
+   * nudged towards, never how. Declared here and held to the solver by
+   * `tests/stealth/wants.tests.ts`, in both directions. `[]` means the room asks for
+   * no tool at all, only timing, which is itself worth telling him.
+   */
+  readonly wants?: readonly Want[]
 }
 
 export interface Patrol {
@@ -104,6 +112,8 @@ export interface Room {
   readonly levers: readonly Cell[]
   /** Grates: a wall until the lever is pulled. */
   readonly grates: readonly Cell[]
+  /** See {@link RoomSource.wants}. */
+  readonly wants: readonly Want[]
 }
 
 /** Lamps a room may hold: one bit each in `World.lamps`, and more than a few would be a lit room. */
@@ -261,5 +271,5 @@ export function parseRoom(src: RoomSource): Room {
       throw new Error(`${src.name}: bat ${i} shares (${c.x},${c.y}) with another creature`)
     }
   })
-  return { ...base, patrols, bats, lamps, levers, grates }
+  return { ...base, patrols, bats, lamps, levers, grates, wants: src.wants ?? [] }
 }

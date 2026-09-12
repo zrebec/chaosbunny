@@ -260,6 +260,20 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    lowered ears, a bat hears the ones that are up, and wading costs two beats a step. This list came from a real player
    stuck in a room that was provably passable: **anything the game expects and never
    says is a bug in the teaching, not in the player.**
+
+   The same player's other half of the problem was not a rule he did not know but an
+   *idea* he had not had — he was walking a room built on the dark. So a room now says
+   what it **wants** after three catches: the verb it cannot be left without, one line,
+   in yellow, under the caught banner, and the next want each further catch. Nothing
+   about it is written by hand. `wants.ts` asks the solver to leave a verb out and reads
+   the answer off whether the room still opens, and `tests/stealth/wants.tests.ts` holds
+   every room's declaration to that in both directions — nothing claimed that is not
+   true, nothing true left unclaimed. That is what makes it safe to show: a want names
+   the tool and never the hand, and there are as many wrong ways to use the right verb
+   as there ever were. The cellar as it stands wants
+   the ears down in ten rooms, a carrot in eleven, a lamp out in three, the lever in
+   three, wet feet in zero, and nothing but timing in two — a tally the doc test keeps
+   true, since a new room would quietly age it.
 4. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
    There is a bench for it now: `S` on the loaded picture puts all twelve sounds on
    twelve keys, so two can be heard back to back, and `M` there starts the cellar hum —

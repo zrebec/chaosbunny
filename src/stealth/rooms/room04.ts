@@ -20,6 +20,7 @@ export const ROOM_04: RoomSource = {
   name: 'room04',
   carrots: 0,
   par: 28,
+  wants: ['dark', 'carrot'],
   bats: [[10, 1]],
   patrols: [{ route: [[5, 7]], facing: 'right' }],
   rows: [

@@ -64,6 +64,12 @@ export interface Frame {
   readonly toast: string | null
   /** Whether there is a beat to take back — the caught screen offers U only then. */
   readonly canUndo: boolean
+  /**
+   * Under the caught overlay: the verb this room cannot be left without, shown once a
+   * player has been caught here often enough to be stuck rather than unlucky
+   * (`wants.ts`). Null the rest of the time — advice nobody asked for is noise.
+   */
+  readonly nudge: string | null
 }
 
 export interface Scene {
@@ -346,6 +352,7 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
     blit(ctx, scene.dimLayer)
     drawTextCentered(ctx, str.caught, 80, 32, C.B_RED, C.BLACK)
     if (f.canUndo) drawTextCentered(ctx, str.caughtHint, 96, 32, C.WHITE, C.BLACK)
+    if (f.nudge) drawTextCentered(ctx, f.nudge, 116, 32, C.B_YELLOW, C.BLACK)
   }
   if (f.won) {
     blit(ctx, scene.dimLayer)

@@ -43,6 +43,12 @@ On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it
 **Start** works the ears — the kit's pad has one action button and the throw already has
 it (`docs/zx-kit-findings.md`). Waiting a beat is still the space bar.
 
+Caught three times in the same room, the cellar names the verb that room cannot be
+left without — *the ears down*, *a carrot thrown*, *the lamp out*, *the lever*, *wet
+feet*, or *only timing* for a room that needs no tool at all. It is read off the solver
+(take a verb away, see whether the room still opens) and checked by a test, so it can
+name the tool without ever naming a step. Being caught again names the next one.
+
 Three rules the rooms rely on, said once in-game the first time each bites: **a `?` is a
 warning, not a capture** (the second sighting in a row is what ends the room), the dark
 hides only lowered ears, and a bat hears the ones that are up.
