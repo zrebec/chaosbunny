@@ -15,7 +15,8 @@ import { ROOM_05 } from './room05.js'
 import { ROOM_06 } from './room06.js'
 import { ROOM_07 } from './room07.js'
 import { ROOM_08 } from './room08.js'
+import { ROOM_09 } from './room09.js'
 
 export const ROOM_SOURCES: readonly RoomSource[] = [
-  ROOM_01, ROOM_02, ROOM_03, ROOM_04, ROOM_05, ROOM_06, ROOM_07, ROOM_08,
+  ROOM_01, ROOM_02, ROOM_03, ROOM_04, ROOM_05, ROOM_06, ROOM_07, ROOM_08, ROOM_09,
 ]

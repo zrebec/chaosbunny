@@ -6,6 +6,7 @@
  * npm run roomgen                          # general rooms that need the ears
  * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
  * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
+ * KIND=lever  npm run roomgen             # rooms where a grate has to be opened
  * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
  * KIND=bat npm run roomgen                 # rooms that need silence
  * ```
@@ -22,8 +23,9 @@ import { test } from 'vitest'
 import { generate, withTiles, type Candidate } from './gen.js'
 import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
+import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat'
+type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -76,6 +78,36 @@ function variants(kind: Kind, c: Candidate): RoomSource[] {
     }
     return [...single, ...pairs]
   }
+  if (kind === 'lever') {
+    const room = parseRoom(src)
+    const out: RoomSource[] = []
+    // A grate is only interesting where it cuts the room in two: a corridor cell with
+    // exactly two open neighbours, opposite each other. The lever then goes somewhere
+    // a guard can watch — the search finds out whether that is worth the walk.
+    const open = (x: number, y: number): boolean => '.s~'.includes(src.rows[y]?.[x] ?? '#')
+    const chokes: [number, number][] = []
+    for (let y = 1; y < room.rows - 1; y++) {
+      for (let x = 1; x < room.cols - 1; x++) {
+        if (src.rows[y]![x] !== '.') continue
+        const h = open(x - 1, y) && open(x + 1, y)
+        const v = open(x, y - 1) && open(x, y + 1)
+        if (h !== v && !open(x - (h ? 0 : 1), y - (h ? 1 : 0)) && !open(x + (h ? 0 : 1), y + (h ? 1 : 0))) {
+          chokes.push([x, y])
+        }
+      }
+    }
+    for (const grate of chokes) {
+      for (const lever of spots(src, 6)) {
+        if (lever[0] === grate[0] && lever[1] === grate[1]) continue
+        out.push({
+          ...src,
+          name: `${src.name}@grate${grate[0]},${grate[1]}+lever${lever[0]},${lever[1]}`,
+          rows: withTiles(withTiles(src.rows, '+', [grate]), '/', [lever]),
+        })
+      }
+    }
+    return out
+  }
   return [src]
 }
 
@@ -102,6 +134,34 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
       patrols: src.patrols.map((p) => (p.turns ? { route: p.route, facing: p.turns[0] } : p)),
     }, MAX_STATES)
     return frozen && frozen.par === null ? { src, marks: m, score: m.par!, note: 'frozen, the room is impossible' } : null
+  }
+  if (kind === 'lever') {
+    // The grate must be the room: wall it off and there is no way out, so the lever
+    // is not a detour but the door. And the room must still be worth walking.
+    const walled = mark({ ...src, name: `${src.name} (walled)`, rows: src.rows.map((r) => r.split('+').join('#').split('/').join('.')) }, MAX_STATES)
+    if (!walled || walled.par !== null) return null
+    const open = mark({ ...src, name: `${src.name} (open)`, rows: src.rows.map((r) => r.split('+').join('.').split('/').join('.')) }, MAX_STATES)
+    if (!open?.par) return null
+    // A room that is eight beats long with the grate open is a fetch, not a room: the
+    // detour has to be dangerous, not merely long. So it must also carry stealth
+    // pressure — the ears are needed, or even the most careful player is noticed.
+    if (open.par < 12) return null
+    // And the pull must be heard by somebody who can walk to it, or the loudest thing
+    // in the game costs nothing and the lever is just a long errand.
+    const room = parseRoom(src)
+    const lever = room.levers[0]!
+    const heard = room.patrols.some((p) => p.route.some((c) =>
+      Math.abs(c.x - lever.x) + Math.abs(c.y - lever.y) <= HEARING && nextStepToward(room, c, lever) !== null))
+    if (!heard) return null
+    const gain = m.par! - open.par
+    const pressure = m.noEars === null || (m.fewest ?? 0) >= 1
+    if (gain < GAIN || !pressure) return null
+    return {
+      src,
+      marks: m,
+      score: gain * 10 + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5,
+      note: `already open it is par ${open.par} (+${gain}), fewest? ${open.fewest}`,
+    }
   }
   if (kind === 'bat') {
     if (!src.bats?.length) return null
