@@ -99,6 +99,7 @@ export const SOUND_BENCH: ReadonlyArray<{ readonly key: string; readonly play: (
   { key: '0', play: () => playEvents([{ type: 'caught', fox: 0, why: 'seen' }]) },
   { key: 'A', play: () => playEvents([{ type: 'batHeard', bat: 0 }]) },
   { key: 'B', play: () => playEvents([{ type: 'won' }]) },
+  { key: 'C', play: () => playEvents([{ type: 'wade', at: { x: 0, y: 0 } }]) },
 ]
 
 /** A step into a wall, or a throw with nowhere to go: a dull knock, and no beat. */

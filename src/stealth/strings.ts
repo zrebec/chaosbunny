@@ -114,7 +114,7 @@ const EN: Strings = {
   soundTitle: 'THE SOUND BENCH',
   soundNames: [
     'STEP', 'EARS', 'THROW', 'CARROT LANDS', 'LAMP OUT', 'CREAK',
-    'LEVER', 'PICKUP', 'SPOTTED', 'CAUGHT', 'BAT', 'ESCAPED',
+    'LEVER', 'PICKUP', 'SPOTTED', 'CAUGHT', 'BAT', 'ESCAPED', 'WADING',
   ],
   soundHint: 'M THE HUM - ESC BACK',
   cellar: 'THE CELLAR',
@@ -175,7 +175,7 @@ const SK: Strings = {
   soundTitle: 'SKUSOBNA ZVUKOV',
   soundNames: [
     'KROK', 'USI', 'HOD', 'DOPAD MRKVY', 'SKLO LAMPY', 'VRZGNUTIE',
-    'PAKA', 'ZOBRAL MRKVU', 'VSIMOL SI TA', 'CHYTENY', 'NETOPIER', 'PREKLZOL',
+    'PAKA', 'ZOBRAL MRKVU', 'VSIMOL SI TA', 'CHYTENY', 'NETOPIER', 'PREKLZOL', 'BRODENIE',
   ],
   soundHint: 'M HUKOT - ESC SPAT',
   cellar: 'PIVNICA',

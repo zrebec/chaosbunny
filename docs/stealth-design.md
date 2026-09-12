@@ -92,6 +92,7 @@ should come from what the game turns out to need, not from what the generator ca
 | lamp | lights 3 steps out; **light kills shadow**; a carrot puts it out for good | one carrot, two uses, never both |
 | lever and grate | a grate is a wall Randy sees through and a fox never fits through; stepping on the lever works every grate, and works them back | the first thing that changes the room somewhere you are not |
 | creaky board | creaks under Randy's step, ears up or down; heard 3 away, nothing there to find | the first thing the dribble cannot save you from |
+| water | Randy wades it, no fox follows; a step in costs **two beats and two turns of the world** | the first rule about what a route is worth rather than who can sense you |
 | listening | a fox that hears a creak stands still one beat, then comes | the noise is under Randy's own foot: without the pause it would be one chance, not two |
 
 ## 4. How a room actually gets designed
