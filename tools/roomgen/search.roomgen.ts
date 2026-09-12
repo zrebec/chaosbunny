@@ -4,6 +4,8 @@
  *
  * ```bash
  * npm run roomgen                          # general rooms that need the ears
+ * KIND=gentle npm run roomgen              # a short room whose only lesson is that a
+ *   `?` is survivable: it must be seen exactly once, and needs neither ears nor carrot
  * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
  * KIND=decision npm run roomgen            # rooms with two plans that cost the same
  * KIND=lampboard npm run roomgen           # rooms where a lamp AND a plank are both load-bearing
@@ -32,7 +34,7 @@ import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route'
+type Kind = 'plain' | 'gentle' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -260,6 +262,17 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     const gain = m.par! - quiet.par
     if (gain < GAIN && quiet.noEars !== null) return null
     return { src, marks: m, score: gain * 10, note: `without the bat par ${quiet.par}, noEars ${quiet.noEars ?? 'NONE'}` }
+  }
+  if (kind === 'gentle') {
+    // The teaching room between the first and the second: one sighting is forced, and
+    // nothing else is. No carrot to find, no dribble to learn — only the rule that a
+    // guard which has noticed you lets go again if the next beat gives it nothing.
+    if (m.fewest !== 1) return null
+    if (m.noEars === null || m.noEars !== m.par) return null // the ears must buy nothing
+    // No carrot in the room at all, so the lesson cannot be confused with the first
+    // room's: this one is only about a guard that has noticed you.
+    if ((src.carrots ?? 0) > 0 || src.rows.join('').includes('c')) return null
+    return { src, marks: m, score: 100 - m.par!, note: 'one sighting forced, nothing else' }
   }
   // plain: a room that cannot be walked with the ears up is already worth a look.
   return m.noEars === null ? { src, marks: m, score: m.par!, note: 'the ears are needed' } : null
