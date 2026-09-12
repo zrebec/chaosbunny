@@ -76,6 +76,8 @@ export function renderTitle(
   total: number | null = null,
   /** How many rooms the cellar holds, so the tale can count them honestly. */
   rooms = 0,
+  /** The pars of every room added up — the number a perfect cellar would take. */
+  parTotal = 0,
 ): void {
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, 256, 192)
@@ -109,7 +111,12 @@ export function renderTitle(
     drawTextCentered(ctx, ending ? str.endingTitle : str.storyTitle, 24, 32, ending ? C.B_GREEN : C.B_YELLOW, C.BLACK)
     // 14 px a line leaves the prompt its own air, however long the tale runs.
     lines.forEach((line: string, i: number) => drawTextCentered(ctx, line, 56 + i * 14, 32, C.B_WHITE, C.BLACK))
-    if (ending && total !== null) drawTextCentered(ctx, str.wholeCellar(total), 56 + lines.length * 14 + 8, 32, C.B_CYAN, C.BLACK)
+    if (ending && total !== null) {
+      const y = 56 + lines.length * 14 + 8
+      drawTextCentered(ctx, str.wholeCellar(total), y, 32, C.B_CYAN, C.BLACK)
+      // What a perfect cellar would take, so the number above has something to beat.
+      if (parTotal > 0) drawTextCentered(ctx, str.par(parTotal), y + 14, 32, total <= parTotal ? C.B_YELLOW : C.CYAN, C.BLACK)
+    }
     const sx = Math.floor((256 - str.startPrompt.length * 8) / 2)
     drawBlinkingText(ctx, str.startPrompt, sx, 176, now, C.WHITE, C.BLACK)
     return

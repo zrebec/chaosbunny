@@ -70,6 +70,8 @@ canvas.style.width = '' // index.html's CSS fits the canvas to the window
 canvas.style.height = ''
 
 const ROOMS = ROOM_SOURCES.map(parseRoom)
+/** Every room's par added up: what the whole cellar costs a player who never wastes a beat. */
+const PAR_TOTAL = ROOMS.reduce((sum, r) => sum + (r.par ?? 0), 0)
 const scenes = new Map<number, Scene>()
 let roomIndex = 0
 let room = ROOMS[roomIndex]!
@@ -501,7 +503,7 @@ function frame(now: number): void {
   } else if (phase === 'title') {
     if (titleMode === 'sound') {
       setBorder(null, now)
-      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length)
+      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL)
       requestAnimationFrame(frame)
       return // its keys are handled on keydown, so no key may advance the title here
     }
@@ -526,7 +528,7 @@ function frame(now: number): void {
     }
   }
 
-  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length)
+  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL)
   else if (phase === 'map') {
     renderCellar(
       ctx,
