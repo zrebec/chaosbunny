@@ -58,6 +58,10 @@ describe('the design doc', () => {
 /**
  * The two documents a newcomer reads first both count the rooms in words, and a count
  * in prose is the first thing to rot. Any "<word> rooms" in them has to be the truth.
+ *
+ * Which means the phrase is reserved: "two rooms use it now" in a paragraph about water
+ * fails this test, and rightly — a reader skimming for the size of the game would read
+ * it as the total. Write "one room offers it and the next demands it" instead.
  */
 describe('the documents that count the rooms', () => {
   it.each([['README.md', readme], ['docs/ROADMAP.md', roadmap]])('%s says how many rooms there really are', (file, text) => {

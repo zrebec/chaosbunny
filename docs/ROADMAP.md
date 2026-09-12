@@ -22,6 +22,10 @@ a cellar map that is also the room chooser, a story and an ending, records and r
   and what each of them costs. A Slovak copy sits beside it.
 - Where the work is: local branches, newest last, each one a working state. The night's
   diary with the whole table is `retro/docs/sk/chaosbunny-noc-2026-09-12.md`.
+- What a stuck player is told: four rules are said once at the beat they first bite, all
+  eleven are on one screen (`H`, from the picture or mid-room), and after three catches
+  the room names the verb it cannot be left without — read off the solver by `wants.ts`
+  and held to it by a test, so it names the tool and never the way.
 - Still open, and only the owner can close it: **the sound** — every blip and the AY
   loop are a guess. `S` on the loaded picture opens a bench that plays all twelve.
 - Resolution: asked again on 2026-09-12 and answered the same way as below — **256×192
@@ -34,9 +38,9 @@ a cellar map that is also the room chooser, a story and an ending, records and r
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
 | S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen sounds against the hum. This is the only item nobody but the owner can do. | S | 🔜 |
-| S2 | **Rooms on demand** | `npm run roomgen` finds them in seconds now (`KIND=route`, `fork`, `dark`, `bat`, `water`, `gentle`, `dribble`). Sixteen is a cellar's worth, so the next room should answer something play turned up, not fill a gap in a table. | S each | 💭 |
+| S2 | **Rooms on demand** | `npm run roomgen` finds them in seconds (`KIND=route` with `shadow`, `lure`, `grate`, `board`, `water`, `sentry`, `bat` gates, plus `fork`, `gentle`, `dribble`). Eighteen is a cellar's worth. The two newest each answered a question rather than filling a gap: "the flood" because the wants tally showed water was a rule no room enforced, "the shadow shelf" because the step from par 21 to par 30 was where a real player fell off. The next one should be asked for the same way. | S each | 💭 |
 | S3 | **The pad cannot wait a beat** | zx-kit has one action button and this game has four verbs; Start already had to become the ears. Needs `consumeButton` in the kit — written up in `docs/zx-kit-findings.md`. | S (in the kit) | 💭 |
-| S4 | **A second cellar, built on water** | The rule is in and one room uses it (`docs/stealth-design.md` §5). A cellar of its own would want the flooded-passage shape as well — the planner already makes those. | M | 💭 |
+| S4 | **A second cellar, built on water** | Water is finished rather than started: one room offers the wade and the next one demands it. A cellar of its own would want a spine the first one has not used: the flooded passage the planner can already build, and rooms where the tax and the patrol clock are the whole puzzle. | M | 💭 |
 | S5 | **Publish?** | Minefield's route (itch.io) or GitHub Pages, whichever the owner wants; CI already deploys `master`. Owner's call, and only after S1. | S | 💭 |
 
 **The platformer list below is untouched.** Nothing in it has been cancelled; it is
