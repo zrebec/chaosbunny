@@ -10,6 +10,9 @@
  *    being caught.
  * 2. **Noise** — a carrot that landed this beat diverts every fox that hears it.
  *    Bats (`bat.ts`) hear more: the carrot, and any step Randy took with his ears up.
+ *    A **creaking board** under Randy's foot is a noise too, ears up or down, but a
+ *    quiet one — it carries {@link CREAK_HEARING} cells, not the carrot's five, and
+ *    whoever comes finds nothing.
  *    A carrot thrown at a lamp (`light.ts`) puts it out instead of landing: the
  *    carrot is gone, the crash is heard from the foot of the lamp, and whoever comes
  *    to look finds nothing there — a shorter distraction, bought with the dark.
@@ -39,6 +42,13 @@ export const THROW_RANGE = 3
  * and dark corridors impassable — measured with the solver before choosing 2.
  */
 export const SNEAK_STEPS = 2
+
+/**
+ * How far a creaking board carries — Manhattan, through walls, like every other
+ * noise. Shorter than a carrot's {@link HEARING}: a board gives away where you are
+ * to whoever is near, not to the whole cellar.
+ */
+export const CREAK_HEARING = 3
 
 export type Action =
   | { readonly kind: 'move'; readonly dir: Dir }
@@ -73,6 +83,7 @@ export type BeatEvent =
   | { readonly type: 'ears'; readonly down: boolean }
   | { readonly type: 'throw'; readonly from: Cell; readonly to: Cell }
   | { readonly type: 'pickup'; readonly at: Cell }
+  | { readonly type: 'creak'; readonly at: Cell }
   | { readonly type: 'heard'; readonly fox: number }
   | { readonly type: 'eat'; readonly fox: number; readonly at: Cell }
   | { readonly type: 'suspicious'; readonly fox: number }
@@ -148,6 +159,7 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
   let noise: Cell | null = null
   const from = randy.cell
   let stepNoise: Cell | null = null
+  let creak: Cell | null = null
   const done = (outcome: Outcome, foxes: readonly Fox[] = world.foxes, bats: readonly Bat[] = world.bats): BeatResult => ({
     world: { randy, foxes, bats, items, lamps, beats: world.beats + 1 },
     outcome,
@@ -173,6 +185,10 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
         return done('caught')
       }
       if (!randy.earsDown) stepNoise = to
+      if (tileAt(room, to) === 'board') {
+        creak = to
+        events.push({ type: 'creak', at: to })
+      }
       if (items.some((c) => sameCell(c, to))) {
         items = without(items, to)
         randy = { ...randy, carrots: randy.carrots + 1 }
@@ -208,13 +224,16 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
       break
   }
 
-  // 2. Noise. Foxes hear only a carrot landing; bats hear that and an ears-up step.
+  // 2. Noise. Foxes hear a carrot landing, and a board creaking from closer;
+  // bats hear all of that and an ears-up step as well.
+  const foxNoise = noise ?? creak
+  const foxRange = noise ? undefined : CREAK_HEARING
   let foxes: Fox[] = world.foxes.map((f, i) => {
-    if (!noise || !hears(room, f, noise)) return f
+    if (!foxNoise || !hears(room, f, foxNoise, foxRange)) return f
     events.push({ type: 'heard', fox: i })
-    return divert(f, noise)
+    return divert(f, foxNoise, creak !== null) // a creak is under Randy's own foot: it listens first
   })
-  const sound = noise ?? stepNoise
+  const sound = noise ?? creak ?? stepNoise
   let bats: Bat[] = world.bats.map((b, i) => {
     if (!sound || !batHears(b, sound)) return b
     events.push({ type: 'batHeard', bat: i })

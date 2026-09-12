@@ -11,6 +11,7 @@
  * | `=`  | cover    | no    | no  | blocks only when ears are down |
  * | `D`  | door     | yes   | no  | passes — stepping on it wins   |
  * | `L`  | lamp     | no    | no  | passes; its light kills shadow |
+ * | `~`  | board    | yes   | yes | passes; creaks under Randy      |
  * | `R`  | floor    |       |     | Randy's start                  |
  * | `c`  | floor    |       |     | a carrot lying there           |
  *
@@ -22,7 +23,7 @@ import { dirBetween, sameCell, type Cell, type Dir } from './grid.js'
 export const ROOM_COLS = 16
 export const ROOM_ROWS = 11
 
-export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp'
+export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp' | 'board'
 
 const LEGEND: Readonly<Record<string, TileKind>> = {
   '#': 'wall',
@@ -31,6 +32,7 @@ const LEGEND: Readonly<Record<string, TileKind>> = {
   '=': 'cover',
   D: 'door',
   L: 'lamp',
+  '~': 'board',
   R: 'floor',
   c: 'floor',
 }
@@ -106,7 +108,7 @@ export function tileAt(grid: TileGrid, c: Cell): TileKind {
 }
 
 export function randyCanEnter(kind: TileKind): boolean {
-  return kind === 'floor' || kind === 'shadow' || kind === 'door'
+  return kind === 'floor' || kind === 'shadow' || kind === 'door' || kind === 'board'
 }
 
 /** Whether light passes through: everything but a wall — a lamp shines over a crate. */
@@ -115,7 +117,7 @@ export function passesLight(kind: TileKind): boolean {
 }
 
 export function foxCanEnter(kind: TileKind): boolean {
-  return kind === 'floor' || kind === 'shadow'
+  return kind === 'floor' || kind === 'shadow' || kind === 'board'
 }
 
 /** Expands waypoints into the full closed loop of neighbouring cells. */

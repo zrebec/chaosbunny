@@ -92,6 +92,7 @@ function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlyS
     case 'shadow': return lit.has(cellIndex(room, cell)) ? TILES.floor : TILES['floor-shadow']
     case 'cover': return TILES.crate
     case 'door': return TILES.door
+    case 'board': return TILES.board
     case 'lamp': {
       const i = room.lamps.findIndex((l) => sameCell(l, cell))
       return lampOn(lamps, i) ? TILES['lamp-on'] : TILES['lamp-off']

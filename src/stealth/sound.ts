@@ -38,6 +38,10 @@ export function playEvents(events: readonly BeatEvent[]): void {
         blip(2600, 14, 95, 0.5); blip(1900, 14, 113, 0.45); blip(2300, 12, 131, 0.4)
         blip(150, 110, 155, 0.45)
         break
+      case 'creak':
+        // Old wood bending: two low tones that slide the wrong way, and loud enough to worry.
+        blip(190, 55, 0, 0.4); blip(150, 70, 50, 0.4)
+        break
       case 'pickup':
         blip(880, 40, 0, 0.4); blip(1320, 60, 45, 0.4)
         break

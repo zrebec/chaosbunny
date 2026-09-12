@@ -105,15 +105,25 @@ export function nextStepToward(room: Room, from: Cell, to: Cell): Cell | null {
   return best
 }
 
-/** Whether `fox` hears a carrot land at `noise`, and can get there. */
-export function hears(room: Room, fox: Fox, noise: Cell): boolean {
+/**
+ * Whether `fox` hears a noise at `noise`, and can get there. `range` is how far the
+ * noise carries — a carrot landing carries {@link HEARING}, a creaking board less
+ * (`beat.ts`). A fox that cannot walk to the noise ignores it: it has nowhere to look.
+ */
+export function hears(room: Room, fox: Fox, noise: Cell, range = HEARING): boolean {
   if (fox.mode !== 'patrol' && fox.mode !== 'return' && fox.mode !== 'suspicious') return false
-  if (manhattan(fox.cell, noise) > HEARING) return false
+  if (manhattan(fox.cell, noise) > range) return false
   return sameCell(fox.cell, noise) || nextStepToward(room, fox.cell, noise) !== null
 }
 
-export function divert(fox: Fox, noise: Cell): Fox {
-  return { ...fox, mode: 'divert', resume: 'divert', target: noise }
+/**
+ * Sends `fox` to look at a noise. `listen` holds it still for the beat it hears —
+ * a guard that stops, ears up, before it walks over. A carrot landing across the
+ * room needs no such pause; a board creaking under Randy's own foot does, or the
+ * fox would be on top of him before he could move (`beat.ts` promises two chances).
+ */
+export function divert(fox: Fox, noise: Cell, listen = false): Fox {
+  return { ...fox, mode: 'divert', resume: 'divert', target: noise, timer: listen ? 1 : 0 }
 }
 
 function moveTo(fox: Fox, to: Cell): Fox {
@@ -165,6 +175,8 @@ export function advanceFox(room: Room, fox: Fox, items: readonly Cell[]): { fox:
     case 'return':
       return { fox: returnStep(room, fox), ate: null }
     case 'divert': {
+      // Listening: the beat it heard, a fox stands still with its ears up.
+      if (fox.timer > 0) return { fox: { ...fox, timer: fox.timer - 1 }, ate: null }
       const target = fox.target
       // Standing on it already — the carrot landed on the fox: eat, or this beat's move is home.
       if (!target || sameCell(fox.cell, target)) {

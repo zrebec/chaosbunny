@@ -97,11 +97,14 @@ export function drawLayered(ctx: CanvasRenderingContext2D, art: Layered, x: numb
   for (const l of art.layers) drawBitmap(ctx, l.bitmap, Math.round(x), Math.round(y), l.ink)
 }
 
-export type TileArt = 'floor' | 'floor-shadow' | 'wall-top' | 'wall-face' | 'crate' | 'door' | 'lamp-on' | 'lamp-off'
+export type TileArt =
+  | 'floor' | 'floor-shadow' | 'wall-top' | 'wall-face' | 'crate' | 'door' | 'lamp-on' | 'lamp-off' | 'board'
 
 function tileset(json: { tile: number; legend: Record<string, string>; tiles: Record<string, string[]> }): Record<TileArt, Layered> {
   const legend = colours(json.legend, 'room-kit')
-  const need: TileArt[] = ['floor', 'floor-shadow', 'wall-top', 'wall-face', 'crate', 'door', 'lamp-on', 'lamp-off']
+  const need: TileArt[] = [
+    'floor', 'floor-shadow', 'wall-top', 'wall-face', 'crate', 'door', 'lamp-on', 'lamp-off', 'board',
+  ]
   return Object.fromEntries(
     need.map((name) => {
       const rows = json.tiles[name]
