@@ -116,7 +116,7 @@ const EN: Strings = {
     'STEP', 'EARS', 'THROW', 'CARROT LANDS', 'LAMP OUT', 'CREAK',
     'LEVER', 'PICKUP', 'SPOTTED', 'CAUGHT', 'BAT', 'ESCAPED',
   ],
-  soundHint: 'ESC: BACK',
+  soundHint: 'M THE HUM - ESC BACK',
   cellar: 'THE CELLAR',
   cellarHint: 'ARROWS PICK - ENTER IN - ESC OUT',
   roomNames: [
@@ -177,7 +177,7 @@ const SK: Strings = {
     'KROK', 'USI', 'HOD', 'DOPAD MRKVY', 'SKLO LAMPY', 'VRZGNUTIE',
     'PAKA', 'ZOBRAL MRKVU', 'VSIMOL SI TA', 'CHYTENY', 'NETOPIER', 'PREKLZOL',
   ],
-  soundHint: 'ESC: SPAT',
+  soundHint: 'M HUKOT - ESC SPAT',
   cellar: 'PIVNICA',
   cellarHint: 'SIPKY - ENTER DNU - ESC VON',
   roomNames: [

@@ -361,7 +361,12 @@ window.addEventListener('keydown', (e) => {
   }
   // The sound bench: each key plays its own sound, Esc goes back to the picture.
   if (phase === 'title' && titleMode === 'sound') {
-    if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') titleMode = 'ready'
+    if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
+      pauseMusic() // the bench is for the beeper; the hum stops when you leave
+      titleMode = 'ready'
+    }
+    // The tuning question is whether a blip cuts through the hum, so the hum is here too.
+    else if (e.key === 'm' || e.key === 'M') toggleMusic()
     else SOUND_BENCH.find((s) => s.key === e.key.toUpperCase())?.play()
     resetInput()
     return

@@ -209,8 +209,9 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    says is a bug in the teaching, not in the player.**
 4. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
    There is a bench for it now: `S` on the loaded picture puts all twelve sounds on
-   twelve keys, so two can be heard back to back. Tuning is the numbers in
-   `sound.ts`'s `playEvents` and `music.ts`'s three strings.
+   twelve keys, so two can be heard back to back, and `M` there starts the cellar hum —
+   because the real question is whether a `?` cuts through it. Tuning is the numbers in
+   `sound.ts`'s `playEvents` and `music.ts`'s three strings; nothing else has to change.
 5. **Resolution** — staying at 256×192 with 16 px tiles, decided again on 2026-09-12
    when it was put as a question. Three reasons, all of them about the verb: the rules
    are countable in cells (a cone 1 then 3 wide to 4, a throw of 3, hearing 5, a dribble
