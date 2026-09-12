@@ -15,10 +15,12 @@
  * target's centre touches, and a line through a corner touches all four cells
  * there — so a wall that meets another only at a corner still blocks. Walls always
  * block; low cover blocks only while Randy has his ears down (ears up stick out
- * over it). In shadow, ears down, Randy is invisible except right in front of a fox.
+ * over it). In shadow, ears down, Randy is invisible except right in front of a fox
+ * — unless a lamp is lighting that shadow (`light.ts`), which is no shadow at all.
  */
 import { delta, type Cell, type Dir } from './grid.js'
-import { tileAt, type Room, type TileGrid, type TileKind } from './room.js'
+import { cellIndex } from './light.js'
+import { randyCanEnter, tileAt, type Room, type TileGrid, type TileKind } from './room.js'
 
 export const SIGHT_RANGE = 4
 
@@ -75,7 +77,7 @@ export function visibleCells(grid: TileGrid, fox: Cell, facing: Dir, earsDown: b
   for (const e of CONE) {
     const cell = toWorld(fox, facing, e.f, e.l)
     const kind = tileAt(grid, cell)
-    if (kind === 'wall' || kind === 'cover') continue
+    if (!randyCanEnter(kind)) continue
     const blocked = e.path.some(([f, l]) => blocksSight(tileAt(grid, toWorld(fox, facing, f, l)), earsDown))
     if (!blocked) seen.push({ cell, forward: e.f, lateral: e.l })
   }
@@ -89,8 +91,13 @@ const CONE_AT = new Map(CONE.map((e) => [`${e.f},${e.l}`, e]))
  * Whether the fox at `fox`, facing `facing`, sees Randy at `randy`; `null` if not.
  * The same answer as looking Randy up in {@link visibleCells}, computed directly —
  * the solver asks this for every fox on every beat of every state.
+ *
+ * `lit` is the room's lit cells (`light.ts`); a shadow among them hides nobody.
+ * Rooms without lamps pass nothing and behave exactly as before.
  */
-export function spots(room: Room, fox: Cell, facing: Dir, randy: Cell, earsDown: boolean): Sighting | null {
+export function spots(
+  room: Room, fox: Cell, facing: Dir, randy: Cell, earsDown: boolean, lit?: ReadonlySet<number>,
+): Sighting | null {
   const fw = delta(facing)
   const dx = randy.x - fox.x
   const dy = randy.y - fox.y
@@ -100,9 +107,10 @@ export function spots(room: Room, fox: Cell, facing: Dir, randy: Cell, earsDown:
   const e = CONE_AT.get(`${forward},${lateral}`)
   if (!e) return null
   const kind = tileAt(room, randy)
-  if (kind === 'wall' || kind === 'cover') return null
+  if (!randyCanEnter(kind)) return null
   if (e.path.some(([f, l]) => blocksSight(tileAt(room, toWorld(fox, facing, f, l)), earsDown))) return null
   const rightInFront = e.f === 1 && e.l === 0
-  if (earsDown && kind === 'shadow' && !rightInFront) return null
+  const hidden = kind === 'shadow' && !lit?.has(cellIndex(room, randy))
+  if (earsDown && hidden && !rightInFront) return null
   return { cell: randy, forward: e.f, lateral: e.l }
 }

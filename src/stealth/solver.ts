@@ -26,14 +26,21 @@ export interface SolveOptions {
   readonly throws?: boolean
   /** Allow ears up/down (default true). Off, Randy keeps his ears up the whole way. */
   readonly ears?: boolean
+  /** Allow putting a lamp out with a carrot (default true). Off, it asks "with the lights on?" */
+  readonly lamps?: boolean
   /** Skip throws no fox hears (default true) — see the module comment. */
   readonly prune?: boolean
   readonly maxStates?: number
 }
 
-/** A throw that diverts nobody — no fox, no bat: dominated by waiting, so the search need not follow it. */
+/**
+ * A throw that changes nothing but where the carrot lies — nobody heard it and no
+ * lamp went out: dominated by waiting, so the search need not follow it.
+ */
 function pointless(action: Action, events: readonly { readonly type: string }[]): boolean {
-  return action.kind === 'throw' && !events.some((e) => e.type === 'heard' || e.type === 'batHeard')
+  const acted = (e: { readonly type: string }): boolean =>
+    e.type === 'heard' || e.type === 'batHeard' || e.type === 'lampOut'
+  return action.kind === 'throw' && !events.some(acted)
 }
 
 export function worldKey(w: World): string {
@@ -43,7 +50,7 @@ export function worldKey(w: World): string {
     .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}:${f.phase}`)
     .join('|')
   const bats = w.bats.map((b) => `${cellKey(b.cell)}:${b.mode}:${b.timer}:${b.target ? cellKey(b.target) : '-'}`).join('|')
-  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}`
+  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}/${w.lamps}`
 }
 
 export function actionsFor(throws: boolean, ears: boolean): Action[] {
@@ -66,6 +73,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
+  const keepLamps = options.lamps === false
   const start = startWorld(room)
   const cost = new Map<string, number>([[worldKey(start), 0]])
   const buckets: World[][] = [[start]]
@@ -77,6 +85,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
       for (const action of actions) {
         const result = beat(room, world, action)
         if (result.outcome === 'blocked' || result.outcome === 'caught') continue
+        if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
         // A winning step ends the beat before any fox looks, so it adds no sighting.
         if (result.outcome === 'won') return q
         if (prune && pointless(action, result.events)) continue
@@ -97,6 +106,7 @@ export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
+  const keepLamps = options.lamps === false
   const start = startWorld(room)
   const parent = new Map<string, { prev: string; action: Action } | null>([[worldKey(start), null]])
   const queue: World[] = [start]
@@ -107,6 +117,7 @@ export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
     for (const action of actions) {
       const result = beat(room, world, action)
       if (result.outcome === 'blocked' || result.outcome === 'caught') continue
+      if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
       if (result.outcome === 'won') {
         const path: Action[] = [action]
         for (let at = parent.get(key); at; at = parent.get(at.prev)) path.push(at.action)

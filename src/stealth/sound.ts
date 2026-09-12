@@ -32,6 +32,12 @@ export function playEvents(events: readonly BeatEvent[]): void {
       case 'heard':
         blip(260, 35, 110, 0.4) // the carrot landing, just after the throw
         break
+      case 'lampOut':
+        // Glass, then the room going quiet: three quick high shards and a low thud,
+        // timed to land after the throw's own arc.
+        blip(2600, 14, 95, 0.5); blip(1900, 14, 113, 0.45); blip(2300, 12, 131, 0.4)
+        blip(150, 110, 155, 0.45)
+        break
       case 'pickup':
         blip(880, 40, 0, 0.4); blip(1320, 60, 45, 0.4)
         break

@@ -10,6 +10,9 @@
  *    being caught.
  * 2. **Noise** — a carrot that landed this beat diverts every fox that hears it.
  *    Bats (`bat.ts`) hear more: the carrot, and any step Randy took with his ears up.
+ *    A carrot thrown at a lamp (`light.ts`) puts it out instead of landing: the
+ *    carrot is gone, the crash is heard from the foot of the lamp, and whoever comes
+ *    to look finds nothing there — a shorter distraction, bought with the dark.
  * 3. **Foxes move**, each by its mode (`patrol.ts`); then bats fly.
  * 4. **Contact** — a fox that walks onto Randy's cell catches him; so does a bat
  *    that flies through it, or that Randy walks into.
@@ -22,6 +25,7 @@
  */
 import { advanceBat, batHears, flyTo, initialBats, type Bat } from './bat.js'
 import { sameCell, step, type Cell, type Dir } from './grid.js'
+import { allLampsOn, lampOn, litCells } from './light.js'
 import { advanceFox, divert, hears, initialFoxes, type Fox } from './patrol.js'
 import { randyCanEnter, tileAt, type Room } from './room.js'
 import { spots } from './rules.js'
@@ -56,6 +60,8 @@ export interface World {
   readonly bats: readonly Bat[]
   /** Carrots on the floor: the room's own and any thrown one not yet eaten. */
   readonly items: readonly Cell[]
+  /** Which of `room.lamps` are still burning — one bit each (`light.ts`). */
+  readonly lamps: number
   readonly beats: number
 }
 
@@ -72,6 +78,7 @@ export type BeatEvent =
   | { readonly type: 'suspicious'; readonly fox: number }
   | { readonly type: 'calm'; readonly fox: number }
   | { readonly type: 'caught'; readonly fox: number; readonly why: 'seen' | 'bumped' }
+  | { readonly type: 'lampOut'; readonly lamp: number; readonly at: Cell }
   | { readonly type: 'batHeard'; readonly bat: number }
   | { readonly type: 'bitten'; readonly bat: number }
   | { readonly type: 'won' }
@@ -88,20 +95,43 @@ export function startWorld(room: Room): World {
     foxes: initialFoxes(room),
     bats: initialBats(room),
     items: room.pickups,
+    lamps: allLampsOn(room),
     beats: 0,
   }
 }
 
-/** Where a carrot thrown from `from` towards `dir` lands, or `null` if the first cell is blocked. */
-export function throwTarget(room: Room, from: Cell, dir: Dir): Cell | null {
+/** What a thrown carrot meets: an empty cell to land on, or a burning lamp to put out. */
+export type Throw =
+  | { readonly kind: 'land'; readonly at: Cell }
+  | { readonly kind: 'lamp'; readonly at: Cell; readonly lamp: number; readonly noise: Cell }
+
+/**
+ * What a carrot thrown from `from` towards `dir` does, or `null` if it has nowhere
+ * to go. It flies over foxes and stops short of walls and cover. A **burning** lamp
+ * in its way is hit — it goes out, and the carrot is lost at the lamp's foot, which
+ * is where the crash is heard from (the cell before it, or Randy's own if he is
+ * right against it). A lamp already out is just a post: it blocks like cover.
+ */
+export function throwAt(room: Room, from: Cell, dir: Dir, lamps: number): Throw | null {
   let land: Cell | null = null
   for (let k = 1; k <= THROW_RANGE; k++) {
     const c = step(from, dir, k)
     const kind = tileAt(room, c)
+    if (kind === 'lamp') {
+      const lamp = room.lamps.findIndex((l) => sameCell(l, c))
+      if (lamp >= 0 && lampOn(lamps, lamp)) return { kind: 'lamp', at: c, lamp, noise: land ?? from }
+      break
+    }
     if (kind === 'wall' || kind === 'cover') break
     land = c
   }
-  return land
+  return land ? { kind: 'land', at: land } : null
+}
+
+/** Where a carrot lands, ignoring lamps — the simple question, for rooms that have none. */
+export function throwTarget(room: Room, from: Cell, dir: Dir): Cell | null {
+  const t = throwAt(room, from, dir, 0)
+  return t?.kind === 'land' ? t.at : null
 }
 
 function without(items: readonly Cell[], at: Cell): Cell[] {
@@ -114,11 +144,12 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
   const events: BeatEvent[] = []
   let randy = world.randy
   let items: readonly Cell[] = world.items
+  let lamps = world.lamps
   let noise: Cell | null = null
   const from = randy.cell
   let stepNoise: Cell | null = null
   const done = (outcome: Outcome, foxes: readonly Fox[] = world.foxes, bats: readonly Bat[] = world.bats): BeatResult => ({
-    world: { randy, foxes, bats, items, beats: world.beats + 1 },
+    world: { randy, foxes, bats, items, lamps, beats: world.beats + 1 },
     outcome,
     events,
   })
@@ -154,12 +185,18 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
       break
     }
     case 'throw': {
-      const to = randy.carrots > 0 ? throwTarget(room, from, action.dir) : null
-      if (!to) return { world, outcome: 'blocked', events: [] }
+      const shot = randy.carrots > 0 ? throwAt(room, from, action.dir, lamps) : null
+      if (!shot) return { world, outcome: 'blocked', events: [] }
       randy = { ...randy, carrots: randy.carrots - 1 }
-      items = [...items, to]
-      noise = to
-      events.push({ type: 'throw', from, to })
+      events.push({ type: 'throw', from, to: shot.at })
+      if (shot.kind === 'lamp') {
+        lamps &= ~(1 << shot.lamp)
+        noise = shot.noise
+        events.push({ type: 'lampOut', lamp: shot.lamp, at: shot.at })
+      } else {
+        items = [...items, shot.at]
+        noise = shot.at
+      }
       break
     }
     case 'ears':
@@ -212,11 +249,12 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
     return done('caught', foxes, bats)
   }
 
-  // 5. Sight.
+  // 5. Sight. A lamp put out this beat is already dark for it.
+  const lit = litCells(room, lamps)
   for (let i = 0; i < foxes.length; i++) {
     const f = foxes[i]!
     if (f.mode === 'eat') continue
-    const seen = spots(room, f.cell, f.facing, randy.cell, randy.earsDown)
+    const seen = spots(room, f.cell, f.facing, randy.cell, randy.earsDown, lit)
     if (!seen) {
       if (f.mode === 'suspicious') {
         foxes[i] = { ...f, mode: f.resume }

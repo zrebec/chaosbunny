@@ -10,6 +10,7 @@
  * | `s`  | shadow   | yes   | yes | passes; hides Randy, ears down |
  * | `=`  | cover    | no    | no  | blocks only when ears are down |
  * | `D`  | door     | yes   | no  | passes — stepping on it wins   |
+ * | `L`  | lamp     | no    | no  | passes; its light kills shadow |
  * | `R`  | floor    |       |     | Randy's start                  |
  * | `c`  | floor    |       |     | a carrot lying there           |
  *
@@ -21,7 +22,7 @@ import { dirBetween, sameCell, type Cell, type Dir } from './grid.js'
 export const ROOM_COLS = 16
 export const ROOM_ROWS = 11
 
-export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door'
+export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp'
 
 const LEGEND: Readonly<Record<string, TileKind>> = {
   '#': 'wall',
@@ -29,6 +30,7 @@ const LEGEND: Readonly<Record<string, TileKind>> = {
   s: 'shadow',
   '=': 'cover',
   D: 'door',
+  L: 'lamp',
   R: 'floor',
   c: 'floor',
 }
@@ -87,7 +89,12 @@ export interface Room {
   readonly par: number | null
   /** Bat roosts. */
   readonly bats: readonly Cell[]
+  /** Lamps, in reading order — their number is the bit they hold in `World.lamps` (`light.ts`). */
+  readonly lamps: readonly Cell[]
 }
+
+/** Lamps a room may hold: one bit each in `World.lamps`, and more than a few would be a lit room. */
+export const MAX_LAMPS = 8
 
 /** The part of a room that {@link tileAt} reads. */
 export type TileGrid = Pick<Room, 'cols' | 'rows' | 'tiles'>
@@ -100,6 +107,11 @@ export function tileAt(grid: TileGrid, c: Cell): TileKind {
 
 export function randyCanEnter(kind: TileKind): boolean {
   return kind === 'floor' || kind === 'shadow' || kind === 'door'
+}
+
+/** Whether light passes through: everything but a wall — a lamp shines over a crate. */
+export function passesLight(kind: TileKind): boolean {
+  return kind !== 'wall'
 }
 
 export function foxCanEnter(kind: TileKind): boolean {
@@ -167,6 +179,7 @@ export function parseRoom(src: RoomSource): Room {
   let spawn: Cell | null = null
   const exits: Cell[] = []
   const pickups: Cell[] = []
+  const lamps: Cell[] = []
   src.rows.forEach((row, y) => {
     if (row.length !== ROOM_COLS) {
       throw new Error(`${src.name}: row ${y} must be ${ROOM_COLS} characters, got ${row.length}`)
@@ -181,10 +194,12 @@ export function parseRoom(src: RoomSource): Room {
       }
       if (ch === 'D') exits.push({ x, y })
       if (ch === 'c') pickups.push({ x, y })
+      if (ch === 'L') lamps.push({ x, y })
     })
   })
   if (!spawn) throw new Error(`${src.name}: no start 'R'`)
   if (exits.length === 0) throw new Error(`${src.name}: no door 'D'`)
+  if (lamps.length > MAX_LAMPS) throw new Error(`${src.name}: ${lamps.length} lamps, at most ${MAX_LAMPS}`)
 
   const base = {
     name: src.name,
@@ -214,5 +229,5 @@ export function parseRoom(src: RoomSource): Room {
       throw new Error(`${src.name}: bat ${i} shares (${c.x},${c.y}) with another creature`)
     }
   })
-  return { ...base, patrols, bats }
+  return { ...base, patrols, bats, lamps }
 }

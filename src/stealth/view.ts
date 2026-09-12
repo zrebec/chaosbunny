@@ -10,17 +10,22 @@
  * - A carrot over a fox's head: it is eating, and blind.
  * - `~` over a bat: Randy is close enough for it to hear an ears-up step.
  * - `^ v < >` over a sentry, ears up: the way it will look next beat.
+ * - **A lit shadow is drawn as plain floor** — because that is what it is worth
+ *   while the lamp burns. Put the lamp out and those cells go dark in front of you:
+ *   the room itself tells you what the carrot bought.
  *
  * Walls are drawn by where they are: a wall with floor below shows its face (3⁄4
  * view), a wall that touches the room shows its top, a wall deep in rock is black.
  */
 import {
-  C, createLayerCache, drawChar, drawText, drawTextCentered, refreshLayer, type LayerCache, type SpectrumColor,
+  C, createGlowLayer, createLayerCache, drawChar, drawGlowSource, drawText, drawTextCentered, refreshLayer, renderGlow,
+  type GlowLayer, type LayerCache, type SpectrumColor,
 } from 'zx-kit'
 import { SPRITES, TILES, drawLayered, layered, type Layered } from './art.js'
 import { BAT_HEARING } from './bat.js'
-import { SNEAK_STEPS, throwTarget, type World } from './beat.js'
+import { SNEAK_STEPS, throwAt, type World } from './beat.js'
 import { DIRS, manhattan, sameCell, type Cell, type Dir } from './grid.js'
+import { allLampsOn, cellIndex, lampOn, litCells } from './light.js'
 import { advanceFox, type Fox } from './patrol.js'
 import { tileAt, type Room } from './room.js'
 import { visibleCells } from './rules.js'
@@ -64,6 +69,9 @@ export interface Scene {
   readonly number: number
   readonly roomLayer: LayerCache
   readonly dimLayer: LayerCache
+  readonly glowLayer: GlowLayer
+  /** The lamps the cached room was drawn with; when the world's differ, it is redrawn. */
+  lamps: number
 }
 
 // 25% dots: light on the floor where a fox is looking.
@@ -75,12 +83,17 @@ const CONE_DOTS = layered(
 
 const NEIGHBOURS: readonly Cell[] = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => ({ x: dx, y: dy })))
 
-function tileArt(room: Room, x: number, y: number): Layered | null {
-  switch (tileAt(room, { x, y })) {
+function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlySet<number>): Layered | null {
+  const cell = { x, y }
+  switch (tileAt(room, cell)) {
     case 'floor': return TILES.floor
-    case 'shadow': return TILES['floor-shadow']
+    case 'shadow': return lit.has(cellIndex(room, cell)) ? TILES.floor : TILES['floor-shadow']
     case 'cover': return TILES.crate
     case 'door': return TILES.door
+    case 'lamp': {
+      const i = room.lamps.findIndex((l) => sameCell(l, cell))
+      return lampOn(lamps, i) ? TILES['lamp-on'] : TILES['lamp-off']
+    }
     case 'wall': {
       if (tileAt(room, { x, y: y + 1 }) !== 'wall') return TILES['wall-face']
       const touchesRoom = NEIGHBOURS.some((d) => tileAt(room, { x: x + d.x, y: y + d.y }) !== 'wall')
@@ -89,25 +102,49 @@ function tileArt(room: Room, x: number, y: number): Layered | null {
   }
 }
 
-export function createScene(room: Room, number: number): Scene {
-  const roomLayer = createLayerCache(PLAY_W, PLAY_H)
-  refreshLayer(roomLayer, (ctx) => {
+/** Redraws the cached room for a given set of burning lamps — once, not per frame. */
+function drawRoom(scene: Scene, lamps: number): void {
+  const { room } = scene
+  const lit = litCells(room, lamps)
+  scene.lamps = lamps
+  refreshLayer(scene.roomLayer, (ctx) => {
     ctx.fillStyle = C.BLACK
     ctx.fillRect(0, 0, PLAY_W, PLAY_H)
     for (let y = 0; y < room.rows; y++) {
       for (let x = 0; x < room.cols; x++) {
-        const art = tileArt(room, x, y)
+        const art = tileArt(room, x, y, lamps, lit)
         if (art) drawLayered(ctx, art, x * TILE, y * TILE)
       }
     }
   })
+}
+
+export function createScene(room: Room, number: number): Scene {
+  const roomLayer = createLayerCache(PLAY_W, PLAY_H)
   // A 50% black checker over the play area — how the room dims when caught or out.
   const dimLayer = createLayerCache(PLAY_W, PLAY_H)
   refreshLayer(dimLayer, (ctx) => {
     ctx.fillStyle = C.BLACK
     for (let y = 0; y < PLAY_H; y++) for (let x = y % 2; x < PLAY_W; x += 2) ctx.fillRect(x, y, 1, 1)
   })
-  return { room, number, roomLayer, dimLayer }
+  // The bloom is emissive only — nothing else in the room is drawn into it, so a
+  // room without lamps never touches it (zx-kit's glow, the additive twin of lighting).
+  const glowLayer = createGlowLayer(PLAY_W, PLAY_H, { downscale: 4, alpha: 0.55 })
+  const scene: Scene = { room, number, roomLayer, dimLayer, glowLayer, lamps: allLampsOn(room) }
+  drawRoom(scene, scene.lamps)
+  return scene
+}
+
+/** The halo of every burning lamp, added over the finished room. */
+function drawGlow(ctx: CanvasRenderingContext2D, scene: Scene, world: World): void {
+  const { room } = scene
+  if (!room.lamps.some((_, i) => lampOn(world.lamps, i))) return
+  renderGlow(scene.glowLayer, ctx, (g) => {
+    room.lamps.forEach((lamp, i) => {
+      if (!lampOn(world.lamps, i)) return
+      drawGlowSource(g, { x: lamp.x * TILE + TILE / 2, y: lamp.y * TILE + 5, radius: 30, color: C.B_YELLOW, intensity: 0.9 })
+    })
+  })
 }
 
 const ease = (t: number): number => t * t * (3 - 2 * t)
@@ -153,9 +190,11 @@ function drawIntel(ctx: CanvasRenderingContext2D, room: Room, world: World): voi
 
 function drawAim(ctx: CanvasRenderingContext2D, room: Room, world: World): void {
   for (const dir of DIRS) {
-    const land = throwTarget(room, world.randy.cell, dir)
-    if (!land) continue
-    ctx.fillStyle = C.B_WHITE
+    const shot = throwAt(room, world.randy.cell, dir, world.lamps)
+    if (!shot) continue
+    const land = shot.at
+    // A lamp in range is marked in its own colour: that throw buys the dark, not a distraction.
+    ctx.fillStyle = shot.kind === 'lamp' ? C.B_YELLOW : C.B_WHITE
     const x = land.x * TILE + 4
     const y = land.y * TILE + 4
     ctx.fillRect(x, y, 8, 1)
@@ -259,12 +298,15 @@ function drawHud(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Str
 }
 
 export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Strings): void {
+  // A lamp going out changes the room itself: redraw the cache, then, not every frame.
+  if (scene.lamps !== f.world.lamps) drawRoom(scene, f.world.lamps)
   blit(ctx, scene.roomLayer)
   const settled = f.t >= 1
   const over = f.caughtBy !== null || f.bittenBy !== null
   if (settled && !f.world.randy.earsDown && !over && !f.won) drawIntel(ctx, scene.room, f.world)
   drawCarrots(ctx, f)
   for (const a of actors(ctx, f)) a.draw()
+  drawGlow(ctx, scene, f.world)
   if (settled && f.aiming) drawAim(ctx, scene.room, f.world)
   if (f.toast) drawTextCentered(ctx, f.toast, 8, 32, C.B_WHITE, C.BLACK)
   if (over) {
