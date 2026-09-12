@@ -7,6 +7,7 @@
  * - Z: ears up / down
  * - X or F (gamepad A): aim a carrot, then an arrow throws it that way; X or Esc cancels
  * - Space: wait a beat
+ * - U: take the last beat back (and, while a fox has you, the one that lost the room)
  * - M: the cellar hum on or off
  * - R: start the room again
  * - 1, 2, …: jump to that room (after a win, any key goes on to the next)
@@ -37,15 +38,19 @@ import { ROOM_03 } from './rooms/room03.js'
 import { ROOM_04 } from './rooms/room04.js'
 import { ROOM_05 } from './rooms/room05.js'
 import { ROOM_06 } from './rooms/room06.js'
-import { playBlocked, playEvents, playTape, stopTape } from './sound.js'
+import { playBlocked, playEvents, playTape, playUndo, stopTape } from './sound.js'
 import { STR } from './strings.js'
 import { loadStateAt } from './loader.js'
 import { createTitle, renderTitle, setBorder, type TitleMode } from './title.js'
 import { createScene, render, type Frame, type Scene } from './view.js'
 
 const BEAT_MS = 150
-/** How long the room stays dimmed with `!` before it starts again. */
-const CAUGHT_MS = 900
+/**
+ * How long the room stays dimmed with `!` before it starts again on its own. Long
+ * enough to read the `!` and take the beat back with U; any other key starts again
+ * at once, so the wait is never imposed on a player who has already decided.
+ */
+const CAUGHT_MS = 1600
 /** A pause after winning before a key restarts, so the winning keypress cannot skip the screen. */
 const WON_GRACE_MS = 400
 /** Replay pace: a little slower than play, so a run can be followed. */
@@ -87,6 +92,12 @@ let lastRun: Run | null = null
 /** Every action of the current attempt that the room took — the run, if it wins. */
 let runActions: Action[] = []
 let wonWorld: World | null = null
+/**
+ * The world before each beat of this attempt, newest last — what U walks back
+ * through, in step with `runActions` so an undone beat leaves no trace in the run
+ * that gets saved. Emptied whenever the room starts over.
+ */
+const history: World[] = []
 let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: number } | null = null
 let toast: { text: string; ms: number } | null = null
 const TOAST_MS = 1400
@@ -147,8 +158,33 @@ function restart(): void {
   bittenBy = null
   queued = null
   runActions = []
+  history.length = 0
   replay = null
   resetInput()
+}
+
+/**
+ * One beat back: the world as it was before the last action, the action struck from
+ * the run. Works while playing and — the reason it exists — while a fox has Randy by
+ * the jacket, so a lost room costs one beat instead of every beat.
+ */
+function undo(): boolean {
+  const back = history.pop()
+  if (!back) return false
+  runActions.pop()
+  world = back
+  prev = back
+  t = 1
+  thrown = null
+  aiming = false
+  queued = null
+  caughtBy = null
+  bittenBy = null
+  phase = 'play'
+  phaseMs = 0
+  playUndo()
+  say(STR.undone)
+  return true
 }
 
 function startReplay(actions: readonly Action[]): void {
@@ -204,6 +240,7 @@ function play(action: Action): void {
   }
   playEvents(r.events)
   runActions.push(action)
+  history.push(world)
   prev = world
   world = r.world
   t = 0
@@ -239,6 +276,9 @@ function toggleAim(): void {
   else playBlocked()
 }
 
+/** Keys that are not an answer to "any key": holding Shift must not restart a room. */
+const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab'])
+
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return
   const digit = Number(e.key)
@@ -252,8 +292,18 @@ window.addEventListener('keydown', (e) => {
     if ((e.key === 'b' || e.key === 'B') && best) startReplay(decodeRun(best))
     return
   }
+  // Caught: U takes back the beat that lost the room; anything else starts it again now.
+  if (phase === 'caught') {
+    if (e.key === 'u' || e.key === 'U') undo()
+    else if (!MODIFIERS.has(e.key)) restart()
+    return
+  }
   if (phase !== 'play') return
   switch (e.key) {
+    case 'u':
+    case 'U':
+      if (!undo()) playBlocked()
+      break
     case 'z':
     case 'Z':
       request({ kind: 'ears' })
@@ -334,6 +384,7 @@ function frame(now: number): void {
       replaying: phase === 'replay',
       bestRunKept: book.bestRun(room.name) !== null,
       toast: toast?.text ?? null,
+      canUndo: history.length > 0,
     }, STR)
   requestAnimationFrame(frame)
 }

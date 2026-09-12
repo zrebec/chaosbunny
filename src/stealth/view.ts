@@ -61,6 +61,8 @@ export interface Frame {
   readonly bestRunKept: boolean
   /** A line shown over the room for a moment — the room's number, the music going on or off. */
   readonly toast: string | null
+  /** Whether there is a beat to take back — the caught screen offers U only then. */
+  readonly canUndo: boolean
 }
 
 export interface Scene {
@@ -312,6 +314,7 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
   if (over) {
     blit(ctx, scene.dimLayer)
     drawTextCentered(ctx, str.caught, 80, 32, C.B_RED, C.BLACK)
+    if (f.canUndo) drawTextCentered(ctx, str.caughtHint, 96, 32, C.WHITE, C.BLACK)
   }
   if (f.won) {
     blit(ctx, scene.dimLayer)

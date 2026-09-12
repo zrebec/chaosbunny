@@ -15,6 +15,10 @@ export interface Strings {
   readonly hints: string
   readonly aimHints: string
   readonly caught: string
+  /** Under `caught`: the two ways out of a lost room. */
+  readonly caughtHint: string
+  /** Toast after a beat is taken back. */
+  readonly undone: string
   readonly won: string
   readonly wonBeats: (n: number) => string
   readonly par: (n: number) => string
@@ -40,9 +44,11 @@ const EN: Strings = {
   earsDown: 'EARS DOWN',
   carrots: (n) => `CARROT ${n}`,
   beats: (n) => `BEAT ${n}`,
-  hints: 'Z EARS X THROW SPC WAIT M R',
+  hints: 'Z EARS X THROW SPC U UNDO M R',
   aimHints: 'THROW: PICK A DIRECTION  X NO',
   caught: 'CAUGHT!',
+  caughtHint: 'U ONE BEAT BACK - ANY KEY AGAIN',
+  undone: 'ONE BEAT BACK',
   won: 'SLIPPED OUT',
   wonBeats: (n) => `IN ${n} BEATS`,
   par: (n) => `PAR ${n}`,
@@ -65,9 +71,11 @@ const SK: Strings = {
   earsDown: 'USI DOLE',
   carrots: (n) => `MRKVA ${n}`,
   beats: (n) => `BEAT ${n}`,
-  hints: 'Z USI X HOD MEDZ CAKAJ M R',
+  hints: 'Z USI X HOD MEDZ U SPAT M R',
   aimHints: 'HOD: VYBER SMER SIPKOU  X NIE',
   caught: 'CHYTENY!',
+  caughtHint: 'U BEAT SPAT - KLAVESA ZNOVA',
+  undone: 'O BEAT SPAT',
   won: 'PREKLZOL SI',
   wonBeats: (n) => `ZA ${n} BEATOV`,
   par: (n) => `PAR ${n}`,

@@ -71,6 +71,13 @@ export function playBlocked(): void {
   blip(110, 40, 0, 0.3)
 }
 
+/** A beat taken back: the step blip played backwards — quiet, and rising. */
+export function playUndo(): void {
+  blip(300, 18, 0, 0.25)
+  blip(450, 18, 22, 0.25)
+  blip(620, 22, 44, 0.2)
+}
+
 /**
  * A tape loading: the 808 Hz pilot tone, then data — a stream of short pulses at
  * the two bit frequencies, drawn from a fixed seed so every load sounds the same.
