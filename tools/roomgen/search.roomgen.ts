@@ -7,6 +7,7 @@
  * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
  * KIND=decision npm run roomgen            # rooms with two plans that cost the same
  * KIND=lampboard npm run roomgen           # rooms where a lamp AND a plank are both load-bearing
+ * KIND=route GATES=grate,board npm run roomgen  # a planned route, one gate per corridor
  * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
  * KIND=lever  npm run roomgen             # rooms where a grate has to be opened
  * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
@@ -23,11 +24,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { test } from 'vitest'
 import { generate, withTiles, type Candidate } from './gen.js'
+import { generateRoute, type Gate } from './route.js'
 import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard'
+type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -38,6 +40,7 @@ const MAX_PAR = Number(process.env.MAX_PAR ?? 40)
 const GAIN = Number(process.env.GAIN ?? 5)
 const MAX_STATES = Number(process.env.MAX_STATES ?? 120_000)
 const OUT = process.env.OUT ?? path.join(import.meta.dirname, 'out', `${KIND}.txt`)
+const GATES = (process.env.GATES ?? 'grate,board').split(',') as Gate[]
 
 interface Hit { readonly src: RoomSource; readonly marks: Marks; readonly score: number; readonly note: string }
 
@@ -167,6 +170,21 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
       note: `lit ${lit} against dark ${dark}: two plans, ${spread} beats apart`,
     }
   }
+  if (kind === 'route') {
+    // Every gate on a planned route is a bridge by construction, so the question is
+    // only whether the room the plan produced is worth playing: long enough, and each
+    // gate still paying for itself once the solver has had its say.
+    const room = parseRoom(src)
+    if (room.grates.length && mark({ ...src, name: `${src.name} (walled)`, rows: src.rows.map((r) => r.split('+').join('#').split('/').join('.')) }, MAX_STATES)?.par !== null) return null
+    if (room.lamps.length && m.lampsOn !== null) return null
+    let note = ''
+    if (src.rows.join('').includes('~')) {
+      const silent = mark({ ...src, name: `${src.name} (silent)`, rows: src.rows.map((r) => r.split('~').join('.')) }, MAX_STATES)
+      if (!silent?.par || m.par! - silent.par < GAIN) return null
+      note = `silent floor is par ${silent.par}; `
+    }
+    return { src, marks: m, score: m.par! + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5, note: `${note}gates ${GATES.join('+')}` }
+  }
   if (kind === 'lampboard') {
     // Both must carry the room: burning, the lamp makes it impossible; and with the
     // plank turned to silent floor it is markedly shorter.
@@ -232,7 +250,9 @@ test(`roomgen: ${KIND}`, () => {
   let seen = 0
   let marked = 0
   for (let seed = FROM; seed < FROM + N && Date.now() - t0 < BUDGET_MS; seed++) {
-    const c = generate(seed, { sentries: KIND === 'sentry', bats: KIND === 'bat' })
+    const c = KIND === 'route'
+      ? generateRoute(seed, { gates: GATES })
+      : generate(seed, { sentries: KIND === 'sentry', bats: KIND === 'bat' })
     if (!c || c.src.patrols.length > 2) continue
     seen++
     // A candidate the solver cannot even walk is not worth dressing up.

@@ -10,7 +10,7 @@
  * - U: take the last beat back (and, while a fox has you, the one that lost the room)
  * - M: the cellar hum on or off
  * - R: start the room again
- * - 1, 2, …: jump to that room (after a win, any key goes on to the next)
+ * - 1, 2, … 9, 0: jump to that room, 0 being the tenth (after a win, any key goes on)
  *
  * After a win, P plays the run back and B the run that holds the room's record
  * (`replay.ts`: a run is just its actions); any key stops it.
@@ -276,7 +276,7 @@ const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab']
 
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return
-  const digit = Number(e.key)
+  const digit = e.key === '0' ? 10 : Number(e.key) // 0 is the tenth room, as on a Spectrum menu
   if (Number.isInteger(digit) && digit >= 1 && digit <= ROOMS.length) {
     goToRoom(digit - 1)
     return
