@@ -1,0 +1,151 @@
+/**
+ * The search: walk a range of seeds, mark every candidate, keep the ones where the
+ * thing being looked for is the reason the room is hard.
+ *
+ * ```bash
+ * npm run roomgen                          # general rooms that need the ears
+ * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
+ * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
+ * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
+ * KIND=bat npm run roomgen                 # rooms that need silence
+ * ```
+ *
+ * `FROM` first seed, `N` how many, `BUDGET` milliseconds, `MIN_PAR`/`MAX_PAR` the
+ * length of room wanted, `OUT` where the report goes. It is a vitest file only
+ * because vitest is what this repo has to run TypeScript; it asserts nothing.
+ *
+ * **The report holds layouts and numbers, never a way through.**
+ */
+import fs from 'node:fs'
+import path from 'node:path'
+import { test } from 'vitest'
+import { generate, withTiles, type Candidate } from './gen.js'
+import { line, mark, sheet, type Marks } from './metrics.js'
+import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
+
+type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat'
+
+const KIND = (process.env.KIND ?? 'plain') as Kind
+const FROM = Number(process.env.FROM ?? 1000)
+const N = Number(process.env.N ?? 2000)
+const BUDGET_MS = Number(process.env.BUDGET ?? 600_000)
+const MIN_PAR = Number(process.env.MIN_PAR ?? 16)
+const MAX_PAR = Number(process.env.MAX_PAR ?? 40)
+const GAIN = Number(process.env.GAIN ?? 5)
+const MAX_STATES = Number(process.env.MAX_STATES ?? 120_000)
+const OUT = process.env.OUT ?? path.join(import.meta.dirname, 'out', `${KIND}.txt`)
+
+interface Hit { readonly src: RoomSource; readonly marks: Marks; readonly score: number; readonly note: string }
+
+const fits = (m: Marks): boolean => m.par !== null && m.par >= MIN_PAR && m.par <= MAX_PAR
+
+/** Cells worth trying a lamp or a board on: floor, off every route, near a guard. */
+function spots(src: RoomSource, within: number): [number, number][] {
+  const room = parseRoom(src)
+  const onRoute = new Set(room.patrols.flatMap((p) => p.route.map((c) => `${c.x},${c.y}`)))
+  const near = (x: number, y: number): boolean =>
+    room.patrols.some((p) => p.route.some((c) => Math.abs(c.x - x) + Math.abs(c.y - y) <= within))
+  const out: [number, number][] = []
+  for (let y = 1; y < room.rows - 1; y++) {
+    for (let x = 1; x < room.cols - 1; x++) {
+      if (src.rows[y]![x] === '.' && !onRoute.has(`${x},${y}`) && near(x, y)) out.push([x, y])
+    }
+  }
+  return out
+}
+
+/** Every room worth marking for this kind, from one candidate. */
+function variants(kind: Kind, c: Candidate): RoomSource[] {
+  const src = c.src
+  if (kind === 'lamp') {
+    return spots(src, 6)
+      .filter(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => src.rows[y + dy]?.[x + dx] === 's'))
+      .map(([x, y]) => ({ ...src, name: `${src.name}@lamp${x},${y}`, rows: withTiles(src.rows, 'L', [[x, y]]) }))
+  }
+  if (kind === 'board') {
+    const cells = spots(src, 3)
+    const single = cells.map(([x, y]) => ({ ...src, name: `${src.name}@board${x},${y}`, rows: withTiles(src.rows, '~', [[x, y]]) }))
+    const pairs: RoomSource[] = []
+    for (let i = 0; i < cells.length; i++) {
+      for (let j = i + 1; j < cells.length; j++) {
+        const a = cells[i]!
+        const b = cells[j]!
+        if (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) !== 1) continue
+        pairs.push({ ...src, name: `${src.name}@board${a[0]},${a[1]}+${b[0]},${b[1]}`, rows: withTiles(src.rows, '~', [a, b]) })
+      }
+    }
+    return [...single, ...pairs]
+  }
+  return [src]
+}
+
+/** Whether the room's new thing is load-bearing, and how strongly. */
+function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
+  if (!fits(m)) return null
+  if (kind === 'lamp') {
+    // The room must be impossible with the lamp left burning.
+    return m.lampsOn === null ? { src, marks: m, score: m.par!, note: 'the lamp is the room' } : null
+  }
+  if (kind === 'board') {
+    const plain = mark({ ...src, name: `${src.name} (plain floor)`, rows: src.rows.map((r) => r.split('~').join('.')) }, MAX_STATES)
+    if (!plain?.par) return null
+    const gain = m.par! - plain.par
+    const noticedMore = m.fewest !== null && plain.fewest !== null && m.fewest > plain.fewest
+    if (gain < GAIN && !noticedMore) return null
+    return { src, marks: m, score: gain * 10 + (noticedMore ? 5 : 0), note: `plain floor is par ${plain.par} (+${gain}), fewest? ${plain.fewest}` }
+  }
+  if (kind === 'sentry') {
+    if (!src.patrols.some((p) => p.turns)) return null
+    const frozen = mark({
+      ...src,
+      name: `${src.name} (frozen)`,
+      patrols: src.patrols.map((p) => (p.turns ? { route: p.route, facing: p.turns[0] } : p)),
+    }, MAX_STATES)
+    return frozen && frozen.par === null ? { src, marks: m, score: m.par!, note: 'frozen, the room is impossible' } : null
+  }
+  if (kind === 'bat') {
+    if (!src.bats?.length) return null
+    const quiet = mark({ ...src, name: `${src.name} (no bat)`, bats: [] }, MAX_STATES)
+    if (!quiet?.par) return null
+    const gain = m.par! - quiet.par
+    if (gain < GAIN && quiet.noEars !== null) return null
+    return { src, marks: m, score: gain * 10, note: `without the bat par ${quiet.par}, noEars ${quiet.noEars ?? 'NONE'}` }
+  }
+  // plain: a room that cannot be walked with the ears up is already worth a look.
+  return m.noEars === null ? { src, marks: m, score: m.par!, note: 'the ears are needed' } : null
+}
+
+test(`roomgen: ${KIND}`, () => {
+  const t0 = Date.now()
+  const hits: Hit[] = []
+  let seen = 0
+  let marked = 0
+  for (let seed = FROM; seed < FROM + N && Date.now() - t0 < BUDGET_MS; seed++) {
+    const c = generate(seed, { sentries: KIND === 'sentry', bats: KIND === 'bat' })
+    if (!c || c.src.patrols.length > 2) continue
+    seen++
+    // A candidate the solver cannot even walk is not worth dressing up.
+    const base = mark(c.src, 60_000)
+    if (!base?.par) continue
+    for (const src of variants(KIND, c)) {
+      if (Date.now() - t0 > BUDGET_MS) break
+      marked++
+      const m = mark(src, MAX_STATES)
+      if (!m) continue
+      const hit = judge(KIND, src, m)
+      if (hit) hits.push(hit)
+    }
+  }
+  hits.sort((a, b) => b.score - a.score)
+  const report = [
+    `roomgen ${KIND}: seeds ${FROM}..${FROM + N - 1}, ${seen} candidates, ${marked} rooms marked, ${hits.length} kept`,
+    `par ${MIN_PAR}..${MAX_PAR}, ${Math.round((Date.now() - t0) / 1000)} s`,
+    '',
+    ...hits.slice(0, 12).map((h) => `${line(h.marks)} — ${h.note}`),
+    '',
+    ...hits.slice(0, 5).map((h) => `${sheet(h.src, h.marks)}\n  ${h.note}\n`),
+  ].join('\n')
+  fs.mkdirSync(path.dirname(OUT), { recursive: true })
+  fs.writeFileSync(OUT, report)
+  console.log(report.slice(0, 4000))
+}, 3_600_000)

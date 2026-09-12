@@ -9,3 +9,6 @@ dist/
 # Design mockups / playtest screenshots — local references, not shipped
 rebuild/
 docs/Screenshot*.png
+
+# roomgen reports — design output, not source
+tools/roomgen/out/

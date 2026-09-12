@@ -26,6 +26,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "roomgen": "vitest run --config tools/roomgen/vitest.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
