@@ -41,6 +41,7 @@ import { generateRoute, type Gate } from './route.js'
 import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
+import { LOCALES } from '../../src/stealth/strings.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
 type Kind = 'ladder' | 'plain' | 'gentle' | 'dribble' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route' | 'fork'
@@ -341,13 +342,14 @@ function markLadder(): string {
       m.noThrow === null && (src.carrots ?? 0) + (src.rows.join('').split('c').length - 1) > 0 ? 'carrot' : '',
       m.lamps > 0 && m.lampsOn === null ? 'the dark' : '',
     ].filter(Boolean)
-    return `| ${i + 1} | ${src.name} | ${m.par} | ${m.fewest} | ${needs.join(' + ') || '—'} |`
+    const name = LOCALES.en.roomNames[i] ?? '—'
+    return `| ${i + 1} | ${name.toLowerCase()} | \`${src.name}\` | ${m.par} | ${m.fewest} | ${needs.join(' + ') || '—'} |`
   })
   return [
     `The ladder as the solver sees it, ${new Date().toISOString().slice(0, 10)}.`,
     '',
-    '| # | id | par | fewest ? | cannot be done without |',
-    '|---|---|---:|---:|---|',
+    '| # | room | id | par | fewest ? | cannot be done without |',
+    '|---|---|---|---:|---:|---|',
     ...rows,
   ].join('\n')
 }
