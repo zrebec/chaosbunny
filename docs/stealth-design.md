@@ -91,6 +91,13 @@ guard the dark was meant to hide you from**. A room where darkening is a real op
 has to give that guard somewhere else to be, or give Randy somewhere to be while it
 comes and looks.
 
+**Two things at once is rarer still.** `KIND=lampboard` asks for a room where the lamp
+makes it impossible *and* the plank costs it four beats or more. 3000 seeds, nothing.
+Each requirement alone is roughly one room in a few thousand, so their intersection is
+out of reach of this generator's shapes — a room with two load-bearing mechanics will
+have to be built from a room that already has one, or from a generator that plans a
+route first and dresses it afterwards.
+
 **Lessons that cost time:**
 - More than **two moving** foxes means hundreds of thousands of states (every `?`
   shifts every fox's phase). Hence standing guards and short routes.
