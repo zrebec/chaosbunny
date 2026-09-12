@@ -29,6 +29,16 @@ a cellar map that is also the room chooser, a story and an ending, records and r
   in cells, and the solver that proves every room gets four times more expensive on a
   finer grid.
 
+### Order of work — the stealth game
+
+| # | Task | Why | Effort | Status |
+|---|------|-----|--------|--------|
+| S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen against the hum. This is the only item nobody but the owner can do. | S | 🔜 |
+| S2 | **Rooms on demand** | `npm run roomgen` finds them in seconds now (`KIND=route`, `fork`, `dark`, `bat`, `water`, `gentle`, `dribble`). Sixteen is a cellar's worth, so the next room should answer something play turned up, not fill a gap in a table. | S each | 💭 |
+| S3 | **The pad cannot wait a beat** | zx-kit has one action button and this game has four verbs; Start already had to become the ears. Needs `consumeButton` in the kit — written up in `docs/zx-kit-findings.md`. | S (in the kit) | 💭 |
+| S4 | **A second cellar, built on water** | The rule is in and one room uses it (`docs/stealth-design.md` §5). A cellar of its own would want the flooded-passage shape as well — the planner already makes those. | M | 💭 |
+| S5 | **Publish?** | Minefield's route (itch.io) or GitHub Pages, whichever the owner wants; CI already deploys `master`. Owner's call, and only after S1. | S | 💭 |
+
 **The platformer list below is untouched.** Nothing in it has been cancelled; it is
 simply not what the game has been for the last day. Which of the two chaosBunny is, is
 the owner's decision, not this document's.
