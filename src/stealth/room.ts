@@ -12,6 +12,8 @@
  * | `D`  | door     | yes   | no  | passes — stepping on it wins   |
  * | `L`  | lamp     | no    | no  | passes; its light kills shadow |
  * | `~`  | board    | yes   | yes | passes; creaks under Randy      |
+ * | `/`  | lever    | yes   | yes | passes; Randy stepping on it works the grates |
+ * | `+`  | grate    | open  | no  | passes; a wall until the lever is pulled |
  * | `R`  | floor    |       |     | Randy's start                  |
  * | `c`  | floor    |       |     | a carrot lying there           |
  *
@@ -23,7 +25,7 @@ import { dirBetween, sameCell, type Cell, type Dir } from './grid.js'
 export const ROOM_COLS = 16
 export const ROOM_ROWS = 11
 
-export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp' | 'board'
+export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp' | 'board' | 'lever' | 'grate'
 
 const LEGEND: Readonly<Record<string, TileKind>> = {
   '#': 'wall',
@@ -33,6 +35,8 @@ const LEGEND: Readonly<Record<string, TileKind>> = {
   D: 'door',
   L: 'lamp',
   '~': 'board',
+  '/': 'lever',
+  '+': 'grate',
   R: 'floor',
   c: 'floor',
 }
@@ -93,6 +97,10 @@ export interface Room {
   readonly bats: readonly Cell[]
   /** Lamps, in reading order — their number is the bit they hold in `World.lamps` (`light.ts`). */
   readonly lamps: readonly Cell[]
+  /** The lever, if the room has one: stepping on it works every grate. */
+  readonly levers: readonly Cell[]
+  /** Grates: a wall until the lever is pulled. */
+  readonly grates: readonly Cell[]
 }
 
 /** Lamps a room may hold: one bit each in `World.lamps`, and more than a few would be a lit room. */
@@ -107,8 +115,19 @@ export function tileAt(grid: TileGrid, c: Cell): TileKind {
   return grid.tiles[c.y * grid.cols + c.x] ?? 'wall'
 }
 
+/**
+ * Tiles Randy can ever stand on — which is also what a fox can see him on. A grate
+ * counts: a fox sees straight through the bars, and he stands there once it is open.
+ * Whether he can *step* there this beat is {@link randyCanStep}.
+ */
 export function randyCanEnter(kind: TileKind): boolean {
   return kind === 'floor' || kind === 'shadow' || kind === 'door' || kind === 'board'
+    || kind === 'lever' || kind === 'grate'
+}
+
+/** Tiles Randy can step onto now: a grate is a wall until the lever has been pulled. */
+export function randyCanStep(kind: TileKind, pulled: boolean): boolean {
+  return randyCanEnter(kind) && (kind !== 'grate' || pulled)
 }
 
 /** Whether light passes through: everything but a wall — a lamp shines over a crate. */
@@ -116,8 +135,9 @@ export function passesLight(kind: TileKind): boolean {
   return kind !== 'wall'
 }
 
+/** A fox walks the floor, the boards and past the lever — never through a rabbit's grate. */
 export function foxCanEnter(kind: TileKind): boolean {
-  return kind === 'floor' || kind === 'shadow' || kind === 'board'
+  return kind === 'floor' || kind === 'shadow' || kind === 'board' || kind === 'lever'
 }
 
 /** Expands waypoints into the full closed loop of neighbouring cells. */
@@ -182,6 +202,8 @@ export function parseRoom(src: RoomSource): Room {
   const exits: Cell[] = []
   const pickups: Cell[] = []
   const lamps: Cell[] = []
+  const levers: Cell[] = []
+  const grates: Cell[] = []
   src.rows.forEach((row, y) => {
     if (row.length !== ROOM_COLS) {
       throw new Error(`${src.name}: row ${y} must be ${ROOM_COLS} characters, got ${row.length}`)
@@ -197,11 +219,16 @@ export function parseRoom(src: RoomSource): Room {
       if (ch === 'D') exits.push({ x, y })
       if (ch === 'c') pickups.push({ x, y })
       if (ch === 'L') lamps.push({ x, y })
+      if (ch === '/') levers.push({ x, y })
+      if (ch === '+') grates.push({ x, y })
     })
   })
   if (!spawn) throw new Error(`${src.name}: no start 'R'`)
   if (exits.length === 0) throw new Error(`${src.name}: no door 'D'`)
   if (lamps.length > MAX_LAMPS) throw new Error(`${src.name}: ${lamps.length} lamps, at most ${MAX_LAMPS}`)
+  if (levers.length > 1) throw new Error(`${src.name}: ${levers.length} levers, at most one`)
+  if (levers.length === 1 && grates.length === 0) throw new Error(`${src.name}: a lever with no grate to work`)
+  if (grates.length > 0 && levers.length === 0) throw new Error(`${src.name}: a grate with no lever is a wall`)
 
   const base = {
     name: src.name,
@@ -231,5 +258,5 @@ export function parseRoom(src: RoomSource): Room {
       throw new Error(`${src.name}: bat ${i} shares (${c.x},${c.y}) with another creature`)
     }
   })
-  return { ...base, patrols, bats, lamps }
+  return { ...base, patrols, bats, lamps, levers, grates }
 }

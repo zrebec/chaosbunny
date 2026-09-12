@@ -42,6 +42,12 @@ export function playEvents(events: readonly BeatEvent[]): void {
         // Old wood bending: two low tones that slide the wrong way, and loud enough to worry.
         blip(190, 55, 0, 0.4); blip(150, 70, 50, 0.4)
         break
+      case 'lever':
+        // Iron: the handle clunks, then the grate grinds — up when it opens, down when it shuts.
+        blip(120, 70, 0, 0.5)
+        if (e.open) { blip(300, 40, 80, 0.4); blip(380, 40, 125, 0.4); blip(460, 60, 170, 0.4) }
+        else { blip(460, 40, 80, 0.4); blip(380, 40, 125, 0.4); blip(300, 60, 170, 0.4) }
+        break
       case 'pickup':
         blip(880, 40, 0, 0.4); blip(1320, 60, 45, 0.4)
         break

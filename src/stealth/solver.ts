@@ -50,7 +50,7 @@ export function worldKey(w: World): string {
     .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}:${f.phase}`)
     .join('|')
   const bats = w.bats.map((b) => `${cellKey(b.cell)}:${b.mode}:${b.timer}:${b.target ? cellKey(b.target) : '-'}`).join('|')
-  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}/${w.lamps}`
+  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}/${w.lamps}${w.pulled ? '+' : '-'}`
 }
 
 export function actionsFor(throws: boolean, ears: boolean): Action[] {

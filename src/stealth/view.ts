@@ -74,6 +74,8 @@ export interface Scene {
   readonly glowLayer: GlowLayer
   /** The lamps the cached room was drawn with; when the world's differ, it is redrawn. */
   lamps: number
+  /** The same for the grates: shut or open in the cached picture. */
+  pulled: boolean
 }
 
 // 25% dots: light on the floor where a fox is looking.
@@ -85,7 +87,7 @@ const CONE_DOTS = layered(
 
 const NEIGHBOURS: readonly Cell[] = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => ({ x: dx, y: dy })))
 
-function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlySet<number>): Layered | null {
+function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlySet<number>, pulled: boolean): Layered | null {
   const cell = { x, y }
   switch (tileAt(room, cell)) {
     case 'floor': return TILES.floor
@@ -93,6 +95,8 @@ function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlyS
     case 'cover': return TILES.crate
     case 'door': return TILES.door
     case 'board': return TILES.board
+    case 'lever': return TILES.lever
+    case 'grate': return pulled ? TILES['grate-open'] : TILES['grate-shut']
     case 'lamp': {
       const i = room.lamps.findIndex((l) => sameCell(l, cell))
       return lampOn(lamps, i) ? TILES['lamp-on'] : TILES['lamp-off']
@@ -105,18 +109,19 @@ function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlyS
   }
 }
 
-/** Redraws the cached room for a given set of burning lamps — once, not per frame. */
-function drawRoom(scene: Scene, lamps: number): void {
+/** Redraws the cached room for what the world has done to it — once, not per frame. */
+function drawRoom(scene: Scene, lamps: number, pulled: boolean): void {
   const { room } = scene
   const lit = litCells(room, lamps)
   scene.lamps = lamps
+  scene.pulled = pulled
   invalidateLayer(scene.roomLayer) // the cache only re-runs the draw while it is dirty
   refreshLayer(scene.roomLayer, (ctx) => {
     ctx.fillStyle = C.BLACK
     ctx.fillRect(0, 0, PLAY_W, PLAY_H)
     for (let y = 0; y < room.rows; y++) {
       for (let x = 0; x < room.cols; x++) {
-        const art = tileArt(room, x, y, lamps, lit)
+        const art = tileArt(room, x, y, lamps, lit, pulled)
         if (art) drawLayered(ctx, art, x * TILE, y * TILE)
       }
     }
@@ -134,8 +139,8 @@ export function createScene(room: Room, number: number): Scene {
   // The bloom is emissive only — nothing else in the room is drawn into it, so a
   // room without lamps never touches it (zx-kit's glow, the additive twin of lighting).
   const glowLayer = createGlowLayer(PLAY_W, PLAY_H, { downscale: 4, alpha: 0.55 })
-  const scene: Scene = { room, number, roomLayer, dimLayer, glowLayer, lamps: allLampsOn(room) }
-  drawRoom(scene, scene.lamps)
+  const scene: Scene = { room, number, roomLayer, dimLayer, glowLayer, lamps: allLampsOn(room), pulled: false }
+  drawRoom(scene, scene.lamps, false)
   return scene
 }
 
@@ -302,8 +307,8 @@ function drawHud(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Str
 }
 
 export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Strings): void {
-  // A lamp going out changes the room itself: redraw the cache, then, not every frame.
-  if (scene.lamps !== f.world.lamps) drawRoom(scene, f.world.lamps)
+  // A lamp going out, a grate opening: the room itself changed. Redraw the cache then, not every frame.
+  if (scene.lamps !== f.world.lamps || scene.pulled !== f.world.pulled) drawRoom(scene, f.world.lamps, f.world.pulled)
   blit(ctx, scene.roomLayer)
   const settled = f.t >= 1
   const over = f.caughtBy !== null || f.bittenBy !== null
