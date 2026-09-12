@@ -174,8 +174,34 @@ room itself changes — a lamp going out, a grate opening.
 
 ## 5. Ideas, ranked by what they give against what they cost
 
-Two of these are now built — kept in the table with what they actually cost, so the
-next estimate has something to stand on.
+**What a second cellar would be built on.** Fifteen rooms is one cellar's worth, and
+every verb in it is now taught, combined and finished with. A second one wants a spine
+of its own, and the best candidate is **water**: cells Randy can wade into, which cost
+**two beats a step instead of one**, and which no fox will follow him into.
+
+Why that one, out of everything on the list below:
+
+- It is the first thing to touch the **beat economy** rather than sight or sound. Every
+  rule so far answers "can they see or hear me"; water answers "how much is this route
+  worth", which is a different question and the one a second cellar needs.
+- It is cheap and true to the game: one tile kind, one line in the step, no new state
+  for the solver to carry — par simply counts differently, so every existing test, room
+  and ablation keeps working.
+- It cuts both ways on its own. A fox cannot follow, so water is safety; you are slow in
+  it, so water is exposure. That is the same shape as the ears (see and be seen) and the
+  carrot (distract or darken), which is why those two carried a cellar between them.
+- The route generator already knows how to lay a gate on a corridor; a water gate is a
+  corridor that costs double, and the ablation is the one it already runs — dry floor in
+  its place, and how many beats that saves.
+
+What it would need: a `water` tile (Randy yes, fox no, light yes, sight yes), a step onto
+it costing two beats — which means `beat()` returning how many beats it consumed, the one
+piece of the rulebook that assumes one — and a `KIND=water` search. Half a day, and the
+half that matters is the beat count, because everything that reads `world.beats` (par,
+records, the map, the ending) has to keep meaning the same thing.
+
+Two of the ideas below are now built — kept in the table with what they actually cost, so
+the next estimate has something to stand on.
 
 | Idea | What it adds | The beat rule | Cost | The ablation that would prove it |
 |---|---|---|---|---|
