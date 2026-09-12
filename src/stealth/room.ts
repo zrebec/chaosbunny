@@ -12,6 +12,7 @@
  * | `D`  | door     | yes   | no  | passes — stepping on it wins   |
  * | `L`  | lamp     | no    | no  | passes; its light kills shadow |
  * | `~`  | board    | yes   | yes | passes; creaks under Randy      |
+ * | `w`  | water    | slow  | no  | passes; a step in it costs two beats |
  * | `/`  | lever    | yes   | yes | passes; Randy stepping on it works the grates |
  * | `+`  | grate    | open  | no  | passes; a wall until the lever is pulled |
  * | `R`  | floor    |       |     | Randy's start                  |
@@ -25,7 +26,8 @@ import { dirBetween, sameCell, type Cell, type Dir } from './grid.js'
 export const ROOM_COLS = 16
 export const ROOM_ROWS = 11
 
-export type TileKind = 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp' | 'board' | 'lever' | 'grate'
+export type TileKind =
+  | 'wall' | 'floor' | 'shadow' | 'cover' | 'door' | 'lamp' | 'board' | 'lever' | 'grate' | 'water'
 
 const LEGEND: Readonly<Record<string, TileKind>> = {
   '#': 'wall',
@@ -37,6 +39,7 @@ const LEGEND: Readonly<Record<string, TileKind>> = {
   '~': 'board',
   '/': 'lever',
   '+': 'grate',
+  w: 'water',
   R: 'floor',
   c: 'floor',
 }
@@ -122,7 +125,7 @@ export function tileAt(grid: TileGrid, c: Cell): TileKind {
  */
 export function randyCanEnter(kind: TileKind): boolean {
   return kind === 'floor' || kind === 'shadow' || kind === 'door' || kind === 'board'
-    || kind === 'lever' || kind === 'grate'
+    || kind === 'lever' || kind === 'grate' || kind === 'water'
 }
 
 /** Tiles Randy can step onto now: a grate is a wall until the lever has been pulled. */

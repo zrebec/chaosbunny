@@ -7,7 +7,8 @@
     "R": "C.RED",
     "Y": "C.YELLOW",
     "B": "C.B_YELLOW",
-    "G": "C.B_GREEN"
+    "G": "C.B_GREEN",
+    "C": "C.CYAN"
   },
   "tiles": {
     "floor": [
@@ -63,6 +64,24 @@
       "KKKKKKKKKKKKKKKK",
       "UUUUUUUUUUUUUUUK",
       "KKKKKKKKKKKKKKKK"
+    ],
+    "water": [
+      "UUUUUUUUUUUUUUUU",
+      "UUCCUUUUUUUCCUUU",
+      "UUUUUUUCCUUUUUUU",
+      "UUUUUUUUUUUUUUUU",
+      "UCCUUUUUUUUUUCCU",
+      "UUUUUUUUUUUUUUUU",
+      "UUUUUUCCUUUUUUUU",
+      "UUUUUUUUUUUUUUUU",
+      "UUUCCUUUUUCCUUUU",
+      "UUUUUUUUUUUUUUUU",
+      "UUUUUUUUUCCUUUUU",
+      "UCCUUUUUUUUUUUUU",
+      "UUUUUUUUUUUUCCUU",
+      "UUUUUUUUUUUUUUUU",
+      "UUUUCCUUUUUUUUUU",
+      "UUUUUUUUUUUUUUUU"
     ],
     "wall-top": [
       "WWWWWWWWWWWWWWWK",

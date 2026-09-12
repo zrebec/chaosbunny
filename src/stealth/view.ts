@@ -96,6 +96,7 @@ function tileArt(room: Room, x: number, y: number, lamps: number, lit: ReadonlyS
     case 'cover': return TILES.crate
     case 'door': return TILES.door
     case 'board': return TILES.board
+    case 'water': return TILES.water
     case 'lever': return TILES.lever
     case 'grate': return pulled ? TILES['grate-open'] : TILES['grate-shut']
     case 'lamp': {

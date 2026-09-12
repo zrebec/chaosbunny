@@ -99,13 +99,13 @@ export function drawLayered(ctx: CanvasRenderingContext2D, art: Layered, x: numb
 
 export type TileArt =
   | 'floor' | 'floor-shadow' | 'wall-top' | 'wall-face' | 'crate' | 'door' | 'lamp-on' | 'lamp-off' | 'board'
-  | 'lever' | 'grate-shut' | 'grate-open'
+  | 'lever' | 'grate-shut' | 'grate-open' | 'water'
 
 function tileset(json: { tile: number; legend: Record<string, string>; tiles: Record<string, string[]> }): Record<TileArt, Layered> {
   const legend = colours(json.legend, 'room-kit')
   const need: TileArt[] = [
     'floor', 'floor-shadow', 'wall-top', 'wall-face', 'crate', 'door', 'lamp-on', 'lamp-off', 'board',
-    'lever', 'grate-shut', 'grate-open',
+    'lever', 'grate-shut', 'grate-open', 'water',
   ]
   return Object.fromEntries(
     need.map((name) => {

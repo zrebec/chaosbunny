@@ -52,6 +52,14 @@ export const SNEAK_STEPS = 2
  */
 export const CREAK_HEARING = 3
 
+/**
+ * Beats a step into water costs. The clock counts two, and so does the world: everything
+ * else takes two turns while Randy pulls his feet out. A fox will not follow him in, so
+ * water is safety bought with time — the first rule here that answers "what is this
+ * route worth" rather than "can they see or hear me".
+ */
+export const WADE_BEATS = 2
+
 export type Action =
   | { readonly kind: 'move'; readonly dir: Dir }
   | { readonly kind: 'throw'; readonly dir: Dir }
@@ -156,6 +164,73 @@ function without(items: readonly Cell[], at: Cell): Cell[] {
   return i < 0 ? [...items] : [...items.slice(0, i), ...items.slice(i + 1)]
 }
 
+/**
+ * The world's half of a beat: every fox takes its step, every bat its flight, then
+ * contact and sight are settled. It is a function of its own because **water makes it
+ * happen twice** for one step of Randy's — wading is slow, and slow in a beat game can
+ * only mean that everyone else moves while you are still pulling your feet out.
+ */
+function turn(
+  room: Room,
+  randy: Randy,
+  before: readonly Fox[],
+  batsBefore: readonly Bat[],
+  itemsBefore: readonly Cell[],
+  lamps: number,
+): { foxes: Fox[]; bats: Bat[]; items: readonly Cell[]; events: BeatEvent[]; caught: boolean } {
+  const events: BeatEvent[] = []
+  let items = itemsBefore
+
+  const foxes = before.map((f, i) => {
+    const r = advanceFox(room, f, items)
+    if (r.ate) {
+      items = without(items, r.ate)
+      events.push({ type: 'eat', fox: i, at: r.ate })
+    }
+    return r.fox
+  })
+  const paths: Cell[][] = []
+  const bats = batsBefore.map((b) => {
+    const r = advanceBat(room, b)
+    paths.push(r.path)
+    return r.bat
+  })
+
+  // Contact. (Randy and a fox cannot swap cells: stepping into a fox was caught already.)
+  const bumper = foxes.findIndex((f) => sameCell(f.cell, randy.cell))
+  if (bumper >= 0) {
+    events.push({ type: 'caught', fox: bumper, why: 'bumped' })
+    return { foxes, bats, items, events, caught: true }
+  }
+  const biter = paths.findIndex((path) => path.some((c) => sameCell(c, randy.cell)))
+  if (biter >= 0) {
+    events.push({ type: 'bitten', bat: biter })
+    return { foxes, bats, items, events, caught: true }
+  }
+
+  // Sight. A lamp put out this beat is already dark for it.
+  const lit = litCells(room, lamps)
+  for (let i = 0; i < foxes.length; i++) {
+    const f = foxes[i]!
+    if (f.mode === 'eat') continue
+    const seen = spots(room, f.cell, f.facing, randy.cell, randy.earsDown, lit)
+    if (!seen) {
+      if (f.mode === 'suspicious') {
+        foxes[i] = { ...f, mode: f.resume }
+        events.push({ type: 'calm', fox: i })
+      }
+      continue
+    }
+    if (f.mode === 'suspicious' || (seen.forward === 1 && seen.lateral === 0)) {
+      events.push({ type: 'caught', fox: i, why: 'seen' })
+      return { foxes, bats, items, events, caught: true }
+    }
+    foxes[i] = { ...f, mode: 'suspicious', resume: f.mode }
+    events.push({ type: 'suspicious', fox: i })
+  }
+  return { foxes, bats, items, events, caught: false }
+}
+
 /** Resolves one beat. A `blocked` result returns the world unchanged. */
 export function beat(room: Room, world: World, action: Action): BeatResult {
   const events: BeatEvent[] = []
@@ -167,8 +242,10 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
   const from = randy.cell
   let stepNoise: Cell | null = null
   let creak: Cell | null = null
+  /** A step into water costs the world two turns, and the clock two beats. */
+  let wading = false
   const done = (outcome: Outcome, foxes: readonly Fox[] = world.foxes, bats: readonly Bat[] = world.bats): BeatResult => ({
-    world: { randy, foxes, bats, items, lamps, pulled, beats: world.beats + 1 },
+    world: { randy, foxes, bats, items, lamps, pulled, beats: world.beats + (wading ? WADE_BEATS : 1) },
     outcome,
     events,
   })
@@ -192,6 +269,7 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
         return done('caught')
       }
       if (!randy.earsDown) stepNoise = to
+      if (tileAt(room, to) === 'water') wading = true
       if (tileAt(room, to) === 'board') {
         creak = to
         events.push({ type: 'creak', at: to })
@@ -253,53 +331,23 @@ export function beat(room: Room, world: World, action: Action): BeatResult {
     return flyTo(b, sound)
   })
 
-  // 3. Foxes move.
-  foxes = foxes.map((f, i) => {
-    const r = advanceFox(room, f, items)
-    if (r.ate) {
-      items = without(items, r.ate)
-      events.push({ type: 'eat', fox: i, at: r.ate })
-    }
-    return r.fox
-  })
-  const paths: Cell[][] = []
-  bats = bats.map((b) => {
-    const r = advanceBat(room, b)
-    paths.push(r.path)
-    return r.bat
-  })
+  // 3-5, once — or twice, when the step went into water. See `turn` above.
+  const first = turn(room, randy, foxes, bats, items, lamps)
+  foxes = first.foxes
+  bats = first.bats
+  items = first.items
+  events.push(...first.events)
+  if (first.caught) return done('caught', foxes, bats)
 
-  // 4. Contact. (Randy and a fox cannot swap cells: stepping into a fox was caught in 1.)
-  const bumper = foxes.findIndex((f) => sameCell(f.cell, randy.cell))
-  if (bumper >= 0) {
-    events.push({ type: 'caught', fox: bumper, why: 'bumped' })
-    return done('caught', foxes, bats)
-  }
-  const biter = paths.findIndex((path) => path.some((c) => sameCell(c, randy.cell)))
-  if (biter >= 0) {
-    events.push({ type: 'bitten', bat: biter })
-    return done('caught', foxes, bats)
-  }
-
-  // 5. Sight. A lamp put out this beat is already dark for it.
-  const lit = litCells(room, lamps)
-  for (let i = 0; i < foxes.length; i++) {
-    const f = foxes[i]!
-    if (f.mode === 'eat') continue
-    const seen = spots(room, f.cell, f.facing, randy.cell, randy.earsDown, lit)
-    if (!seen) {
-      if (f.mode === 'suspicious') {
-        foxes[i] = { ...f, mode: f.resume }
-        events.push({ type: 'calm', fox: i })
-      }
-      continue
-    }
-    if (f.mode === 'suspicious' || (seen.forward === 1 && seen.lateral === 0)) {
-      events.push({ type: 'caught', fox: i, why: 'seen' })
-      return done('caught', foxes, bats)
-    }
-    foxes[i] = { ...f, mode: 'suspicious', resume: f.mode }
-    events.push({ type: 'suspicious', fox: i })
+  if (wading) {
+    // Wading takes the world two beats: everything moves again while Randy is still
+    // pulling his feet out. No new noise — the splash was the step.
+    const second = turn(room, randy, foxes, bats, items, lamps)
+    foxes = second.foxes
+    bats = second.bats
+    items = second.items
+    events.push(...second.events)
+    if (second.caught) return done('caught', foxes, bats)
   }
 
   return done('ok', foxes, bats)
