@@ -160,7 +160,8 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    chain — see below.
 2. ~~**A reason**~~ — there is a screen before the first room now: the foxes' larder is
    under the hill, Randy went in for one carrot, the door shut. Eleven cellars to the
-   night air. What is still missing is the other end of it — an ending.
+   night air — and, once the last one is behind him, the grass, with the beats the whole
+   cellar took.
 3. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
 4. **Resolution** — staying at 256×192; hi-res is a question for a sports game, not
    for this one.

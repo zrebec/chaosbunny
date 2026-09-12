@@ -101,6 +101,18 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
 let toast: { text: string; ms: number } | null = null
 const TOAST_MS = 1400
 
+/** The beats of every room's record added up, or `null` until the whole cellar is done. */
+function wholeCellarBeats(): number | null {
+  const records = book.records()
+  let total = 0
+  for (const room of ROOMS) {
+    const beats = records[room.name]
+    if (beats === undefined) return null
+    total += beats
+  }
+  return total
+}
+
 function say(text: string): void {
   toast = { text, ms: TOAST_MS }
 }
@@ -131,6 +143,8 @@ function advanceTitle(): void {
     titleMode = 'ready'
   } else if (titleMode === 'ready') {
     titleMode = 'story' // why he is down there, before he starts climbing out
+  } else if (titleMode === 'ending') {
+    titleMode = 'ready' // back to the picture, for whoever wants the climb again
   } else {
     goToRoom(0)
   }
@@ -368,7 +382,7 @@ function frame(now: number): void {
   } else if (phase === 'map') {
     phaseMs += dt
     if (consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
-      if (roomIndex === ROOMS.length - 1) goToTitle('ready')
+      if (roomIndex === ROOMS.length - 1) goToTitle('ending') // out, and into the grass
       else goToRoom(roomIndex + 1)
     }
   } else if (phase === 'title') {
@@ -390,7 +404,7 @@ function frame(now: number): void {
     }
   }
 
-  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR)
+  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats())
   else if (phase === 'map') {
     renderCellar(ctx, { names: ROOMS.map((r) => r.name), current: roomIndex, records: book.records(), now }, STR)
   }

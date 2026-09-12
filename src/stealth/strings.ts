@@ -31,6 +31,10 @@ export interface Strings {
   /** The screen before the first room: why Randy is down there. Lines of at most 32. */
   readonly storyTitle: string
   readonly story: readonly string[]
+  /** The screen after the last room, and the beats the whole cellar took. */
+  readonly endingTitle: string
+  readonly ending: readonly string[]
+  readonly wholeCellar: (n: number) => string
   readonly record: (n: number) => string
   readonly newRecord: string
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
@@ -77,6 +81,14 @@ const EN: Strings = {
   newRecord: 'NEW BEST!',
   replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
   replaying: 'REPLAY - ANY KEY STOPS',
+  endingTitle: 'THE NIGHT AIR',
+  ending: [
+    'RANDY CAME UP INTO THE GRASS',
+    'BEHIND THE HILL. ELEVEN QUIET',
+    'CELLARS BELOW HIM - AND THE',
+    'ONE CARROT HE NEVER FOUND.',
+  ],
+  wholeCellar: (n) => `THE WHOLE CELLAR: ${n} BEATS`,
   cellar: 'THE CELLAR',
   cellarHint: 'ANY KEY: ON',
   roomToast: (n) => `ROOM ${n}`,
@@ -117,6 +129,14 @@ const SK: Strings = {
   newRecord: 'NOVY REKORD!',
   replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),
   replaying: 'ZAZNAM - KLAVESA ZASTAVI',
+  endingTitle: 'NOCNY VZDUCH',
+  ending: [
+    'RANDY VYLIEZOL DO TRAVY ZA',
+    'KOPCOM. POD NIM JEDENAST',
+    'TICHYCH PIVNIC - A JEDNA',
+    'MRKVA, KTORU NIKDY NENASIEL.',
+  ],
+  wholeCellar: (n) => `CELA PIVNICA: ${n} BEATOV`,
   cellar: 'PIVNICA',
   cellarHint: 'KLAVESA: DALEJ',
   roomToast: (n) => `MIESTNOST ${n}`,

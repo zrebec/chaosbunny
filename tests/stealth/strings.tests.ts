@@ -36,9 +36,12 @@ describe('the strings', () => {
   })
 })
 
-describe('the story screen', () => {
-  it('fits above the prompt, however long the tale is', () => {
-    const bottom = 56 + (STR.story.length - 1) * 14 + 8
-    expect(bottom, `${STR.story.length} lines reach ${bottom}px`).toBeLessThan(176)
+describe('the screens at either end', () => {
+  it('both fit above the prompt, however long the tale is', () => {
+    const storyBottom = 56 + (STR.story.length - 1) * 14 + 8
+    expect(storyBottom, `story: ${STR.story.length} lines reach ${storyBottom}px`).toBeLessThan(176)
+    // The ending carries one more line under it: the beats for the whole cellar.
+    const endBottom = 56 + STR.ending.length * 14 + 8 + 8
+    expect(endBottom, `ending: ${STR.ending.length} lines reach ${endBottom}px`).toBeLessThan(176)
   })
 })

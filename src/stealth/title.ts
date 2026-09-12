@@ -8,6 +8,8 @@
  * 3. `ready` — the picture, and a blinking prompt to start.
  * 4. `story` — why Randy is down there, on black, the way a Spectrum game told you
  *    before it let you play. A key from here starts the first room.
+ * 5. `ending` — the night air, once the last cellar is behind him, with the beats the
+ *    whole climb took if every room has a record.
  *
  * The screen is a native `.scr` inlined by `scripts/screen-import.mjs` and decoded
  * with zx-kit's `parseSCR`; both finished looks are drawn once to offscreen layers
@@ -21,7 +23,7 @@ import { CHAOSBUNNY_STEALTH_LOADING_SCR } from '../art/zx/chaosbunny-stealth-loa
 import { loadStateAt, screenRowOfMemoryRow, type LoadPhase } from './loader.js'
 import type { Strings } from './strings.js'
 
-export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story'
+export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending'
 
 export interface Title {
   /** The bitmap alone, white ink on black paper — what a screen shows before its attributes arrive. */
@@ -67,6 +69,8 @@ export function setBorder(phase: LoadPhase | null, now: number): void {
 
 export function renderTitle(
   ctx: CanvasRenderingContext2D, title: Title, mode: TitleMode, loadMs: number, now: number, str: Strings,
+  /** Beats for the whole cellar, when every room has a record — shown on the ending. */
+  total: number | null = null,
 ): void {
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, 256, 192)
@@ -83,12 +87,14 @@ export function renderTitle(
     for (let r = 0; r < s.attrRows; r++) rows(ctx, title.colour, r * 8, 8)
     return
   }
-  if (mode === 'story') {
-    // Two colours and the ROM font: the screen a cassette game gave you while your
-    // thumb was still on the PLAY button.
-    drawTextCentered(ctx, str.storyTitle, 24, 32, C.B_YELLOW, C.BLACK)
+  // Two colours and the ROM font: the screens a cassette game gave you at either end.
+  if (mode === 'story' || mode === 'ending') {
+    const ending = mode === 'ending'
+    const lines = ending ? str.ending : str.story
+    drawTextCentered(ctx, ending ? str.endingTitle : str.storyTitle, 24, 32, ending ? C.B_GREEN : C.B_YELLOW, C.BLACK)
     // 14 px a line leaves the prompt its own air, however long the tale runs.
-    str.story.forEach((line, i) => drawTextCentered(ctx, line, 56 + i * 14, 32, C.B_WHITE, C.BLACK))
+    lines.forEach((line: string, i: number) => drawTextCentered(ctx, line, 56 + i * 14, 32, C.B_WHITE, C.BLACK))
+    if (ending && total !== null) drawTextCentered(ctx, str.wholeCellar(total), 56 + lines.length * 14 + 8, 32, C.B_CYAN, C.BLACK)
     const sx = Math.floor((256 - str.startPrompt.length * 8) / 2)
     drawBlinkingText(ctx, str.startPrompt, sx, 176, now, C.WHITE, C.BLACK)
     return
