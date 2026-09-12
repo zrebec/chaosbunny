@@ -14,6 +14,7 @@
 import type { RoomSource } from '../room.js'
 import { ROOM_01 } from './room01.js'
 import { ROOM_1B } from './room1b.js'
+import { ROOM_2B } from './room2b.js'
 import { ROOM_02 } from './room02.js'
 import { ROOM_03 } from './room03.js'
 import { ROOM_04 } from './room04.js'
@@ -28,7 +29,7 @@ import { ROOM_12 } from './room12.js'
 import { ROOM_14 } from './room14.js'
 
 export const ROOM_SOURCES: readonly RoomSource[] = [
-  ROOM_01, ROOM_1B, ROOM_02, ROOM_03, ROOM_04, ROOM_05, ROOM_06, ROOM_07, ROOM_08, ROOM_09, ROOM_10,
+  ROOM_01, ROOM_1B, ROOM_2B, ROOM_02, ROOM_03, ROOM_04, ROOM_05, ROOM_06, ROOM_07, ROOM_08, ROOM_09, ROOM_10,
   // A breather with a decision in it, then the two that ask for everything at once.
   ROOM_14, ROOM_12, ROOM_11,
 ]

@@ -6,6 +6,8 @@
  * npm run roomgen                          # general rooms that need the ears
  * KIND=gentle npm run roomgen              # a short room whose only lesson is that a
  *   `?` is survivable: it must be seen exactly once, and needs neither ears nor carrot
+ * KIND=dribble npm run roomgen             # the next step after that: the ears are
+ *   needed and nothing else is — no carrot in the room, one guard, short
  * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
  * KIND=decision npm run roomgen            # rooms with two plans that cost the same
  * KIND=lampboard npm run roomgen           # rooms where a lamp AND a plank are both load-bearing
@@ -37,7 +39,7 @@ import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'gentle' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route' | 'fork'
+type Kind = 'plain' | 'gentle' | 'dribble' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route' | 'fork'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -276,6 +278,15 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     const gain = m.par! - quiet.par
     if (gain < GAIN && quiet.noEars !== null) return null
     return { src, marks: m, score: gain * 10, note: `without the bat par ${quiet.par}, noEars ${quiet.noEars ?? 'NONE'}` }
+  }
+  if (kind === 'dribble') {
+    // The room between "you will be seen" and the dark corridor: the ears are the only
+    // thing it wants. No carrot in it, one guard, and short enough to be learned.
+    if (m.noEars !== null) return null
+    if ((src.carrots ?? 0) > 0 || src.rows.join('').includes('c')) return null
+    if (src.patrols.length !== 1) return null
+    if ((m.fewest ?? 9) > 1) return null
+    return { src, marks: m, score: 100 - m.par!, note: 'the ears, and nothing else' }
   }
   if (kind === 'gentle') {
     // The teaching room between the first and the second: one sighting is forced, and
