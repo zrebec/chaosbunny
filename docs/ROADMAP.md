@@ -12,7 +12,7 @@
 chaosBunny turned into a **beat-based tile stealth game** on 2026-09-11 (owner's call,
 after the platformer's charge-jump failed twice). One screen is one room, 16×11 tiles;
 every action moves the whole world one beat; the verb is **slip past**. It is not a
-sketch any more: **fourteen rooms**, each proved solvable by a solver in its own test,
+sketch any more: **sixteen rooms**, each proved solvable by a solver in its own test,
 a cellar map that is also the room chooser, a story and an ending, records and replays.
 
 - Where it lives: `src/stealth/` (`beat.ts` is the rulebook, `solver.ts` the guarantee),
@@ -33,7 +33,7 @@ a cellar map that is also the room chooser, a story and an ending, records and r
 
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
-| S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen against the hum. This is the only item nobody but the owner can do. | S | 🔜 |
+| S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen sounds against the hum. This is the only item nobody but the owner can do. | S | 🔜 |
 | S2 | **Rooms on demand** | `npm run roomgen` finds them in seconds now (`KIND=route`, `fork`, `dark`, `bat`, `water`, `gentle`, `dribble`). Sixteen is a cellar's worth, so the next room should answer something play turned up, not fill a gap in a table. | S each | 💭 |
 | S3 | **The pad cannot wait a beat** | zx-kit has one action button and this game has four verbs; Start already had to become the ears. Needs `consumeButton` in the kit — written up in `docs/zx-kit-findings.md`. | S (in the kit) | 💭 |
 | S4 | **A second cellar, built on water** | The rule is in and one room uses it (`docs/stealth-design.md` §5). A cellar of its own would want the flooded-passage shape as well — the planner already makes those. | M | 💭 |

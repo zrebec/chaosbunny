@@ -43,3 +43,24 @@ describe('the design doc', () => {
     expect(rows.map((r) => r.name), REGENERATE).toEqual(LOCALES.en.roomNames.map((n) => n.toLowerCase()))
   })
 })
+
+/**
+ * The two documents a newcomer reads first both count the rooms in words, and a count
+ * in prose is the first thing to rot. Any "<word> rooms" in them has to be the truth.
+ */
+describe('the documents that count the rooms', () => {
+  const WORDS = [
+    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+    'nineteen', 'twenty',
+  ]
+
+  it.each(['README.md', 'docs/ROADMAP.md'])('%s says how many rooms there really are', (file) => {
+    const text = readFileSync(file, 'utf8')
+    const counts = [...text.matchAll(/\*{0,2}(\w+) rooms\*{0,2}/g)]
+      .map((m) => WORDS.indexOf(m[1]!.toLowerCase()))
+      .filter((n) => n > 0)
+    expect(counts.length, `${file} should count the rooms somewhere`).toBeGreaterThan(0)
+    for (const n of counts) expect(n, `${file}: says ${WORDS[n]} rooms`).toBe(ROOM_SOURCES.length)
+  })
+})
