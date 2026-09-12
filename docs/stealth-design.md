@@ -40,9 +40,9 @@ either cannot be finished or collapses to something much shorter.
 | 9 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
 | 10 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 | 11 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
-| 12 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
+| 12 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
 | 13 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
-| 14 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
+| 14 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 
 The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
 room's name is only the key its record is filed under, so the second room is `room1b`.
@@ -128,7 +128,7 @@ transparent to its eyes and its light.
 lamp as its only window, the pocket checked to be sealed against fox pathing, and the
 corridor running three cells past the lamp — the third is out of the cone (a cone reaches
 four) and still within a carrot's throw (three), which is where Randy has to stand to put
-the light out. `room11` (played twelfth) came out of it, and is the first room that needs every verb the
+the light out. `room11` (played last) came out of it, and is the first room that needs every verb the
 game has.
 
 Its lesson generalises: **the expensive part of room design was never the search, it
