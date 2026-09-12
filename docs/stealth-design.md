@@ -41,9 +41,8 @@ either cannot be finished or collapses to something much shorter.
 
 Where the ladder should go next (a proposal, not a promise):
 
-10. **A decision**: two carrots, two lamps, and two plans that cost the same — a room
-    with no single "right" answer. It needs no new rule at all, only a search that
-    can tell one plan from another.
+10. **A decision**: two plans that cost the same — a room with no single "right"
+    answer. The search for it now exists and has not found one yet; see below.
 
 ## 3. The rules that already hold, one line each
 
@@ -77,6 +76,20 @@ Where the ladder should go next (a proposal, not a promise):
 5. The solver's `par` is written into the room and pinned by its test: change a rule
    and the test fails until the numbers are recomputed. (That is exactly what caught
    the move to `SNEAK_STEPS = 2`.)
+
+**The decision room, and why there is not one yet.** Every way out either leaves the
+lamps burning or puts one out, so `solve({lamps: false})` and `solve({lampsOut: true})`
+are the two halves of a room's plans and their pars say what it really offers: far
+apart is a right answer and a wrong one, close together is a choice. `KIND=decision`
+keeps rooms where they tie within two beats and the carrot is needed at all.
+
+Searched: 2500 seeds with the extra requirement that the room also **press** (need the
+ears, or notice even the most careful player) — nothing. Two rooms tie without pressing;
+a thin room is worse than none, so neither shipped. One hand-drawn attempt failed for a
+reason worth keeping: **putting a lamp out is a noise, and the noise pulls the very
+guard the dark was meant to hide you from**. A room where darkening is a real option
+has to give that guard somewhere else to be, or give Randy somewhere to be while it
+comes and looks.
 
 **Lessons that cost time:**
 - More than **two moving** foxes means hundreds of thousands of states (every `?`
