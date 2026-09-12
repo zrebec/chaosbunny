@@ -223,7 +223,14 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    when this one needs more room, it needs more rooms, and those are cheap now.
 6. ~~**A generator that lives in the repo**~~ — done: `tools/roomgen`, `npm run roomgen`.
 
-## 7. Where it all lives
+## 7. What this taught us about zx-kit
+
+Building on the kit this hard turned up two things worth sending back to it (a silent
+failure in the layer cache, and one action button for a game with four verbs) and a
+longer list of things that worked first time. It is written up for the kit's owner in
+`docs/zx-kit-findings.md`.
+
+## 8. Where it all lives
 
 - Logic: `src/stealth/` (`beat.ts` is the rulebook, `solver.ts` is the guarantee).
 - Rooms: `src/stealth/rooms/*.ts`, in the order `rooms/index.ts` lists them — each
