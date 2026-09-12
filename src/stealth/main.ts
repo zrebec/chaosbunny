@@ -11,6 +11,7 @@
  * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
+ * - C on the loaded picture: the cellar map, where the arrows pick a room
  * - (after a win, any key goes on to the next room)
  *
  * After a win, P plays the run back and B the run that holds the room's record
@@ -98,6 +99,10 @@ let wonWorld: World | null = null
  */
 const history: World[] = []
 let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: number } | null = null
+/** The room the map's arrows are resting on. */
+let mapPick = 0
+/** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
+let escaped = false
 let toast: { text: string; ms: number } | null = null
 const TOAST_MS = 1400
 
@@ -152,6 +157,7 @@ function advanceTitle(): void {
 
 function goToRoom(i: number): void {
   if (phase === 'title') stopTape()
+  escaped = false
   setBorder(null, 0)
   roomIndex = ((i % ROOMS.length) + ROOMS.length) % ROOMS.length
   room = ROOMS[roomIndex]!
@@ -296,6 +302,20 @@ const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab']
 
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return
+  // The map: the arrows walk the chain, Enter opens the marked room, Esc leaves.
+  if (phase === 'map') {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') mapPick = (mapPick + ROOMS.length - 1) % ROOMS.length
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') mapPick = (mapPick + 1) % ROOMS.length
+    else if (e.key === 'Enter' || e.key === ' ') {
+      // Out of the last cellar, with the mark still on it: that way is the night air.
+      if (escaped && mapPick === roomIndex) goToTitle('ending')
+      else goToRoom(mapPick)
+    }
+    else if (e.key === 'Escape') goToTitle('ready')
+    resetInput()
+    e.preventDefault()
+    return
+  }
   // The sound bench: each key plays its own sound, Esc goes back to the picture.
   if (phase === 'title' && titleMode === 'sound') {
     if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') titleMode = 'ready'
@@ -305,6 +325,18 @@ window.addEventListener('keydown', (e) => {
   }
   if (phase === 'title' && titleMode === 'ready' && (e.key === 's' || e.key === 'S')) {
     titleMode = 'sound'
+    resetInput()
+    return
+  }
+  // The cellar from the title: the first room still unbeaten is the one marked.
+  if (phase === 'title' && titleMode === 'ready' && (e.key === 'c' || e.key === 'C')) {
+    const records = book.records()
+    const next = ROOMS.findIndex((r) => records[r.name] === undefined)
+    phase = 'map'
+    escaped = false
+    mapPick = next < 0 ? 0 : next
+    roomIndex = mapPick
+    phaseMs = WON_GRACE_MS
     resetInput()
     return
   }
@@ -393,10 +425,7 @@ function frame(now: number): void {
     else if (replay) stepReplay(replay, dt)
   } else if (phase === 'map') {
     phaseMs += dt
-    if (consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
-      if (roomIndex === ROOMS.length - 1) goToTitle('ending') // out, and into the grass
-      else goToRoom(roomIndex + 1)
-    }
+    consumeAnyKey() // the map's keys are handled on keydown; nothing here may advance it
   } else if (phase === 'title') {
     if (titleMode === 'sound') {
       setBorder(null, now)
@@ -417,6 +446,8 @@ function frame(now: number): void {
     // Keys during the grace are dropped, not kept for later — or they would skip the screen the moment it ends.
     if (phase === 'won' && consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
       phase = 'map' // the cellar, with the room just escaped lit up
+      escaped = roomIndex === ROOMS.length - 1
+      mapPick = escaped ? roomIndex : roomIndex + 1
       phaseMs = 0
       resetInput()
     }
@@ -424,7 +455,11 @@ function frame(now: number): void {
 
   if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length)
   else if (phase === 'map') {
-    renderCellar(ctx, { names: ROOMS.map((r) => r.name), current: roomIndex, records: book.records(), now }, STR)
+    renderCellar(
+      ctx,
+      { names: ROOMS.map((r) => r.name), current: roomIndex, selected: mapPick, records: book.records(), now },
+      STR,
+    )
   }
   else render(ctx, scene, {
       world, prev, t, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',

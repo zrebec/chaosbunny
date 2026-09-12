@@ -8,6 +8,10 @@
  * Laid out as a serpentine so the chain reads left to right, then back again, the
  * way a corridor would actually wander. Rooms behind you are lit and carry the
  * beats they took; the one you just left blinks; the ones ahead are outlines.
+ *
+ * It is also how a room is chosen: the arrows walk the chain and the marked room is
+ * the one that opens. Coming off a win, the next room is already marked, so carrying
+ * on is still a single key.
  */
 import { C, drawBlinkingText, drawText, drawTextCentered } from 'zx-kit'
 import type { Records } from './records.js'
@@ -53,18 +57,21 @@ export function renderCellar(
   ctx: CanvasRenderingContext2D,
   opts: {
     readonly names: readonly string[]
+    /** The room just left, or being played — it blinks. */
     readonly current: number
+    /** The room the arrows are resting on — it is framed, and it is the one that opens. */
+    readonly selected: number
     readonly records: Records
     readonly now: number
   },
   str: Strings,
 ): void {
-  const { names, current, records, now } = opts
+  const { names, current, selected, records, now } = opts
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, PLAY_W, 192)
   drawTextCentered(ctx, str.cellar, 16, 32, C.B_CYAN, C.BLACK)
   // The room just left, by name: a cellar with names is a place, not a list.
-  drawTextCentered(ctx, roomLabel(str, current), 32, 32, C.WHITE, C.BLACK)
+  drawTextCentered(ctx, roomLabel(str, selected), 32, 32, C.WHITE, C.BLACK)
 
   const nodes = mapNodes(names.length)
   for (let i = 0; i + 1 < nodes.length; i++) {
@@ -93,7 +100,20 @@ export function renderCellar(
       const beats = String(records[names[i]!])
       drawText(ctx, beats, n.x - beats.length * 4, n.y + NODE / 2 + 2, C.CYAN, C.BLACK)
     }
-    if (here) drawBlinkingText(ctx, '', n.x - 4, n.y - NODE / 2 - 10, now, C.B_YELLOW, C.BLACK)
+    // Where you are, pointed at from the side: above the box it would touch the name line.
+    if (here) drawBlinkingText(ctx, '>', x - 12, n.y - 4, now, C.B_YELLOW, C.BLACK)
+    if (i === selected) {
+      // A frame a pixel clear of the box, so it reads as a cursor and not as a wall.
+      ctx.fillStyle = C.B_YELLOW
+      const fx = x - 3
+      const fy = y - 3
+      const fw = w + 6
+      const fh = NODE + 6
+      ctx.fillRect(fx, fy, fw, 1)
+      ctx.fillRect(fx, fy + fh - 1, fw, 1)
+      ctx.fillRect(fx, fy, 1, fh)
+      ctx.fillRect(fx + fw - 1, fy, 1, fh)
+    }
   })
 
   drawTextCentered(ctx, str.cellarHint, 168, 32, C.WHITE, C.BLACK)

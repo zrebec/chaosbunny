@@ -108,7 +108,7 @@ const EN: Strings = {
   ],
   soundHint: 'ESC: BACK',
   cellar: 'THE CELLAR',
-  cellarHint: 'ANY KEY: ON',
+  cellarHint: 'ARROWS PICK - ENTER GOES IN',
   roomNames: [
     'THE PANTRY CORRIDOR', 'THE DARK CORRIDOR', 'THE JUNCTION', "THE BAT'S LARDER",
     "THE BAT'S HALL", 'THE SENTRY', 'THE LIT CORNER', 'THE PLANK',
@@ -166,7 +166,7 @@ const SK: Strings = {
   ],
   soundHint: 'ESC: SPAT',
   cellar: 'PIVNICA',
-  cellarHint: 'KLAVESA: DALEJ',
+  cellarHint: 'SIPKY VYBER - ENTER DNU',
   roomNames: [
     'SPIZOVA CHODBA', 'TMAVA CHODBA', 'KRIZOVATKA', 'NETOPIERIA KOMORA',
     'NETOPIERIA SIEN', 'STRAZNIK', 'OSVETLENY KUT', 'DOSKA',
