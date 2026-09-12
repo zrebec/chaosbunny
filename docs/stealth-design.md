@@ -94,6 +94,7 @@ should come from what the game turns out to need, not from what the generator ca
 | creaky board | creaks under Randy's step, ears up or down; heard 3 away, nothing there to find | the first thing the dribble cannot save you from |
 | water | Randy wades it, no fox follows; a step in costs **two beats and two turns of the world** | the first rule about what a route is worth rather than who can sense you |
 | water in sight | never built: a wade is two beats Randy cannot react in, so a cone over water is a capture with no warning | the promise is two chances, and a wade has none — the planner refuses such a room |
+| water and bats | a wade with the ears up inside a bat's earshot is always a bite: it hears four cells away and covers two a flight, and a wade hands it two flights | fair because the ears answer it — down, it hears nothing — and the `~` over the bat is the warning |
 | listening | a fox that hears a creak stands still one beat, then comes | the noise is under Randy's own foot: without the pause it would be one chance, not two |
 
 ## 4. How a room actually gets designed
