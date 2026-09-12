@@ -24,7 +24,7 @@ import { visibleCells } from '../../src/stealth/rules.js'
 import { rng, W, H, type Candidate } from './gen.js'
 
 /** What a corridor can be made to cost. */
-export type Gate = 'grate' | 'board' | 'dark' | 'bat' | 'open'
+export type Gate = 'grate' | 'board' | 'dark' | 'bat' | 'sentry' | 'open'
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -110,6 +110,31 @@ function watcher(src: RoomSource, cells: readonly Cell[], taken: Set<string>): P
         const run = seen.some((a) => seen.some((b) => manhattan(a.cell, b.cell) === 1))
         if (run && seen.every((s) => s.forward > 1)) return { route: [[x, y]], facing }
       }
+    }
+  }
+  return null
+}
+
+/**
+ * A sentry for a stretch of corridor: one facing that watches a run of it, and another
+ * that watches none of it. The first is the wall, the second is the window — which is
+ * the whole of what a sentry is for. Without the second, the corridor is simply shut.
+ */
+function turner(src: RoomSource, cells: readonly Cell[], taken: Set<string>): PatrolSource | null {
+  const room = parseRoom(src)
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const cell = { x, y }
+      if (taken.has(`${x},${y}`) || !foxCanEnter(tileAt(room, cell))) continue
+      const covers = DIRS.map((facing) => ({
+        facing,
+        seen: visibleCells(room, cell, facing, false).filter((sg) => cells.some((c) => sameCell(sg.cell, c))),
+      }))
+      const watching = covers.find((c) =>
+        c.seen.length >= 2 && c.seen.every((sg) => sg.forward > 1)
+        && c.seen.some((a) => c.seen.some((b) => manhattan(a.cell, b.cell) === 1)))
+      const away = covers.find((c) => c.seen.length === 0)
+      if (watching && away) return { route: [[x, y]], turns: [watching.facing, away.facing], hold: 2 }
     }
   }
   return null
@@ -294,6 +319,11 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       if (!lever || best < 4) return null
       put(g, lever, '/')
       taken.add(`${lever.x},${lever.y}`)
+    } else if (gate === 'sentry') {
+      const guard = turner(src(), corridor, taken)
+      if (!guard) return null
+      patrols.push(guard)
+      taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
     } else if (gate === 'bat') {
       // A bat hanging in the next chamber: it cannot see, but it hears an ears-up step
       // from BAT_HEARING away, so the corridor has to be crossed in silence.

@@ -55,6 +55,12 @@ export interface Strings {
    * over the room use it. A room with no name here shows its number alone.
    */
   readonly roomNames: readonly string[]
+  /**
+   * The line shown the first time a fox notices Randy in a room. Being noticed is not
+   * being caught — the next beat is, if it sees him again — and nothing else in the
+   * game ever says so.
+   */
+  readonly spottedHint: string
   /** Short lines that appear over the room for a moment. */
   readonly roomToast: (n: number) => string
   readonly musicOn: string
@@ -114,6 +120,7 @@ const EN: Strings = {
     "THE BAT'S HALL", 'THE SENTRY', 'THE LIT CORNER', 'THE PLANK',
     'THE HANDLE', 'THE LONG WAY ROUND', 'THE WINDOW', 'THE ROOST',
   ],
+  spottedHint: 'SPOTTED - HIDE THIS BEAT',
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
@@ -172,6 +179,7 @@ const SK: Strings = {
     'NETOPIERIA SIEN', 'STRAZNIK', 'OSVETLENY KUT', 'DOSKA',
     'PAKA', 'OKLUKA', 'OKNO', 'HNIEZDO',
   ],
+  spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',

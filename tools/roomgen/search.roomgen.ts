@@ -9,7 +9,8 @@
  * KIND=lampboard npm run roomgen           # rooms where a lamp AND a plank are both load-bearing
  * KIND=route GATES=grate,board npm run roomgen  # a planned route, one gate per corridor
  *   gates: grate (a lever to find), board (a plank a guard hears), dark (a lit shadow
- *   with the guard walled in behind the lamp), bat (a corridor to cross in silence)
+ *   with the guard walled in behind the lamp), bat (a corridor to cross in silence),
+ *   sentry (a corridor open only on the beats a turning guard looks away)
  * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
  * KIND=lever  npm run roomgen             # rooms where a grate has to be opened
  * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
@@ -180,6 +181,17 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     if (room.grates.length && mark({ ...src, name: `${src.name} (walled)`, rows: src.rows.map((r) => r.split('+').join('#').split('/').join('.')) }, MAX_STATES)?.par !== null) return null
     if (room.lamps.length && m.lampsOn !== null) return null
     let note = ''
+    if (src.patrols.some((p) => p.turns)) {
+      // A sentry earns its place only if its turning is the way through: freeze every
+      // one of them on its first facing and the room must close.
+      const frozen = mark({
+        ...src,
+        name: `${src.name} (frozen)`,
+        patrols: src.patrols.map((p) => (p.turns ? { route: p.route, facing: p.turns[0] } : p)),
+      }, MAX_STATES)
+      if (!frozen || frozen.par !== null) return null
+      note += 'frozen it shuts; '
+    }
     if (src.bats?.length) {
       const quiet = mark({ ...src, name: `${src.name} (no bat)`, bats: [] }, MAX_STATES)
       if (!quiet?.par) return null

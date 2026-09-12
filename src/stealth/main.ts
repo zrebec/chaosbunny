@@ -99,6 +99,8 @@ let wonWorld: World | null = null
  */
 const history: World[] = []
 let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: number } | null = null
+/** Whether this visit to a room has already said what a `?` means. */
+let spottedHinted = false
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -163,6 +165,7 @@ function goToRoom(i: number): void {
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
+  spottedHinted = false
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
   say(roomLabel(STR, roomIndex))
 }
@@ -260,6 +263,12 @@ function play(action: Action): void {
     return
   }
   playEvents(r.events)
+  // The first `?` of a room is the one rule the game never told anyone: it is a warning,
+  // not a capture. Say it once, where it happens.
+  if (!spottedHinted && r.outcome === 'ok' && r.events.some((e) => e.type === 'suspicious')) {
+    spottedHinted = true
+    say(STR.spottedHint)
+  }
   runActions.push(action)
   history.push(world)
   prev = world
