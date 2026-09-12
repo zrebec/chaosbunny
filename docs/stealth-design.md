@@ -55,20 +55,21 @@ rather than editing by hand, because these numbers are the room, not the prose:
 | 1 | the pantry corridor | `room01` | 13 | 0 | carrot |
 | 2 | the crossing | `room1b` | 15 | 1 | — |
 | 3 | the dark step | `room2b` | 21 | 1 | ears |
-| 4 | the dark corridor | `room02` | 30 | 1 | ears + carrot |
-| 5 | the junction | `room03` | 26 | 2 | ears + carrot |
-| 6 | the bat's larder | `room04` | 28 | 0 | ears + carrot |
-| 7 | the bat's hall | `room05` | 35 | 1 | ears + carrot |
-| 8 | the sentry | `room06` | 28 | 2 | ears |
-| 9 | the lit corner | `room07` | 22 | 2 | ears + carrot + the dark |
-| 10 | the plank | `room08` | 35 | 0 | carrot |
-| 11 | the handle | `room09` | 27 | 2 | ears + the lever |
-| 12 | the long way round | `room10` | 28 | 1 | carrot + the lever |
-| 13 | the wade | `room16` | 15 | 0 | — |
-| 14 | the flood | `room13` | 20 | 0 | wet feet |
-| 15 | the fork | `room14` | 19 | 0 | carrot |
-| 16 | the roost | `room12` | 33 | 1 | ears + carrot + the dark |
-| 17 | the window | `room11` | 32 | 1 | ears + carrot + the dark + the lever |
+| 4 | the shadow shelf | `room3b` | 18 | 0 | ears + carrot |
+| 5 | the dark corridor | `room02` | 30 | 1 | ears + carrot |
+| 6 | the junction | `room03` | 26 | 2 | ears + carrot |
+| 7 | the bat's larder | `room04` | 28 | 0 | ears + carrot |
+| 8 | the bat's hall | `room05` | 35 | 1 | ears + carrot |
+| 9 | the sentry | `room06` | 28 | 2 | ears |
+| 10 | the lit corner | `room07` | 22 | 2 | ears + carrot + the dark |
+| 11 | the plank | `room08` | 35 | 0 | carrot |
+| 12 | the handle | `room09` | 27 | 2 | ears + the lever |
+| 13 | the long way round | `room10` | 28 | 1 | carrot + the lever |
+| 14 | the wade | `room16` | 15 | 0 | — |
+| 15 | the flood | `room13` | 20 | 0 | wet feet |
+| 16 | the fork | `room14` | 19 | 0 | carrot |
+| 17 | the roost | `room12` | 33 | 1 | ears + carrot + the dark |
+| 18 | the window | `room11` | 32 | 1 | ears + carrot + the dark + the lever |
 
 The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
 room's name is only the key its record is filed under, so the second room is `room1b`.
@@ -278,7 +279,7 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    true, nothing true left unclaimed. That is what makes it safe to show: a want names
    the tool and never the hand, and there are as many wrong ways to use the right verb
    as there ever were. The cellar as it stands wants
-   the ears down in ten rooms, a carrot in eleven, a lamp out in three, the lever in
+   the ears down in eleven rooms, a carrot in twelve, a lamp out in three, the lever in
    three, wet feet in one, and nothing but timing in two — a tally the doc test keeps
    true, since a new room would quietly age it.
 4. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.

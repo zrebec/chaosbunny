@@ -24,7 +24,7 @@ import { visibleCells } from '../../src/stealth/rules.js'
 import { rng, W, H, type Candidate } from './gen.js'
 
 /** What a corridor can be made to cost. */
-export type Gate = 'grate' | 'board' | 'dark' | 'bat' | 'sentry' | 'water' | 'open'
+export type Gate = 'grate' | 'board' | 'dark' | 'shadow' | 'lure' | 'bat' | 'sentry' | 'water' | 'open'
 
 interface Rect { x: number; y: number; w: number; h: number }
 
@@ -422,6 +422,30 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
     if (gate === 'board') {
       put(g, cell, '~')
       const guard = listener(src(), cell, taken)
+      if (!guard) return false
+      patrols.push(guard)
+      taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
+      return true
+    }
+    if (gate === 'lure') {
+      // The same eyes as `shadow`, on plain floor: nowhere to hide and nothing to wait
+      // for, because a standing guard never turns and never walks off. The carrot is
+      // the only key. It is the plainest way a corridor can ask for one — no new tile,
+      // no new rule, nothing the second room has not already taught.
+      const guard = watcher(src(), corridor, taken)
+      if (!guard) return false
+      patrols.push(guard)
+      taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
+      return true
+    }
+    if (gate === 'shadow') {
+      // A shadow corridor with a pair of eyes on it, and no lamp: the ears are the
+      // whole of the answer. `dark` builds the same corridor but spends a lamp pocket
+      // on it, which is a second lesson and a shape the planner can almost never carve
+      // (2055 shapes thrown away in 4000 seeds). This is the cheap version, and it is
+      // what the ladder's own dribble rooms are made of.
+      for (const c2 of corridor) if (at(g, c2) === '.') put(g, c2, 's')
+      const guard = watcher(src(), corridor, taken)
       if (!guard) return false
       patrols.push(guard)
       taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)

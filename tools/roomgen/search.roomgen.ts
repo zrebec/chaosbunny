@@ -54,10 +54,19 @@ const BUDGET_MS = Number(process.env.BUDGET ?? 600_000)
 const MIN_PAR = Number(process.env.MIN_PAR ?? 16)
 const MAX_PAR = Number(process.env.MAX_PAR ?? 40)
 const GAIN = Number(process.env.GAIN ?? 5)
+/**
+ * The most forced sightings a room may have and still be worth reporting. The ladder's
+ * own test refuses more than two ("no room forces more than two sightings"), so a
+ * search that ranked a six-sighting room top — as this one did, because every judge
+ * *added* `fewest * 5` to the score — was ranking rooms that could never ship.
+ */
+const SIGHTINGS = Number(process.env.SIGHTINGS ?? 2)
 const MAX_STATES = Number(process.env.MAX_STATES ?? 120_000)
 const OUT = process.env.OUT ?? path.join(import.meta.dirname, 'out', `${KIND}.txt`)
 /** How many marked rooms the report lists before the picture sheets (`LINES`). */
 const LINES = Number(process.env.LINES ?? 12)
+/** How many of those get a picture printed under the list (`SHEETS`). */
+const SHEETS = Number(process.env.SHEETS ?? 5)
 const GATES = (process.env.GATES ?? 'grate,board').split(',') as Gate[]
 const FORK = (process.env.FORK ?? 'dark,board').split(',') as [Gate, Gate]
 
@@ -185,7 +194,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     return {
       src,
       marks: m,
-      score: 100 - spread * 10 + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5,
+      score: 100 - spread * 10 + (m.noEars === null ? 20 : 0) - (m.fewest ?? 0) * 5,
       note: `lit ${lit} against dark ${dark}: two plans, ${spread} beats apart`,
     }
   }
@@ -202,7 +211,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     return {
       src,
       marks: m,
-      score: 100 - spread * 10 + (m.par - drained.par) * 5 + (m.fewest ?? 0) * 5,
+      score: 100 - spread * 10 + (m.par - drained.par) * 5 - (m.fewest ?? 0) * 5,
       note: `wet ${m.par}, dry ${m.dry}, drained ${drained.par}`,
     }
   }
@@ -214,7 +223,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     if (lit === null || dark === null) return null
     const spread = Math.abs(lit - dark)
     if (spread > 2) return null
-    return { src, marks: m, score: 100 - spread * 10 + (m.fewest ?? 0) * 5, note: `lit ${lit} against dark ${dark}, ${spread} apart` }
+    return { src, marks: m, score: 100 - spread * 10 - (m.fewest ?? 0) * 5, note: `lit ${lit} against dark ${dark}, ${spread} apart` }
   }
   if (kind === 'route') {
     // Every gate on a planned route is a bridge by construction, so the question is
@@ -223,6 +232,10 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     const room = parseRoom(src)
     if (room.grates.length && mark({ ...src, name: `${src.name} (walled)`, rows: src.rows.map((r) => r.split('+').join('#').split('/').join('.')) }, MAX_STATES)?.par !== null) return null
     if (room.lamps.length && m.lampsOn !== null) return null
+    // A shadow gate is only a gate if the ears are the way through it, and a lure gate
+    // only if the carrot is.
+    if (GATES.includes('shadow') && m.noEars !== null) return null
+    if (GATES.includes('lure') && m.noThrow !== null) return null
     let note = ''
     if (src.rows.join('').includes('w')) {
       // Water on the only way through is a tax, and it has to be one: drain it and the
@@ -254,7 +267,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
       if (!silent?.par || m.par! - silent.par < GAIN) return null
       note += `silent floor is par ${silent.par}; `
     }
-    return { src, marks: m, score: m.par! + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5, note: `${note}gates ${GATES.join('+')}` }
+    return { src, marks: m, score: m.par! + (m.noEars === null ? 20 : 0) - (m.fewest ?? 0) * 5, note: `${note}gates ${GATES.join('+')}` }
   }
   if (kind === 'lampboard') {
     // Both must carry the room: burning, the lamp makes it impossible; and with the
@@ -264,7 +277,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     if (!silent?.par) return null
     const gain = m.par! - silent.par
     if (gain < GAIN) return null
-    return { src, marks: m, score: gain * 10 + (m.fewest ?? 0), note: `silent floor is par ${silent.par} (+${gain})` }
+    return { src, marks: m, score: gain * 10 - (m.fewest ?? 0), note: `silent floor is par ${silent.par} (+${gain})` }
   }
   if (kind === 'sentry') {
     if (!src.patrols.some((p) => p.turns)) return null
@@ -299,7 +312,7 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     return {
       src,
       marks: m,
-      score: gain * 10 + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5,
+      score: gain * 10 + (m.noEars === null ? 20 : 0) - (m.fewest ?? 0) * 5,
       note: `already open it is par ${open.par} (+${gain}), fewest? ${open.fewest}`,
     }
   }
@@ -395,7 +408,7 @@ test(`roomgen: ${KIND}`, () => {
       const m = mark(src, MAX_STATES)
       if (!m) continue
       const hit = judge(KIND, src, m)
-      if (hit) hits.push(hit)
+      if (hit && (hit.marks.fewest ?? 99) <= SIGHTINGS) hits.push(hit)
     }
   }
   hits.sort((a, b) => b.score - a.score)
@@ -406,7 +419,7 @@ test(`roomgen: ${KIND}`, () => {
     '',
     ...hits.slice(0, LINES).map((h) => `${line(h.marks)} — ${h.note}`),
     '',
-    ...hits.slice(0, 5).map((h) => `${sheet(h.src, h.marks)}\n  ${h.note}\n`),
+    ...hits.slice(0, SHEETS).map((h) => `${sheet(h.src, h.marks)}\n  ${h.note}\n`),
   ].join('\n')
   fs.mkdirSync(path.dirname(OUT), { recursive: true })
   fs.writeFileSync(OUT, report)
