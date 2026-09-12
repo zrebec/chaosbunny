@@ -7,6 +7,32 @@
 
 **Legend:** ✅ done · 🔜 next · 🔲 planned · 💭 later / idea
 
+## 2026-09-12 — the tile-stealth direction (read this first)
+
+chaosBunny turned into a **beat-based tile stealth game** on 2026-09-11 (owner's call,
+after the platformer's charge-jump failed twice). One screen is one room, 16×11 tiles;
+every action moves the whole world one beat; the verb is **slip past**. It is not a
+sketch any more: **fourteen rooms**, each proved solvable by a solver in its own test,
+a cellar map that is also the room chooser, a story and an ending, records and replays.
+
+- Where it lives: `src/stealth/` (`beat.ts` is the rulebook, `solver.ts` the guarantee),
+  rooms in `src/stealth/rooms/` with the order in `rooms/index.ts`, the design tool in
+  `tools/roomgen/` (`npm run roomgen`).
+- What to read: **`docs/stealth-design.md`** — the verb ladder, how a room gets designed
+  and what each of them costs. A Slovak copy sits beside it.
+- Where the work is: local branches, newest last, each one a working state. The night's
+  diary with the whole table is `retro/docs/sk/chaosbunny-noc-2026-09-12.md`.
+- Still open, and only the owner can close it: **the sound** — every blip and the AY
+  loop are a guess. `S` on the loaded picture opens a bench that plays all twelve.
+- Resolution: asked again on 2026-09-12 and answered the same way as below — **256×192
+  stays**, and for the stealth game there is a further reason: its rules are countable
+  in cells, and the solver that proves every room gets four times more expensive on a
+  finer grid.
+
+**The platformer list below is untouched.** Nothing in it has been cancelled; it is
+simply not what the game has been for the last day. Which of the two chaosBunny is, is
+the owner's decision, not this document's.
+
 ## Recently done
 
 - ✅ **2026-06-05 — Instant music control.** `M` (mute) and `N` (next) now react
