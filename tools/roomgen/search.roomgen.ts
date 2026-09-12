@@ -5,6 +5,7 @@
  * ```bash
  * npm run roomgen                          # general rooms that need the ears
  * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
+ * KIND=decision npm run roomgen            # rooms with two plans that cost the same
  * KIND=board GAIN=5 npm run roomgen        # rooms a creaky board changes
  * KIND=lever  npm run roomgen             # rooms where a grate has to be opened
  * KIND=sentry npm run roomgen              # rooms a sentry's turning opens
@@ -25,7 +26,7 @@ import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever'
+type Kind = 'plain' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -59,7 +60,7 @@ function spots(src: RoomSource, within: number): [number, number][] {
 /** Every room worth marking for this kind, from one candidate. */
 function variants(kind: Kind, c: Candidate): RoomSource[] {
   const src = c.src
-  if (kind === 'lamp') {
+  if (kind === 'lamp' || kind === 'decision') {
     return spots(src, 6)
       .filter(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => src.rows[y + dy]?.[x + dx] === 's'))
       .map(([x, y]) => ({ ...src, name: `${src.name}@lamp${x},${y}`, rows: withTiles(src.rows, 'L', [[x, y]]) }))
@@ -125,6 +126,26 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
     const noticedMore = m.fewest !== null && plain.fewest !== null && m.fewest > plain.fewest
     if (gain < GAIN && !noticedMore) return null
     return { src, marks: m, score: gain * 10 + (noticedMore ? 5 : 0), note: `plain floor is par ${plain.par} (+${gain}), fewest? ${plain.fewest}` }
+  }
+  if (kind === 'decision') {
+    // Every way out either leaves the lamp burning or puts it out, so those two pars
+    // are the two plans. A room where they are within a beat or two of each other has
+    // a decision in it; one where they are far apart has a right answer and a wrong one.
+    const lit = m.lampsOn
+    const dark = m.dark
+    if (lit === null || dark === null) return null
+    const spread = Math.abs(lit - dark)
+    if (spread > 2 || m.noThrow !== null) return null
+    // A choice with nothing at stake is not a choice: the room must also press, by
+    // needing the ears or by noticing even the most careful player.
+    const pressure = m.noEars === null || (m.fewest ?? 0) >= 1
+    if (!pressure) return null
+    return {
+      src,
+      marks: m,
+      score: 100 - spread * 10 + (m.noEars === null ? 20 : 0) + (m.fewest ?? 0) * 5,
+      note: `lit ${lit} against dark ${dark}: two plans, ${spread} beats apart`,
+    }
   }
   if (kind === 'sentry') {
     if (!src.patrols.some((p) => p.turns)) return null

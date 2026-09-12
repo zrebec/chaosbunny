@@ -21,6 +21,8 @@ export interface Marks {
   readonly noEars: number | null
   readonly noThrow: number | null
   readonly lampsOn: number | null
+  /** Par counting only ways out that leave every lamp dark — the other half of the plan. */
+  readonly dark: number | null
   /** Lamps in the room — `lampsOn` means nothing without it. */
   readonly lamps: number
   /** How long the marking took, in ms — the search's own budget depends on it. */
@@ -41,7 +43,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
   try {
     const best = par(room, { maxStates })
     if (best === null) {
-      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, lamps: room.lamps.length, ms: Date.now() - t0 }
+      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, lamps: room.lamps.length, ms: Date.now() - t0 }
     }
     const hasCarrot = room.carrots + room.pickups.length > 0
     return {
@@ -51,6 +53,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
       noEars: par(room, { ears: false, maxStates }),
       noThrow: hasCarrot ? par(room, { throws: false, maxStates }) : null,
       lampsOn: room.lamps.length ? par(room, { lamps: false, maxStates }) : null,
+      dark: room.lamps.length ? par(room, { lampsOut: true, maxStates }) : null,
       lamps: room.lamps.length,
       ms: Date.now() - t0,
     }
@@ -64,7 +67,7 @@ const n = (v: number | null): string => (v === null ? 'NONE' : String(v))
 /** One line of marks, for a search's report. */
 export function line(m: Marks): string {
   return `${m.name}: par ${n(m.par)} | fewest? ${n(m.fewest)} | noEars ${n(m.noEars)} | noThrow ${n(m.noThrow)}`
-    + `${m.lamps ? ` | lampsOn ${n(m.lampsOn)}` : ''} | ${m.ms} ms`
+    + `${m.lamps ? ` | lampsOn ${n(m.lampsOn)} | dark ${n(m.dark)}` : ''} | ${m.ms} ms`
 }
 
 /** The room as text, with its guards — enough to paste into `src/stealth/rooms/`. */

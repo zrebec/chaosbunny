@@ -3,6 +3,8 @@ import { beat, startWorld, throwAt, type World } from '../../src/stealth/beat.js
 import { allLampsOn, cellIndex, lampOn, litCells, LAMP_REACH } from '../../src/stealth/light.js'
 import { foxCanEnter, parseRoom, randyCanEnter, tileAt, ROOM_COLS, ROOM_ROWS, type Room } from '../../src/stealth/room.js'
 import { spots } from '../../src/stealth/rules.js'
+import { solve } from '../../src/stealth/solver.js'
+import { ROOM_07 } from '../../src/stealth/rooms/room07.js'
 import { move, testRoom, toss, WAIT } from './helpers.js'
 
 const shines = (room: Room, mask: number, x: number, y: number): boolean =>
@@ -157,5 +159,22 @@ describe('throwing a carrot at a lamp', () => {
     const dark = beat(r, w, toss('down'))
     expect(dark.world.lamps).toBe(0)
     expect(dark.events.some((e) => e.type === 'suspicious')).toBe(false)
+  })
+})
+
+describe('the two halves of a plan', () => {
+  // room07 is the room the lamp makes impossible, so only one half of it exists.
+  it('split every way out: keeping the lamp lit, or putting it out', () => {
+    const room = parseRoom(ROOM_07)
+    const lit = solve(room, { lamps: false })
+    const dark = solve(room, { lampsOut: true })
+    expect(lit).toBeNull() // room07 cannot be done with the light on
+    expect(dark).not.toBeNull()
+    expect(dark!.length).toBe(solve(room)!.length) // so its par is the dark plan's
+  })
+
+  it('leaves a room without lamps able to win either way — there is nothing to put out', () => {
+    const plain = testRoom(['#R.....D########', '#..............#'])
+    expect(solve(plain, { lampsOut: true })?.length).toBe(solve(plain)?.length)
   })
 })

@@ -27,6 +27,9 @@ const hall = (foxAt?: readonly [number, number]) =>
     foxAt ? [{ route: [[foxAt[0], foxAt[1]]], facing: 'down' }] : [],
   )
 
+/** A shaft where the grate really is the only way: no route around it at all. */
+const shaft = () => testRoom(['#R.+...D########', '#./#############'])
+
 /** Randy put where the test needs him, everything else as the room starts. */
 const at = (room: ReturnType<typeof hall>, x: number, y: number): World => {
   const w = startWorld(room)
@@ -86,7 +89,7 @@ describe('the lever', () => {
   })
 
   it('is the only way past a grate: the way out works it', () => {
-    const room = hall()
+    const room = shaft()
     const best = solve(room)
     expect(best).not.toBeNull()
     const results = play(room, best!)
@@ -106,5 +109,18 @@ describe('a room with a lever', () => {
 
   it('starts with every grate shut', () => {
     expect(startWorld(hall()).pulled).toBe(false)
+  })
+})
+
+describe('the solver, asked to leave the lever alone', () => {
+  it('finds no way through a room whose only way is the grate', () => {
+    const room = shaft()
+    expect(solve(room)).not.toBeNull()
+    expect(solve(room, { levers: false })).toBeNull()
+  })
+
+  it('leaves a room without ironwork exactly as it was', () => {
+    const plain = testRoom(['#R.....D########', '#..............#'])
+    expect(solve(plain, { levers: false })?.length).toBe(solve(plain)?.length)
   })
 })

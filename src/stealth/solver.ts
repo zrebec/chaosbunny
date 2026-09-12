@@ -28,6 +28,19 @@ export interface SolveOptions {
   readonly ears?: boolean
   /** Allow putting a lamp out with a carrot (default true). Off, it asks "with the lights on?" */
   readonly lamps?: boolean
+  /**
+   * Count only a way out that leaves every lamp dark (default false). Its mirror is
+   * {@link SolveOptions.lamps} `false`, which counts only ways out that leave them
+   * burning — between them they split every plan in two, and a room where both
+   * answers are close is a room with a real decision in it, not one right answer.
+   */
+  readonly lampsOut?: boolean
+  /**
+   * Allow working a lever (default true). Off, every grate stays as it started —
+   * which, with {@link SolveOptions.lamps} off too, is how a room is asked whether
+   * it really offers two ways through or only one.
+   */
+  readonly levers?: boolean
   /** Skip throws no fox hears (default true) — see the module comment. */
   readonly prune?: boolean
   readonly maxStates?: number
@@ -74,6 +87,8 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
   const keepLamps = options.lamps === false
+  const keepGrates = options.levers === false
+  const darkOnly = options.lampsOut === true
   const start = startWorld(room)
   const cost = new Map<string, number>([[worldKey(start), 0]])
   const buckets: World[][] = [[start]]
@@ -86,8 +101,12 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
         const result = beat(room, world, action)
         if (result.outcome === 'blocked' || result.outcome === 'caught') continue
         if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
+        if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
         // A winning step ends the beat before any fox looks, so it adds no sighting.
-        if (result.outcome === 'won') return q
+        if (result.outcome === 'won') {
+          if (!darkOnly || result.world.lamps === 0) return q
+          continue // a way out that leaves a lamp burning, when only the dark counts
+        }
         if (prune && pointless(action, result.events)) continue
         const c = q + result.events.filter((e) => e.type === 'suspicious').length
         const key = worldKey(result.world)
@@ -107,6 +126,8 @@ export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
   const keepLamps = options.lamps === false
+  const keepGrates = options.levers === false
+  const darkOnly = options.lampsOut === true
   const start = startWorld(room)
   const parent = new Map<string, { prev: string; action: Action } | null>([[worldKey(start), null]])
   const queue: World[] = [start]
@@ -118,7 +139,9 @@ export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
       const result = beat(room, world, action)
       if (result.outcome === 'blocked' || result.outcome === 'caught') continue
       if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
+      if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
       if (result.outcome === 'won') {
+        if (darkOnly && result.world.lamps !== 0) continue // only the dark counts here
         const path: Action[] = [action]
         for (let at = parent.get(key); at; at = parent.get(at.prev)) path.push(at.action)
         return path.reverse()
