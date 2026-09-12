@@ -8,6 +8,7 @@
  * - **Ears down**: none of that. Only the foxes themselves, and their `?`.
  * - `?` over a fox: it saw Randy last beat and is standing still. `!`: caught.
  * - A carrot over a fox's head: it is eating, and blind.
+ * - `+n` beside the carrot count: that many are still lying in the room somewhere.
  * - `~` over a bat: Randy is close enough for it to hear an ears-up step.
  * - `^ v < >` over a sentry, ears up: the way it will look next beat.
  * - **A lit shadow is drawn as plain floor** — because that is what it is worth
@@ -299,9 +300,17 @@ function drawHud(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, str: Str
   const ears = r.earsDown ? str.earsDown : str.earsUp
   drawText(ctx, ears, 0, HUD_Y, r.earsDown ? C.CYAN : C.B_CYAN)
   if (r.earsDown) drawSneakPips(ctx, ears.length * 8 + 3, r.sneakLeft)
-  drawText(ctx, str.carrots(r.carrots), 96, HUD_Y, r.carrots > 0 ? C.B_YELLOW : C.YELLOW)
+  const carrots = str.carrots(r.carrots)
+  drawText(ctx, carrots, 96, HUD_Y, r.carrots > 0 ? C.B_YELLOW : C.YELLOW)
   const right = `${str.room(scene.number)} ${str.beats(f.world.beats)}`
-  drawText(ctx, right, PLAY_W - right.length * 8, HUD_Y, C.WHITE)
+  const rightX = PLAY_W - right.length * 8
+  drawText(ctx, right, rightX, HUD_Y, C.WHITE)
+  // Carrots still lying about, dimly: enough to say one exists, never where it is. A
+  // player who cannot see that a room holds a carrot concludes it holds none — which is
+  // exactly how one got stuck. Dropped rather than overlapped when the beats run long.
+  const loose = f.world.items.length > 0 ? `+${f.world.items.length}` : ''
+  const looseX = 96 + carrots.length * 8 + 4
+  if (loose && looseX + loose.length * 8 <= rightX) drawText(ctx, loose, looseX, HUD_Y, C.YELLOW)
   if (f.replaying) drawText(ctx, str.replaying, 0, HUD_Y + 8, C.B_YELLOW)
   else drawText(ctx, f.aiming ? str.aimHints : str.hints, 0, HUD_Y + 8, f.aiming ? C.B_WHITE : C.WHITE)
 }
