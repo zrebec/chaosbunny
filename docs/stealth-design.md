@@ -43,9 +43,12 @@ either cannot be finished or collapses to something much shorter.
 | 12 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 | 13 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
 
+The number is the room's **place**, not its file: `rooms/index.ts` is the order and a
+room's name is only the key its record is filed under, so the second room is `room1b`.
+
 Where the ladder should go next (a proposal, not a promise):
 
-10. **A decision**: two plans that cost the same — a room with no single "right"
+14. **A decision**: two plans that cost the same — a room with no single "right"
     answer. The search for it now exists and has not found one yet; see below.
 
 ## 3. The rules that already hold, one line each
@@ -161,16 +164,28 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    cellar you have not beaten. It is the save file drawn, so it costs no new state. What is still missing is a *reason* for the
    chain — see below.
 2. ~~**A reason**~~ — there is a screen before the first room now: the foxes' larder is
-   under the hill, Randy went in for one carrot, the door shut. Eleven cellars to the
-   night air — and, once the last one is behind him, the grass, with the beats the whole
-   cellar took.
-3. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
+   under the hill, Randy went in for one carrot, the door shut. So many cellars to the
+   night air (the screen counts them, so a new room cannot make it lie) — and, once the
+   last one is behind him, the grass, with the beats the whole cellar took.
+3. ~~**The rules a player cannot see**~~ — three of them are now said once each, at the
+   beat they first bite: a `?` is a warning and not a capture, the dark hides only
+   lowered ears, and a bat hears the ones that are up. This list came from a real player
+   stuck in a room that was provably passable: **anything the game expects and never
+   says is a bug in the teaching, not in the player.**
+4. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
    There is a bench for it now: `S` on the loaded picture puts all twelve sounds on
    twelve keys, so two can be heard back to back. Tuning is the numbers in
    `sound.ts`'s `playEvents` and `music.ts`'s three strings.
-4. **Resolution** — staying at 256×192; hi-res is a question for a sports game, not
-   for this one.
-5. ~~**A generator that lives in the repo**~~ — done: `tools/roomgen`, `npm run roomgen`.
+5. **Resolution** — staying at 256×192 with 16 px tiles, decided again on 2026-09-12
+   when it was put as a question. Three reasons, all of them about the verb: the rules
+   are countable in cells (a cone 1 then 3 wide to 4, a throw of 3, hearing 5, a dribble
+   of 2) and on a finer grid those numbers stop being countable at a glance; the solver
+   is the design engine, and four times the cells turns proving a room from milliseconds
+   into minutes, which kills the generator loop; and a 16 px tile is four attribute
+   cells, so it can keep the hardware rule, while an 8 px tile *is* the attribute cell
+   and clash becomes unavoidable. Hi-res belongs to the sports game, not to this one —
+   when this one needs more room, it needs more rooms, and those are cheap now.
+6. ~~**A generator that lives in the repo**~~ — done: `tools/roomgen`, `npm run roomgen`.
 
 ## 7. Where it all lives
 
