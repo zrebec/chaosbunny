@@ -108,13 +108,13 @@ So the second generator goes the other way about (`tools/roomgen/route.ts`,
 exactly one corridor, and the map is a path — every corridor is a bridge, and cutting
 it really does cut the room. The property a mechanic needs is then true **by
 construction**. Twelve rooms in three hundred seeds, in thirteen seconds, each with two
-load-bearing gates. room10 is the first of them.
+load-bearing gates. `room10` (played eleventh) is the first of them.
 
 **The dark gate took two goes, and the second one is a rule worth keeping.** The first
 `GATES=dark` laid a shadow corridor, a guard watching a run of it and a lamp lighting
 exactly that run — and every room it made was still walkable with the light on, because
 *the carrot lures the guard away*. **A lamp only matters when the guard behind it cannot
-be bought off.** room07 has that by accident: its guard sits in a corner it cannot leave,
+be bought off.** `room07` has that by accident: its guard sits in a corner it cannot leave,
 because what separates the corner from the shaft is **the lamp itself** — solid to a fox,
 transparent to its eyes and its light.
 
@@ -122,7 +122,7 @@ transparent to its eyes and its light.
 lamp as its only window, the pocket checked to be sealed against fox pathing, and the
 corridor running three cells past the lamp — the third is out of the cone (a cone reaches
 four) and still within a carrot's throw (three), which is where Randy has to stand to put
-the light out. room11 came out of it, and is the first room that needs every verb the
+the light out. `room11` (played twelfth) came out of it, and is the first room that needs every verb the
 game has.
 
 Its lesson generalises: **the expensive part of room design was never the search, it
@@ -190,7 +190,8 @@ two grates on one handle, a handle a guard walks past. None of those need new co
 ## 7. Where it all lives
 
 - Logic: `src/stealth/` (`beat.ts` is the rulebook, `solver.ts` is the guarantee).
-- Rooms: `src/stealth/rooms/room01..room07.ts` — each header says **what** its test
+- Rooms: `src/stealth/rooms/*.ts`, in the order `rooms/index.ts` lists them — each
+  header says **what** its test
   proves, never **how**.
 - Tests: `tests/stealth/*.tests.ts`, one file per room.
 - Art: zx-art `art/chaosbunny/`, copied into `src/art/zx/`.
