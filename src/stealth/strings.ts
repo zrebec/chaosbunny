@@ -33,6 +33,9 @@ export interface Strings {
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
   readonly replayHint: (withBest: boolean) => string
   readonly replaying: string
+  /** The map between rooms: its title, and how to leave it. */
+  readonly cellar: string
+  readonly cellarHint: string
   /** Short lines that appear over the room for a moment. */
   readonly roomToast: (n: number) => string
   readonly musicOn: string
@@ -61,6 +64,8 @@ const EN: Strings = {
   newRecord: 'NEW BEST!',
   replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
   replaying: 'REPLAY - ANY KEY STOPS',
+  cellar: 'THE CELLAR',
+  cellarHint: 'ANY KEY: ON',
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
@@ -88,6 +93,8 @@ const SK: Strings = {
   newRecord: 'NOVY REKORD!',
   replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),
   replaying: 'ZAZNAM - KLAVESA ZASTAVI',
+  cellar: 'PIVNICA',
+  cellarHint: 'KLAVESA: DALEJ',
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',

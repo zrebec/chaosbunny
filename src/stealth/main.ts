@@ -14,7 +14,9 @@
  * - (after a win, any key goes on to the next room)
  *
  * After a win, P plays the run back and B the run that holds the room's record
- * (`replay.ts`: a run is just its actions); any key stops it.
+ * (`replay.ts`: a run is just its actions); any key stops it. Leaving the win screen
+ * shows the cellar map (`cellar.ts`) with the room just escaped lit up, and a key
+ * from there walks on to the next.
  *
  * It opens on the title (`title.ts`): `LOAD ""`, a key starts the tape, a key
  * during the load finishes it, a key on the picture starts room 1. Winning the
@@ -37,6 +39,7 @@ import { ROOM_SOURCES } from './rooms/index.js'
 import { playBlocked, playEvents, playTape, playUndo, stopTape } from './sound.js'
 import { STR } from './strings.js'
 import { loadStateAt } from './loader.js'
+import { renderCellar } from './cellar.js'
 import { createTitle, renderTitle, setBorder, type TitleMode } from './title.js'
 import { createScene, render, type Frame, type Scene } from './view.js'
 
@@ -77,7 +80,7 @@ let prev: World = world
 let t = 1
 let thrown: Frame['thrown'] = null
 let aiming = false
-let phase: 'title' | 'play' | 'caught' | 'won' | 'replay' = 'title'
+let phase: 'title' | 'play' | 'caught' | 'won' | 'replay' | 'map' = 'title'
 let phaseMs = 0
 let caughtBy: number | null = null
 let bittenBy: number | null = null
@@ -360,6 +363,12 @@ function frame(now: number): void {
     t = Math.min(1, t + dt / BEAT_MS)
     if (consumeAnyKey()) stopReplay()
     else if (replay) stepReplay(replay, dt)
+  } else if (phase === 'map') {
+    phaseMs += dt
+    if (consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
+      if (roomIndex === ROOMS.length - 1) goToTitle('ready')
+      else goToRoom(roomIndex + 1)
+    }
   } else if (phase === 'title') {
     if (titleMode === 'loading') {
       loadMs += dt
@@ -373,12 +382,16 @@ function frame(now: number): void {
     if (phase === 'caught' && phaseMs >= CAUGHT_MS) restart()
     // Keys during the grace are dropped, not kept for later — or they would skip the screen the moment it ends.
     if (phase === 'won' && consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
-      if (roomIndex === ROOMS.length - 1) goToTitle('ready')
-      else goToRoom(roomIndex + 1)
+      phase = 'map' // the cellar, with the room just escaped lit up
+      phaseMs = 0
+      resetInput()
     }
   }
 
   if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR)
+  else if (phase === 'map') {
+    renderCellar(ctx, { names: ROOMS.map((r) => r.name), current: roomIndex, records: book.records(), now }, STR)
+  }
   else render(ctx, scene, {
       world, prev, t, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
       record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
