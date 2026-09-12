@@ -63,11 +63,11 @@ Where the ladder should go next (a proposal, not a promise):
 
 ## 4. How a room actually gets designed
 
-1. **The generator** (`night/gen.ts`, still in a scratchpad) throws out hundreds of
-   plans from rectangles and corridors, sprinkling shadow, crates and patrols.
+1. **The generator** (`tools/roomgen`, `npm run roomgen`) throws out hundreds of
+   plans from rectangles and corridors, sprinkling shadow, crates, boards and patrols.
 2. **The solver** marks each candidate: `par` (the shortest way out), `fewest ?` (how
    often the most careful player is noticed), and the ablations — no carrot, no ears,
-   lamp kept on, sentry frozen.
+   lamp kept on, sentry frozen, planks turned to silent floor.
 3. **Choose by the ablations, not by the picture**: a good room is one that *cannot*
    be done without its new thing.
 4. **Keep the plan as it came.** Tuning a layout "so it works" quietly draws my own
