@@ -39,6 +39,7 @@ either cannot be finished or collapses to something much shorter.
 | 8 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
 | 9 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 | 10 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
+| 11 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
 
 Where the ladder should go next (a proposal, not a promise):
 
@@ -104,14 +105,20 @@ it really does cut the room. The property a mechanic needs is then true **by
 construction**. Twelve rooms in three hundred seeds, in thirteen seconds, each with two
 load-bearing gates. room10 is the first of them.
 
-**The dark gate is not built yet, and the reason is worth keeping.** `GATES=dark` lays
-a shadow corridor, a guard that watches a run of it, and a lamp that lights exactly what
-the guard watches — and every room it makes is still walkable with the light on, because
-*the carrot lures the guard away*. A lamp only matters when the guard behind it cannot be
-bought off. room07 has that by accident: its guard sits in a corner it cannot leave,
+**The dark gate took two goes, and the second one is a rule worth keeping.** The first
+`GATES=dark` laid a shadow corridor, a guard watching a run of it and a lamp lighting
+exactly that run — and every room it made was still walkable with the light on, because
+*the carrot lures the guard away*. **A lamp only matters when the guard behind it cannot
+be bought off.** room07 has that by accident: its guard sits in a corner it cannot leave,
 because what separates the corner from the shaft is **the lamp itself** — solid to a fox,
-transparent to its eyes and its light. That is the shape the route generator would have to
-build on purpose: a pocket for the guard, with the lamp as the bars of its window.
+transparent to its eyes and its light.
+
+`carveLampPocket` now builds that on purpose: a pocket beside a corridor's end with the
+lamp as its only window, the pocket checked to be sealed against fox pathing, and the
+corridor running three cells past the lamp — the third is out of the cone (a cone reaches
+four) and still within a carrot's throw (three), which is where Randy has to stand to put
+the light out. room11 came out of it, and is the first room that needs every verb the
+game has.
 
 Its lesson generalises: **the expensive part of room design was never the search, it
 was the shape.** A generator that plans the route can also plan where the player will
