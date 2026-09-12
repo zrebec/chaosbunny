@@ -259,7 +259,15 @@ export interface RouteOptions {
    * against `lampsOut: true` in `search.roomgen.ts`).
    */
   readonly fork?: readonly [Gate, Gate]
-  /** Called with a word for each shape the plan had to throw away — for tuning the plan. */
+  /**
+   * Called with a word for each shape the plan threw away, so a search that finds
+   * nothing can say *why* instead of shrugging. The words: `chambers` (no room for the
+   * chain), `corridor`, `door`, `chain-not-a-bridge` (a gate cell that can be walked
+   * round), `chain-gate-<gate>` / `fork-gate-<gate>` (the shape cannot carry that
+   * gate), `fork-square` / `fork-short` / `fork-overlap` (no room for two ways),
+   * `fork-way-is-a-bridge` (the two ways are really one), `empty` (nobody to hide from).
+   * Counting them is how the fork was got working at all.
+   */
   readonly onFail?: (why: string) => void
 }
 
@@ -387,8 +395,8 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
     if (gate === 'open') continue
     const corridor = corridors[i]!
     const cell = corridor[Math.floor(corridor.length / 2)]!
-    if (connected(g, start, door, cell)) { opts.onFail?.('chain-gate-open'); return null } // not a bridge: the plan does not hold
-    if (!dress(gate, corridor, cell)) { opts.onFail?.('chain-gate'); return null }
+    if (connected(g, start, door, cell)) { opts.onFail?.('chain-not-a-bridge'); return null } // the plan does not hold
+    if (!dress(gate, corridor, cell)) { opts.onFail?.(`chain-gate-${gate}`); return null }
   }
   if (opts.fork) {
     const ways = [corridors[corridors.length - 1]!, forked!]
@@ -397,8 +405,8 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       const way = ways[k]!
       const cell = way[Math.floor(way.length / 2)]!
       // A fork's gate must NOT be a bridge: the other way round is what makes it a choice.
-      if (!connected(g, start, door, cell)) { opts.onFail?.('fork-bridge'); return null }
-      if (!dress(gate, way, cell)) { opts.onFail?.('fork-gate'); return null }
+      if (!connected(g, start, door, cell)) { opts.onFail?.('fork-way-is-a-bridge'); return null }
+      if (!dress(gate, way, cell)) { opts.onFail?.(`fork-gate-${gate}`); return null }
     }
   }
   if (!patrols.length && !bats.length) { opts.onFail?.('empty'); return null }
