@@ -28,6 +28,9 @@ export interface Strings {
   /** The command a Spectrum owner typed to load a tape — the same in every language. */
   readonly loadCommand: string
   readonly startPrompt: string
+  /** The screen before the first room: why Randy is down there. Lines of at most 32. */
+  readonly storyTitle: string
+  readonly story: readonly string[]
   readonly record: (n: number) => string
   readonly newRecord: string
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
@@ -60,6 +63,16 @@ const EN: Strings = {
   again: 'ANY KEY: NEXT ROOM',
   loadCommand: 'LOAD ""',
   startPrompt: 'PRESS ANY KEY',
+  storyTitle: 'UNDER THE HILL',
+  story: [
+    'THE FOXES KEEP THEIR LARDER',
+    'DEEP UNDER THE HILL. RANDY',
+    'WENT IN FOR ONE CARROT AND',
+    'THE DOOR SHUT BEHIND HIM.',
+    '',
+    'ELEVEN CELLARS TO THE NIGHT',
+    'AIR. NOBODY MUST SEE HIM GO.',
+  ],
   record: (n) => `BEST ${n}`,
   newRecord: 'NEW BEST!',
   replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
@@ -89,6 +102,17 @@ const SK: Strings = {
   again: 'KLAVESA: DALSIA MIESTNOST',
   loadCommand: 'LOAD ""',
   startPrompt: 'STLAC KLAVESU',
+  storyTitle: 'POD KOPCOM',
+  story: [
+    'LISKY MAJU SPIZ HLBOKO POD',
+    'KOPCOM. RANDY SIEL DNU PRE',
+    'JEDNU MRKVU A DVERE SA ZA',
+    'NIM ZAVRELI.',
+    '',
+    'JEDENAST PIVNIC K NOCNEMU',
+    'VZDUCHU. NIKTO HO NESMIE',
+    'VIDIET ODIST.',
+  ],
   record: (n) => `REKORD ${n}`,
   newRecord: 'NOVY REKORD!',
   replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),

@@ -19,8 +19,8 @@
  * from there walks on to the next.
  *
  * It opens on the title (`title.ts`): `LOAD ""`, a key starts the tape, a key
- * during the load finishes it, a key on the picture starts room 1. Winning the
- * last room comes back to the picture.
+ * during the load finishes it, a key on the picture brings the story, and a key on
+ * that starts room 1. Winning the last room comes back to the picture.
  *
  * Ears down allows only `SNEAK_STEPS` (beat.ts) steps before they must come up;
  * the pips beside EARS DOWN count them.
@@ -129,6 +129,8 @@ function advanceTitle(): void {
   } else if (titleMode === 'loading') {
     stopTape()
     titleMode = 'ready'
+  } else if (titleMode === 'ready') {
+    titleMode = 'story' // why he is down there, before he starts climbing out
   } else {
     goToRoom(0)
   }

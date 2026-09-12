@@ -6,6 +6,7 @@ function lines(s: Strings): [string, string][] {
   const out: [string, string][] = []
   for (const [name, value] of Object.entries(s) as [string, unknown][]) {
     if (typeof value === 'string') out.push([name, value])
+    else if (Array.isArray(value)) value.forEach((line, i) => out.push([`${name}[${i}]`, String(line)]))
     else if (typeof value === 'function') {
       const f = value as (n: number | boolean) => string
       out.push([name, f(88)], [`${name}(true)`, f(true)], [`${name}(false)`, f(false)])
@@ -24,12 +25,20 @@ describe('the strings', () => {
   })
 
   it('says nothing twice: each key has its own line', () => {
-    const strings = lines(STR).filter(([name]) => !name.includes('('))
+    // Blank lines in a block of prose are spacing, not text.
+    const strings = lines(STR).filter(([name, line]) => !name.includes('(') && !name.includes('[') && line !== '')
     const seen = new Map<string, string>()
     for (const [name, line] of strings) {
       const clash = seen.get(line)
       expect(clash, `${name} and ${clash} are both "${line}"`).toBeUndefined()
       seen.set(line, name)
     }
+  })
+})
+
+describe('the story screen', () => {
+  it('fits above the prompt, however long the tale is', () => {
+    const bottom = 56 + (STR.story.length - 1) * 14 + 8
+    expect(bottom, `${STR.story.length} lines reach ${bottom}px`).toBeLessThan(176)
   })
 })

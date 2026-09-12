@@ -6,20 +6,22 @@
  *    behind the canvas plays the Spectrum's border), then the bitmap in memory
  *    order, white on black, then the colours row by row. A key finishes it at once.
  * 3. `ready` — the picture, and a blinking prompt to start.
+ * 4. `story` — why Randy is down there, on black, the way a Spectrum game told you
+ *    before it let you play. A key from here starts the first room.
  *
  * The screen is a native `.scr` inlined by `scripts/screen-import.mjs` and decoded
  * with zx-kit's `parseSCR`; both finished looks are drawn once to offscreen layers
  * and the reveal only copies rows out of them.
  */
 import {
-  C, createLayerCache, drawBitmap, drawBitmapAttrs, drawBlinkingText, drawChar, drawText, parseSCR, refreshLayer,
-  type LayerCache,
+  C, createLayerCache, drawBitmap, drawBitmapAttrs, drawBlinkingText, drawChar, drawText, drawTextCentered,
+  parseSCR, refreshLayer, type LayerCache,
 } from 'zx-kit'
 import { CHAOSBUNNY_STEALTH_LOADING_SCR } from '../art/zx/chaosbunny-stealth-loading.js'
 import { loadStateAt, screenRowOfMemoryRow, type LoadPhase } from './loader.js'
 import type { Strings } from './strings.js'
 
-export type TitleMode = 'prompt' | 'loading' | 'ready'
+export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story'
 
 export interface Title {
   /** The bitmap alone, white ink on black paper — what a screen shows before its attributes arrive. */
@@ -79,6 +81,16 @@ export function renderTitle(
     const s = loadStateAt(loadMs)
     for (let m = 0; m < s.memoryRows; m++) rows(ctx, title.mono, screenRowOfMemoryRow(m), 1)
     for (let r = 0; r < s.attrRows; r++) rows(ctx, title.colour, r * 8, 8)
+    return
+  }
+  if (mode === 'story') {
+    // Two colours and the ROM font: the screen a cassette game gave you while your
+    // thumb was still on the PLAY button.
+    drawTextCentered(ctx, str.storyTitle, 24, 32, C.B_YELLOW, C.BLACK)
+    // 14 px a line leaves the prompt its own air, however long the tale runs.
+    str.story.forEach((line, i) => drawTextCentered(ctx, line, 56 + i * 14, 32, C.B_WHITE, C.BLACK))
+    const sx = Math.floor((256 - str.startPrompt.length * 8) / 2)
+    drawBlinkingText(ctx, str.startPrompt, sx, 176, now, C.WHITE, C.BLACK)
     return
   }
   rows(ctx, title.colour, 0, 192)
