@@ -155,9 +155,9 @@ two grates on one handle, a handle a guard walks past. None of those need new co
 
 ## 6. What is missing before this is a game
 
-1. ~~**Getting from room to room**~~ — there is a cellar map now: after every escape it
-   draws the chain of rooms, the ones behind you lit with the beats they took. It is the
-   save file drawn, so it costs no new state. What is still missing is a *reason* for the
+1. ~~**Getting from room to room**~~ — there is a cellar map now, and it is also how a
+   room is chosen: the arrows walk the chain, Enter goes in, and it opens on the first
+   cellar you have not beaten. It is the save file drawn, so it costs no new state. What is still missing is a *reason* for the
    chain — see below.
 2. ~~**A reason**~~ — there is a screen before the first room now: the foxes' larder is
    under the hill, Randy went in for one carrot, the door shut. Eleven cellars to the
