@@ -7,6 +7,7 @@
  * - Z: ears up / down
  * - X or F (gamepad A): aim a carrot, then an arrow throws it that way; X or Esc cancels
  * - Space: wait a beat
+ * - M: the cellar hum on or off
  * - R: start the room again
  * - 1, 2, …: jump to that room (after a win, any key goes on to the next)
  *
@@ -26,6 +27,7 @@
 import { consumeAnyKey, consumeFlag, initInput, resetInput, SCALE, setupCanvas, tickMovement } from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
 import { beat, startWorld, type Action, type World } from './beat.js'
+import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom } from './room.js'
@@ -86,6 +88,12 @@ let lastRun: Run | null = null
 let runActions: Action[] = []
 let wonWorld: World | null = null
 let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: number } | null = null
+let toast: { text: string; ms: number } | null = null
+const TOAST_MS = 1400
+
+function say(text: string): void {
+  toast = { text, ms: TOAST_MS }
+}
 let titleMode: TitleMode = 'prompt'
 let loadMs = 0
 
@@ -95,6 +103,7 @@ window.addEventListener('keydown', ensureAudio)
 window.addEventListener('pointerdown', ensureAudio)
 
 function goToTitle(mode: TitleMode): void {
+  pauseMusic()
   phase = 'title'
   titleMode = mode
   loadMs = 0
@@ -122,6 +131,8 @@ function goToRoom(i: number): void {
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
+  if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
+  say(STR.roomToast(roomIndex + 1))
 }
 
 function restart(): void {
@@ -262,6 +273,10 @@ window.addEventListener('keydown', (e) => {
     case 'R':
       restart()
       break
+    case 'm':
+    case 'M':
+      say(toggleMusic() ? STR.musicOn : STR.musicOff)
+      break
   }
 })
 
@@ -271,6 +286,10 @@ function frame(now: number): void {
   last = now
   const dir = tickMovement(dt) // also polls the gamepad
   const flag = consumeFlag() // F or gamepad A
+  if (toast) {
+    toast.ms -= dt
+    if (toast.ms <= 0) toast = null
+  }
 
   if (phase === 'play') {
     if (flag) toggleAim()
@@ -314,6 +333,7 @@ function frame(now: number): void {
       record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
       replaying: phase === 'replay',
       bestRunKept: book.bestRun(room.name) !== null,
+      toast: toast?.text ?? null,
     }, STR)
   requestAnimationFrame(frame)
 }

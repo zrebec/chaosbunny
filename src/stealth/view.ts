@@ -54,6 +54,8 @@ export interface Frame {
   readonly replaying: boolean
   /** On the win screen, whether a record run is kept that B can play. */
   readonly bestRunKept: boolean
+  /** A line shown over the room for a moment — the room's number, the music going on or off. */
+  readonly toast: string | null
 }
 
 export interface Scene {
@@ -264,6 +266,7 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
   drawCarrots(ctx, f)
   for (const a of actors(ctx, f)) a.draw()
   if (settled && f.aiming) drawAim(ctx, scene.room, f.world)
+  if (f.toast) drawTextCentered(ctx, f.toast, 8, 32, C.B_WHITE, C.BLACK)
   if (over) {
     blit(ctx, scene.dimLayer)
     drawTextCentered(ctx, str.caught, 80, 32, C.B_RED, C.BLACK)

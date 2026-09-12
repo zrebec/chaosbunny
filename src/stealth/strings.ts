@@ -29,6 +29,10 @@ export interface Strings {
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
   readonly replayHint: (withBest: boolean) => string
   readonly replaying: string
+  /** Short lines that appear over the room for a moment. */
+  readonly roomToast: (n: number) => string
+  readonly musicOn: string
+  readonly musicOff: string
 }
 
 const EN: Strings = {
@@ -36,7 +40,7 @@ const EN: Strings = {
   earsDown: 'EARS DOWN',
   carrots: (n) => `CARROT ${n}`,
   beats: (n) => `BEAT ${n}`,
-  hints: 'Z EARS X THROW SPC WAIT R RESET',
+  hints: 'Z EARS X THROW SPC WAIT M R',
   aimHints: 'THROW: PICK A DIRECTION  X NO',
   caught: 'CAUGHT!',
   won: 'SLIPPED OUT',
@@ -51,6 +55,9 @@ const EN: Strings = {
   newRecord: 'NEW BEST!',
   replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
   replaying: 'REPLAY - ANY KEY STOPS',
+  roomToast: (n) => `ROOM ${n}`,
+  musicOn: 'MUSIC ON',
+  musicOff: 'MUSIC OFF',
 }
 
 const SK: Strings = {
@@ -58,7 +65,7 @@ const SK: Strings = {
   earsDown: 'USI DOLE',
   carrots: (n) => `MRKVA ${n}`,
   beats: (n) => `BEAT ${n}`,
-  hints: 'Z USI X HOD MEDZ CAKAJ R ZNOVA',
+  hints: 'Z USI X HOD MEDZ CAKAJ M R',
   aimHints: 'HOD: VYBER SMER SIPKOU  X NIE',
   caught: 'CHYTENY!',
   won: 'PREKLZOL SI',
@@ -73,6 +80,9 @@ const SK: Strings = {
   newRecord: 'NOVY REKORD!',
   replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),
   replaying: 'ZAZNAM - KLAVESA ZASTAVI',
+  roomToast: (n) => `MIESTNOST ${n}`,
+  musicOn: 'HUDBA ZAP',
+  musicOff: 'HUDBA VYP',
 }
 
 export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)
