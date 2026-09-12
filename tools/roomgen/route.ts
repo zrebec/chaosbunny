@@ -34,8 +34,12 @@ const at = (g: Grid, c: Cell): string => g[c.y]?.[c.x] ?? '#'
 const put = (g: Grid, c: Cell, ch: string): void => { g[c.y]![c.x] = ch }
 const inside = (c: Cell): boolean => c.x > 0 && c.y > 0 && c.x < W - 1 && c.y < H - 1
 
-/** Cells Randy could walk on, for the structural checks below. */
-const walkable = (ch: string): boolean => '.s~+/Rc'.includes(ch)
+/**
+ * Cells Randy could walk on, for the structural checks below — the door included.
+ * Leaving `D` out made every one of those checks answer "not connected" and quietly
+ * pass, which is how a bridge test can look right for a week and test nothing.
+ */
+const walkable = (ch: string): boolean => '.s~+/RcD'.includes(ch)
 
 /** Whether `from` still reaches `to` when `cut` is treated as solid. */
 function connected(g: Grid, from: Cell, to: Cell, cut: Cell | null): boolean {
@@ -247,6 +251,16 @@ function carveLampPocket(
 export interface RouteOptions {
   /** One gate per corridor, in order from Randy to the door. */
   readonly gates: readonly Gate[]
+  /**
+   * Two gates on the **last** pair of chambers instead of one: the corridor is dug
+   * twice, once round each corner, and each way gets its own gate. Neither is a bridge
+   * then — which is the point. A room with a fork asks which price to pay rather than
+   * how to pay the one it has, and the solver can tell the two apart (`lamps: false`
+   * against `lampsOut: true` in `search.roomgen.ts`).
+   */
+  readonly fork?: readonly [Gate, Gate]
+  /** Called with a word for each shape the plan had to throw away — for tuning the plan. */
+  readonly onFail?: (why: string) => void
 }
 
 /**
@@ -268,7 +282,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
     const clash = rooms.some((o) => x - 2 <= o.x + o.w && o.x - 2 <= x + w && y - 2 <= o.y + o.h && o.y - 2 <= y + h)
     if (!clash) rooms.push({ x, y, w, h })
   }
-  if (rooms.length < want) return null
+  if (rooms.length < want) { opts.onFail?.('chambers'); return null }
   rooms.sort((a, b) => a.x + a.y - (b.x + b.y))
   const chambers = rooms.map((rect) => carve(g, rect))
 
@@ -277,8 +291,21 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   const corridors: Cell[][] = []
   for (let i = 0; i + 1 < rooms.length; i++) {
     const cut = dig(g, centre(rooms[i]!), centre(rooms[i + 1]!), r.next() < 0.5)
-    if (cut.length < 2) return null
+    if (cut.length < 2) { opts.onFail?.('corridor'); return null }
     corridors.push(cut)
+  }
+
+  // 2b. The fork: the last pair gets a second corridor, dug round the other corner.
+  let forked: Cell[] | null = null
+  if (opts.fork) {
+    const a = centre(rooms[rooms.length - 2]!)
+    const b = centre(rooms[rooms.length - 1]!)
+    if (Math.abs(a.x - b.x) < 2 || Math.abs(a.y - b.y) < 2) { opts.onFail?.('fork-square'); return null }
+    const first = corridors[corridors.length - 1]!
+    forked = dig(g, a, b, !(first.length > 0 && first[0]!.y === a.y))
+    if (forked.length < 2) { opts.onFail?.('fork-short'); return null }
+    // The two ways must be genuinely separate, or the fork is one corridor with a bulge.
+    if (forked.some((c) => first.some((q) => sameCell(q, c)))) { opts.onFail?.('fork-overlap'); return null }
   }
 
   // 3. Randy in the first chamber, the door in a wall of the last.
@@ -288,7 +315,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   const doorX = r.int(last.x, last.x + last.w - 1)
   const doorY = last.y - 1 >= 0 ? last.y - 1 : last.y + last.h
   const door = { x: doorX, y: doorY }
-  if (at(g, door) !== '#') return null
+  if (at(g, door) !== '#') { opts.onFail?.('door'); return null }
   put(g, door, 'D')
 
   // 4. Each corridor gets its gate — but only where cutting it really does cut the room.
@@ -296,18 +323,15 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   const patrols: PatrolSource[] = []
   const bats: Array<[number, number]> = []
   const rowsOf = (): string[] => g.map((row) => row.join(''))
-  for (let i = 0; i < opts.gates.length; i++) {
-    const gate = opts.gates[i]!
-    if (gate === 'open') continue
-    const corridor = corridors[i]!
-    const cell = corridor[Math.floor(corridor.length / 2)]!
-    if (connected(g, start, door, cell)) return null // not a bridge: the plan does not hold
-    const src = (): RoomSource => ({ name: `route${seed}`, rows: rowsOf(), patrols: [], carrots: 1 })
+  const src = (): RoomSource => ({ name: `route${seed}`, rows: rowsOf(), patrols: [], carrots: 1 })
+
+  /** Puts one gate on one corridor. False when this shape cannot carry that gate. */
+  const dress = (gate: Gate, corridor: readonly Cell[], cell: Cell): boolean => {
     if (gate === 'grate') {
       put(g, cell, '+')
-      // The lever must be on Randy's side of the grate, or the room is a locked door.
-      // The handle goes as far from Randy as the near side allows: a lever by the door
-      // he came in through is a thing to remember, not a detour worth walking.
+      // The lever must be on Randy's side of the grate, or the room is a locked door,
+      // and it goes as far from him as that side allows: a handle by the door he came
+      // in through is a thing to remember, not a detour worth walking.
       const near = chambers.flat().filter((c) => at(g, c) === '.' && !taken.has(`${c.x},${c.y}`)
         && connected(g, start, c, cell))
       let lever: Cell | undefined
@@ -316,40 +340,68 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
         const d = manhattan(c, start)
         if (d > best) { best = d; lever = c }
       }
-      if (!lever || best < 4) return null
+      if (!lever || best < 4) return false
       put(g, lever, '/')
       taken.add(`${lever.x},${lever.y}`)
-    } else if (gate === 'sentry') {
+      return true
+    }
+    if (gate === 'sentry') {
       const guard = turner(src(), corridor, taken)
-      if (!guard) return null
+      if (!guard) return false
       patrols.push(guard)
       taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
-    } else if (gate === 'bat') {
+      return true
+    }
+    if (gate === 'bat') {
       // A bat hanging in the next chamber: it cannot see, but it hears an ears-up step
       // from BAT_HEARING away, so the corridor has to be crossed in silence.
       const roosts = chambers.flat().filter((q) => at(g, q) === '.' && !taken.has(`${q.x},${q.y}`)
         && manhattan(q, cell) <= BAT_HEARING && manhattan(q, start) >= 4)
       const roost = roosts[Math.floor(r.next() * roosts.length)]
-      if (!roost) return null
+      if (!roost) return false
       bats.push([roost.x, roost.y])
       taken.add(`${roost.x},${roost.y}`)
-    } else if (gate === 'board') {
+      return true
+    }
+    if (gate === 'board') {
       put(g, cell, '~')
       const guard = listener(src(), cell, taken)
-      if (!guard) return null
+      if (!guard) return false
       patrols.push(guard)
       taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
-    } else {
-      // dark: a shadow corridor, and a guard walled into a pocket whose only window
-      // is the lamp — see carveLampPocket. Nothing else makes a lamp worth putting out.
-      for (const c2 of corridor) if (at(g, c2) === '.') put(g, c2, 's')
-      const pocket = carveLampPocket(g, corridor, seed)
-      if (!pocket) return null
-      patrols.push(pocket.guard)
-      taken.add(`${pocket.guard.route[0]![0]},${pocket.guard.route[0]![1]}`)
+      return true
+    }
+    // dark: a shadow corridor, and a guard walled into a pocket whose only window is
+    // the lamp — see carveLampPocket. Nothing else makes a lamp worth putting out.
+    for (const c2 of corridor) if (at(g, c2) === '.') put(g, c2, 's')
+    const pocket = carveLampPocket(g, corridor, seed)
+    if (!pocket) return false
+    patrols.push(pocket.guard)
+    taken.add(`${pocket.guard.route[0]![0]},${pocket.guard.route[0]![1]}`)
+    return true
+  }
+
+  const chainGates = opts.fork ? opts.gates.slice(0, -1) : opts.gates
+  for (let i = 0; i < chainGates.length; i++) {
+    const gate = chainGates[i]!
+    if (gate === 'open') continue
+    const corridor = corridors[i]!
+    const cell = corridor[Math.floor(corridor.length / 2)]!
+    if (connected(g, start, door, cell)) { opts.onFail?.('chain-gate-open'); return null } // not a bridge: the plan does not hold
+    if (!dress(gate, corridor, cell)) { opts.onFail?.('chain-gate'); return null }
+  }
+  if (opts.fork) {
+    const ways = [corridors[corridors.length - 1]!, forked!]
+    for (let k = 0; k < 2; k++) {
+      const gate = opts.fork[k]!
+      const way = ways[k]!
+      const cell = way[Math.floor(way.length / 2)]!
+      // A fork's gate must NOT be a bridge: the other way round is what makes it a choice.
+      if (!connected(g, start, door, cell)) { opts.onFail?.('fork-bridge'); return null }
+      if (!dress(gate, way, cell)) { opts.onFail?.('fork-gate'); return null }
     }
   }
-  if (!patrols.length && !bats.length) return null
+  if (!patrols.length && !bats.length) { opts.onFail?.('empty'); return null }
 
   return { seed, src: { name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1, bats } }
 }

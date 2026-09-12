@@ -9,6 +9,9 @@
  * KIND=lamp N=4000 npm run roomgen         # rooms a lamp makes impossible
  * KIND=decision npm run roomgen            # rooms with two plans that cost the same
  * KIND=lampboard npm run roomgen           # rooms where a lamp AND a plank are both load-bearing
+ * KIND=fork GATES=open FORK=dark,board npm run roomgen  # two ways to the door, a gate
+ *   on each (GATES is the chain that leads up to the fork; `open` is a plain corridor):
+ *   the decision room, measured by the two halves of its plans
  * KIND=route GATES=grate,board npm run roomgen  # a planned route, one gate per corridor
  *   gates: grate (a lever to find), board (a plank a guard hears), dark (a lit shadow
  *   with the guard walled in behind the lamp), bat (a corridor to cross in silence),
@@ -34,7 +37,7 @@ import { line, mark, sheet, type Marks } from './metrics.js'
 import { parseRoom, type RoomSource } from '../../src/stealth/room.js'
 import { HEARING, nextStepToward } from '../../src/stealth/patrol.js'
 
-type Kind = 'plain' | 'gentle' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route'
+type Kind = 'plain' | 'gentle' | 'lamp' | 'board' | 'sentry' | 'bat' | 'lever' | 'decision' | 'lampboard' | 'route' | 'fork'
 
 const KIND = (process.env.KIND ?? 'plain') as Kind
 const FROM = Number(process.env.FROM ?? 1000)
@@ -46,6 +49,7 @@ const GAIN = Number(process.env.GAIN ?? 5)
 const MAX_STATES = Number(process.env.MAX_STATES ?? 120_000)
 const OUT = process.env.OUT ?? path.join(import.meta.dirname, 'out', `${KIND}.txt`)
 const GATES = (process.env.GATES ?? 'grate,board').split(',') as Gate[]
+const FORK = (process.env.FORK ?? 'dark,board').split(',') as [Gate, Gate]
 
 interface Hit { readonly src: RoomSource; readonly marks: Marks; readonly score: number; readonly note: string }
 
@@ -175,6 +179,16 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
       note: `lit ${lit} against dark ${dark}: two plans, ${spread} beats apart`,
     }
   }
+  if (kind === 'fork') {
+    // Two ways, and the lamp tells them apart: every plan either leaves it burning
+    // (so it went the other way) or puts it out (so it went through the dark).
+    const lit = m.lampsOn
+    const dark = m.dark
+    if (lit === null || dark === null) return null
+    const spread = Math.abs(lit - dark)
+    if (spread > 2) return null
+    return { src, marks: m, score: 100 - spread * 10 + (m.fewest ?? 0) * 5, note: `lit ${lit} against dark ${dark}, ${spread} apart` }
+  }
   if (kind === 'route') {
     // Every gate on a planned route is a bridge by construction, so the question is
     // only whether the room the plan produced is worth playing: long enough, and each
@@ -284,7 +298,9 @@ test(`roomgen: ${KIND}`, () => {
   let seen = 0
   let marked = 0
   for (let seed = FROM; seed < FROM + N && Date.now() - t0 < BUDGET_MS; seed++) {
-    const c = KIND === 'route'
+    const c = KIND === 'fork'
+      ? generateRoute(seed, { gates: [...GATES, FORK[0]], fork: FORK })
+      : KIND === 'route'
       ? generateRoute(seed, { gates: GATES })
       : generate(seed, { sentries: KIND === 'sentry', bats: KIND === 'bat' })
     if (!c || c.src.patrols.length > 2) continue
