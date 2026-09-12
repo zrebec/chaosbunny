@@ -164,6 +164,9 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    night air — and, once the last one is behind him, the grass, with the beats the whole
    cellar took.
 3. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
+   There is a bench for it now: `S` on the loaded picture puts all twelve sounds on
+   twelve keys, so two can be heard back to back. Tuning is the numbers in
+   `sound.ts`'s `playEvents` and `music.ts`'s three strings.
 4. **Resolution** — staying at 256×192; hi-res is a question for a sports game, not
    for this one.
 5. ~~**A generator that lives in the repo**~~ — done: `tools/roomgen`, `npm run roomgen`.
