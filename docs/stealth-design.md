@@ -35,13 +35,13 @@ either cannot be finished or collapses to something much shorter.
 | 4 | the bat's larder | silence: a bat hears ears-up steps | without the bat, ears are unnecessary |
 | 5 | the bat's hall | a bat and two foxes | without the bat, par 22 |
 | 6 | the sentry | the window when a sentry looks away | freeze the sentry: impossible |
-| 7 | *(in progress)* | **the lamp: light kills shadow** | leave the lamp burning: impossible |
+| 7 | the lit corner | **the lamp: light kills shadow** | leave the lamp burning: impossible |
+| 8 | *(in progress)* | **the creaky board**: a noise the ears cannot hide | plain floor instead: much shorter |
 
 Where the ladder should go next (a proposal, not a promise):
 
-8. **A decision**: two carrots, two lamps, and two plans that cost the same — a room
+9. **A decision**: two carrots, two lamps, and two plans that cost the same — a room
    with no single "right" answer.
-9. **The creaky board**: noise even with the ears down, so a route has to be planned.
 10. **A lever and a grate**: the first switch that changes the room somewhere else.
 
 ## 3. The rules that already hold, one line each
@@ -58,6 +58,8 @@ Where the ladder should go next (a proposal, not a promise):
 | bat | blind; hears the carrot and **ears-up steps** | forces the dark even where there is light |
 | sentry | stands and turns, 2 beats a facing | time as a passage, not as an obstacle |
 | lamp | lights 3 steps out; **light kills shadow**; a carrot puts it out for good | one carrot, two uses, never both |
+| creaky board | creaks under Randy's step, ears up or down; heard 3 away, nothing there to find | the first thing the dribble cannot save you from |
+| listening | a fox that hears a creak stands still one beat, then comes | the noise is under Randy's own foot: without the pause it would be one chance, not two |
 
 ## 4. How a room actually gets designed
 
@@ -84,10 +86,13 @@ Where the ladder should go next (a proposal, not a promise):
 
 ## 5. Ideas, ranked by what they give against what they cost
 
+Two of these are now built — kept in the table with what they actually cost, so the
+next estimate has something to stand on.
+
 | Idea | What it adds | The beat rule | Cost | The ablation that would prove it |
 |---|---|---|---|---|
-| **Creaky board** `~` | routes get planned; shadow stops being universal | stepping on it is a noise, ears down or not | XS (one tile + a line in step 2) | without it, par drops / ears unnecessary |
-| **Undo** | the prototype plays like a puzzle, not a reflex game | outside the rules — a stack of worlds in `main.ts` | XS | — (not a mechanic) |
+| ~~**Creaky board** `~`~~ **built** | routes get planned; shadow stops being universal | stepping on it is a noise, ears down or not | XS as estimated — one tile, one branch, plus the listening beat play needed | without it, par drops by five or more |
+| ~~**Undo**~~ **built** | the prototype plays like a puzzle, not a reflex game | outside the rules — a stack of worlds in `main.ts` | XS as estimated | — (not a mechanic) |
 | **Lever and grate** | the first switch that changes the room elsewhere | a world bit like the lamps; a shut grate is wall | S | with the grate shut: impossible |
 | **Two carrots, two lamps** | a decision instead of a puzzle | no new rule at all, only design | S | both plans cost the same par |
 | **Ceiling spider** | punishes long straight corridors taken ears-up | drops when you pass under it with the ears up | S | without it the straight way works |
@@ -95,9 +100,8 @@ Where the ladder should go next (a proposal, not a promise):
 | **A chain of rooms (the escape)** | the prototype becomes a game: carrots carry over | the world carries `carrots` between rooms | M (records, replay, saves) | — |
 | **A dog on the scent** | a chase; punishes standing still | walks your own cells N beats behind | L (state grows a trail; the solver pays) | — |
 
-My own view: **board → undo → lever**. The first two are cheap and change how the
-game feels more than anything else; the lever opens a whole class of rooms (and it is
-a Spectrum classic).
+My own view was **board → undo → lever**; the first two are done, and the lever is
+still the one that opens a whole class of rooms (and it is a Spectrum classic).
 
 ## 6. What is missing before this is a game
 
@@ -106,9 +110,11 @@ a Spectrum classic).
 2. **A reason** — why Randy is down there and what is behind the door. One screen of
    text before the first room would do it.
 3. **Sound heard by an actual ear** — every blip and the AY loop are still my guess.
-4. **Undo** — without it, long rooms are played carefully rather than cleverly.
-5. **Resolution** — staying at 256×192; hi-res is a question for a sports game, not
+4. **Resolution** — staying at 256×192; hi-res is a question for a sports game, not
    for this one.
+5. **A generator that lives in the repo** — the rooms are designed by a script in a
+   scratchpad, which means the next room cannot be designed without rebuilding it.
+   It should move into `tools/` with the ablation runner beside it. Say the word.
 
 ## 7. Where it all lives
 
