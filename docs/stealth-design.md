@@ -40,6 +40,7 @@ either cannot be finished or collapses to something much shorter.
 | 9 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 | 10 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
 | 11 | the window | **everything at once**: grate, lamp, carrot, ears | take any one away and there is no way out |
+| 12 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
 
 Where the ladder should go next (a proposal, not a promise):
 
