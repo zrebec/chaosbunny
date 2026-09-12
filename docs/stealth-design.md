@@ -236,8 +236,9 @@ generator kind that builds long loops and a way to *show* a loop the player has 
 yet, which the ears already half do: with them up you see a fox's next two steps, and a
 cellar built on timing would want that number to be its main dial.
 
-Two of the ideas below are now built — kept in the table with what they actually cost, so
-the next estimate has something to stand on.
+Three of the ideas below are now built — kept in the table with what they actually cost,
+so the next estimate has something to stand on. Water, the fourth, outgrew the table and
+has the section above to itself.
 
 | Idea | What it adds | The beat rule | Cost | The ablation that would prove it |
 |---|---|---|---|---|

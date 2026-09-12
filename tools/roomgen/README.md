@@ -88,6 +88,21 @@ win screen's beat count is the answer.
 that writes a way through a room down, and the rule above still holds: the file is
 scratch, the driver reads it, and what comes back is a number.
 
+The driver is a dozen lines of Playwright and lives in scratch too (the game has no
+browser-test dependency and does not need one for this). What it has to get right:
+
+- **Reaching a room:** the digits jump absolutely (`1`–`9`, `0` for the tenth) and `]`
+  steps on, and they work from any phase the room is in, won or caught. Navigating the
+  cellar map instead means guessing where the cursor is.
+- **Pacing:** one key per beat with ~450 ms between them. The game buffers a single
+  keypress during the ~150 ms tween, so faster than that silently drops beats and the
+  run desynchronises three rooms later.
+- **Reading the answer:** the win banner is drawn *after* the dim overlay, so pure green
+  (`0,255,0`) in the nine pixel rows at y=56 is the banner and nothing else — a door
+  tile in the same rows has been dimmed and no longer matches. Counting green over the
+  whole screen does not work: the dim takes the door's green away at the same moment the
+  banner adds its own, and the totals cancel.
+
 ## Why it is a vitest file
 
 Vitest is what runs TypeScript in this repo, so the search is a `*.roomgen.ts` file
