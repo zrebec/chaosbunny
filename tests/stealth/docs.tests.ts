@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import designDoc from '../../docs/stealth-design.md?raw'
 import readme from '../../README.md?raw'
 import roadmap from '../../docs/ROADMAP.md?raw'
+import main from '../../src/stealth/main.ts?raw'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { LOCALES } from '../../src/stealth/strings.js'
 
@@ -62,5 +63,39 @@ describe('the documents that count the rooms', () => {
       .filter((n) => n > 0)
     expect(counts.length, `${file} should count the rooms somewhere`).toBeGreaterThan(0)
     for (const n of counts) expect(n, `${file}: says ${WORDS[n]} rooms`).toBe(ROOM_SOURCES.length)
+  })
+})
+
+/**
+ * The HUD's bottom line is a legend: a letter, then what it does. It is the only key
+ * list a player sees while playing, so every letter on it has to be a letter the game
+ * actually listens for — and one the README explains, since that is where somebody
+ * goes when the legend is too terse. Both tongues must name the same keys, too: a
+ * translation that quietly drops one teaches half the players a smaller game.
+ *
+ * `H` was added to the legend the same hour the rules screen learned to open mid-room;
+ * this test is what makes the next such letter impossible to forget.
+ */
+describe('the HUD key legend', () => {
+  /** Standalone capitals in a legend line: `Z USI X HOD U SPAT C MAPA R H` → Z X U C R H. */
+  const letters = (hints: string): string[] => [...hints.matchAll(/(?:^| )([A-Z])(?= |$)/g)].map((m) => m[1]!)
+
+  const en = letters(LOCALES.en.hints)
+  const sk = letters(LOCALES.sk.hints)
+
+  it('names the same keys in both tongues', () => {
+    expect([...sk].sort()).toEqual([...en].sort())
+  })
+
+  it('names only keys the game listens for', () => {
+    const handled = new Set([
+      ...[...main.matchAll(/e\.key === '([A-Za-z])'/g)].map((m) => m[1]!.toUpperCase()),
+      ...[...main.matchAll(/^ *case '([A-Za-z])':/gm)].map((m) => m[1]!.toUpperCase()),
+    ])
+    for (const key of en) expect([...handled], `the HUD offers ${key}`).toContain(key)
+  })
+
+  it('names only keys the README explains', () => {
+    for (const key of en) expect(readme, `README should have a row for ${key}`).toContain(`| \`${key}\``)
   })
 })
