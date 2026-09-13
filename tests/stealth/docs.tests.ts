@@ -103,6 +103,15 @@ describe('the documents that count the spoken rules', () => {
     for (const key of SPOKEN_RULES) expect(LOCALES.en[key], `${key} is not a string any more`).toBeTruthy()
   })
 
+  it('names exactly the hints the game actually speaks', () => {
+    // The list lives in `strings.ts` and the speaking lives in `main.ts`; without this
+    // they drift, and the drift is invisible — a hint nobody says still has a string,
+    // and a hint said but unlisted makes both documents undercount by one. Which is
+    // exactly what happened to the lever's line within an hour of writing it.
+    const said = [...main.matchAll(/STR\.(\w+Hint)\b/g)].map((m) => m[1]!)
+    expect([...new Set(said)].sort()).toEqual([...SPOKEN_RULES].sort())
+  })
+
   it.each([['README.md', readme], [DOC, designDoc]])('%s says how many rules the game speaks', (file, text) => {
     const counts = [...text.matchAll(/(\w+) (?:rules the rooms rely on|of them are now said)/g)]
       .map((m) => WORDS.indexOf(m[1]!.toLowerCase()))
