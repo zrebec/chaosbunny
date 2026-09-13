@@ -24,7 +24,7 @@ a cellar map that is also the room chooser, a story and an ending, records and r
   diaries with the whole table are `retro/docs/sk/chaosbunny-noc-2026-09-12.md` and
   `-13.md` (the second night; the room numbers in the first one have since shifted).
 - What a stuck player is told: four rules are said once at the beat they first bite, all
-  eleven are on one screen (`H`, from the picture or mid-room), and after three catches
+  twelve are on one screen (`H`, from the picture or mid-room), and after three catches
   the room names the verb it cannot be left without — read off the solver by `wants.ts`
   and held to it by a test, so it names the tool and never the way.
 - Still open, and only the owner can close it: **the sound** — every blip and the AY

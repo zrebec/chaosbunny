@@ -314,7 +314,7 @@ two grates on one handle, a handle a guard walks past. None of those need new co
    night air (the screen counts them, so a new room cannot make it lie) — and, once the
    last one is behind him, the grass, with the beats the whole cellar took.
 3. ~~**The rules a player cannot see**~~ — seven of them are now said once each, at the
-   beat they first bite, and all eleven are on one screen (`H`, from the picture or from inside a room —
+   beat they first bite, and all twelve are on one screen (`H`, from the picture or from inside a room —
    the beat you left is still there when you come back). The seven: a `?` is a warning and not a capture, the dark hides only
    lowered ears, a bat hears the ones that are up, wading costs two beats a step, a board
    creaks either way, the handle is heard too, and a lit shadow hides nobody. The last

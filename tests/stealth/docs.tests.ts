@@ -112,6 +112,15 @@ describe('the documents that count the spoken rules', () => {
     expect([...new Set(said)].sort()).toEqual([...SPOKEN_RULES].sort())
   })
 
+  it.each([[DOC, designDoc], ['docs/ROADMAP.md', roadmap]])('%s says how many rules are on the H screen', (file, text) => {
+    const counts = [...text.matchAll(/all (\w+) are on one screen|(\w+) are on one screen/g)]
+      .map((m) => WORDS.indexOf((m[1] ?? m[2]!).toLowerCase()))
+      .filter((n) => n > 0)
+    expect(counts.length, `${file} should count the rules on the H screen`).toBeGreaterThan(0)
+    for (const n of counts) expect(n, `${file}: says ${WORDS[n]}, the screen has ${LOCALES.en.rules.length}`)
+      .toBe(LOCALES.en.rules.length)
+  })
+
   it.each([['README.md', readme], [DOC, designDoc]])('%s says how many rules the game speaks', (file, text) => {
     const counts = [...text.matchAll(/(\w+) (?:rules the rooms rely on|of them are now said)/g)]
       .map((m) => WORDS.indexOf(m[1]!.toLowerCase()))
