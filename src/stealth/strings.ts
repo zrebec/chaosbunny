@@ -80,6 +80,12 @@ export interface Strings {
    */
   readonly lampHint: string
   /** The first plank he stands on: the creak is a sound the player cannot see. */
+  /**
+   * The first time cover is the difference: a fox is looking straight at him and would
+   * not be, had his ears been down. Standing behind a crate with the ears up is the
+   * quietest way the game says no.
+   */
+  readonly crateHint: string
   readonly boardHint: string
   /** The first handle he works: iron, and the guard is listening. */
   readonly leverHint: string
@@ -175,6 +181,7 @@ const EN: Strings = {
   spottedHint: 'SPOTTED - HIDE THIS BEAT',
   shadowHint: 'THE DARK HIDES EARS DOWN ONLY',
   lampHint: 'A LIT SHADOW HIDES NOBODY',
+  crateHint: 'A CRATE HIDES LOWERED EARS ONLY',
   boardHint: 'A BOARD CREAKS EITHER WAY',
   leverHint: 'THE HANDLE IS HEARD TOO',
   batHint: 'THE BAT HEARS EARS-UP STEPS',
@@ -265,6 +272,7 @@ const SK: Strings = {
   spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
   shadowHint: 'TIEN SKRYJE LEN SKLOPENE USI',
   lampHint: 'OSVETLENY TIEN NESKRYJE NIKOHO',
+  crateHint: 'DEBNA KRYJE LEN SKLOPENE USI',
   boardHint: 'DOSKA VRZGNE TAK CI TAK',
   leverHint: 'PAKU TIEZ POCUT',
   batHint: 'NETOPIER POCUJE KROKY S USAMI',
@@ -281,7 +289,8 @@ const SK: Strings = {
  * documents count them in prose and a doc test holds those counts to this list.
  */
 export const SPOKEN_RULES = [
-  'spottedHint', 'shadowHint', 'lampHint', 'boardHint', 'leverHint', 'batHint', 'waterHint',
+  'spottedHint', 'shadowHint', 'crateHint', 'lampHint', 'boardHint', 'leverHint', 'batHint',
+  'waterHint',
 ] as const
 
 export const LOCALES = { en: EN, sk: SK } as const

@@ -45,6 +45,7 @@ import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom, tileAt } from './room.js'
+import { spots } from './rules.js'
 import { ROOM_SOURCES } from './rooms/index.js'
 import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape } from './sound.js'
 import { roomLabel, STR } from './strings.js'
@@ -114,7 +115,7 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
  * The rules the game states nowhere else, each said once per visit to a room, at the
  * moment it first matters. A player who already knows them never sees them twice.
  */
-const hinted = { spotted: false, shadow: false, lamp: false, board: false, lever: false, bat: false, water: false }
+const hinted = { spotted: false, shadow: false, crate: false, lamp: false, board: false, lever: false, bat: false, water: false }
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -205,8 +206,19 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
     say(STR.shadowHint)
     return
   }
+  // Cover is the quietest no in the game: a fox looking straight at him who would not be,
+  // had his ears been down. Not on a shadow cell — that is the line above, and there the
+  // difference is the dark rather than the crate.
+  const lit = litCells(room, world.lamps)
+  if (!hinted.crate && !randy.earsDown && tileAt(room, randy.cell) !== 'shadow'
+    && world.foxes.some((f) => spots(room, f.cell, f.facing, randy.cell, false, lit) !== null
+      && spots(room, f.cell, f.facing, randy.cell, true, lit) === null)) {
+    hinted.crate = true
+    say(STR.crateHint)
+    return
+  }
   if (!hinted.lamp && randy.earsDown && tileAt(room, randy.cell) === 'shadow'
-    && litCells(room, world.lamps).has(cellIndex(room, randy.cell))) {
+    && lit.has(cellIndex(room, randy.cell))) {
     hinted.lamp = true
     say(STR.lampHint)
     return
@@ -261,6 +273,7 @@ function goToRoom(i: number): void {
   restart()
   hinted.spotted = false
   hinted.shadow = false
+  hinted.crate = false
   hinted.lamp = false
   hinted.board = false
   hinted.lever = false
