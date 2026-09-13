@@ -10,3 +10,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** Vite serves any file as a string with `?raw` — the tests read the docs that way. */
+declare module '*?raw' {
+  const content: string
+  export default content
+}

@@ -1,0 +1,186 @@
+/**
+ * Proves a room. A breadth-first search over every state the room can reach —
+ * Randy's cell, ears, carrots, the carrots on the floor, and every fox's full
+ * state — returns the shortest sequence of actions that walks out of the door,
+ * or `null` if there is none.
+ *
+ * The state space is finite (foxes loop, the room is 16×11), so the search always
+ * ends; `maxStates` is only a guard against a room that is far bigger than intended.
+ *
+ * This is the guarantee Minefield gives its fields, applied to a stealth room: a
+ * room that ships has a solution, and a test says so.
+ *
+ * Both searches take an optional `from` — the world to start looking at, instead of
+ * the room's own start. Every room test calls them without it and is untouched, which
+ * is the proof that adding it moved nothing. What it buys is advice from a position
+ * already played into: the first two rooms show the player the next best move (`guide.ts`), and
+ * that has to keep working after he has wandered off the shortest way. Answering
+ * "what now" is the same question as "what from the start", asked from where he is.
+ *
+ * One pruning, on by default: a carrot thrown where no fox or bat hears it is skipped.
+ * They react only to a carrot *landing*, never to one lying on the floor, so such a
+ * throw just moves the carrot — the same beat as waiting with it in hand, plus a
+ * detour to pick it up later. Waiting dominates it: the same foxes, the same sights,
+ * no fewer beats. It changes no answer (a test holds `prune: false` to that) and
+ * cuts the states a thrown carrot can multiply by the cells it could land on.
+ */
+import { DIRS, cellKey } from './grid.js'
+import { beat, startWorld, type Action, type World } from './beat.js'
+import type { Room } from './room.js'
+
+export interface SolveOptions {
+  /** Allow throwing carrots (default true). Off, it answers "can this room be done without one?" */
+  readonly throws?: boolean
+  /** Allow ears up/down (default true). Off, Randy keeps his ears up the whole way. */
+  readonly ears?: boolean
+  /** Allow putting a lamp out with a carrot (default true). Off, it asks "with the lights on?" */
+  readonly lamps?: boolean
+  /**
+   * Count only a way out that leaves every lamp dark (default false). Its mirror is
+   * {@link SolveOptions.lamps} `false`, which counts only ways out that leave them
+   * burning — between them they split every plan in two, and a room where both
+   * answers are close is a room with a real decision in it, not one right answer.
+   */
+  readonly lampsOut?: boolean
+  /** Allow stepping into water (default true). Off, it asks "and if he stays dry?" */
+  readonly wade?: boolean
+  /**
+   * Allow working a lever (default true). Off, every grate stays as it started —
+   * which, with {@link SolveOptions.lamps} off too, is how a room is asked whether
+   * it really offers two ways through or only one.
+   */
+  readonly levers?: boolean
+  /** Skip throws no fox hears (default true) — see the module comment. */
+  readonly prune?: boolean
+  readonly maxStates?: number
+}
+
+/**
+ * A throw that changes nothing but where the carrot lies — nobody heard it and no
+ * lamp went out: dominated by waiting, so the search need not follow it.
+ */
+function pointless(action: Action, events: readonly { readonly type: string }[]): boolean {
+  const acted = (e: { readonly type: string }): boolean =>
+    e.type === 'heard' || e.type === 'batHeard' || e.type === 'lampOut'
+  return action.kind === 'throw' && !events.some(acted)
+}
+
+export function worldKey(w: World): string {
+  const r = w.randy
+  const items = w.items.map(cellKey).sort().join(';')
+  const foxes = w.foxes
+    .map((f) => `${cellKey(f.cell)}:${f.facing}:${f.routeIndex}:${f.mode}:${f.resume}:${f.timer}:${f.target ? cellKey(f.target) : '-'}:${f.phase}`)
+    .join('|')
+  const bats = w.bats.map((b) => `${cellKey(b.cell)}:${b.mode}:${b.timer}:${b.target ? cellKey(b.target) : '-'}`).join('|')
+  return `${cellKey(r.cell)}:${r.earsDown ? 1 : 0}:${r.sneakLeft}:${r.carrots}/${items}/${foxes}/${bats}/${w.lamps}${w.pulled ? '+' : '-'}`
+}
+
+export function actionsFor(throws: boolean, ears: boolean): Action[] {
+  const actions: Action[] = DIRS.map((dir) => ({ kind: 'move', dir }) as const)
+  actions.push({ kind: 'wait' })
+  if (ears) actions.push({ kind: 'ears' })
+  if (throws) actions.push(...DIRS.map((dir) => ({ kind: 'throw', dir }) as const))
+  return actions
+}
+
+/**
+ * The fewest times any fox has to notice Randy (`?`) on a way out, or `null` if
+ * there is no way out. A room's fairness number: 0 means a clean sneak exists,
+ * 1 means even the most careful player is noticed once — however long they take.
+ *
+ * A bucket queue over sightings (each beat adds 0 or more), so the first way out
+ * found is one with the fewest. Beats are not minimised here; that is {@link solve}.
+ */
+export function fewestSightings(room: Room, options: SolveOptions = {}, from?: World): number | null {
+  const actions = actionsFor(options.throws ?? true, options.ears ?? true)
+  const maxStates = options.maxStates ?? 500_000
+  const prune = options.prune ?? true
+  const keepLamps = options.lamps === false
+  const keepGrates = options.levers === false
+  const keepDry = options.wade === false
+  const darkOnly = options.lampsOut === true
+  const start = from ?? startWorld(room)
+  const cost = new Map<string, number>([[worldKey(start), 0]])
+  const buckets: World[][] = [[start]]
+  for (let q = 0; q < buckets.length; q++) {
+    const bucket = buckets[q] ?? []
+    for (let i = 0; i < bucket.length; i++) {
+      const world = bucket[i]!
+      if (cost.get(worldKey(world))! < q) continue // reached more cheaply since it was queued
+      for (const action of actions) {
+        const result = beat(room, world, action)
+        if (result.outcome === 'blocked' || result.outcome === 'caught') continue
+        if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
+        if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
+        if (keepDry && result.events.some((e) => e.type === 'wade')) continue
+        // A winning step ends the beat before any fox looks, so it adds no sighting.
+        if (result.outcome === 'won') {
+          if (!darkOnly || result.world.lamps === 0) return q
+          continue // a way out that leaves a lamp burning, when only the dark counts
+        }
+        if (prune && pointless(action, result.events)) continue
+        const c = q + result.events.filter((e) => e.type === 'suspicious').length
+        const key = worldKey(result.world)
+        if ((cost.get(key) ?? Infinity) <= c) continue
+        if (cost.size >= maxStates) throw new Error(`${room.name}: more than ${maxStates} states — is the room too open?`)
+        cost.set(key, c)
+        ;(buckets[c] ??= []).push(result.world)
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * The **fewest-beats** winning action sequence, or `null` if the room cannot be left.
+ *
+ * Beats, not actions: they were the same number until water arrived, and a step into
+ * water costs two (`WADE_BEATS`). So the search is a bucket queue over the clock rather
+ * than a plain breadth-first walk — the first way out it reaches is the one the game's
+ * own beat counter, and therefore `par` and every record, will agree with.
+ */
+export function solve(room: Room, options: SolveOptions = {}, from?: World): Action[] | null {
+  const actions = actionsFor(options.throws ?? true, options.ears ?? true)
+  const maxStates = options.maxStates ?? 500_000
+  const prune = options.prune ?? true
+  const keepLamps = options.lamps === false
+  const keepGrates = options.levers === false
+  const keepDry = options.wade === false
+  const darkOnly = options.lampsOut === true
+  const start = from ?? startWorld(room)
+  const parent = new Map<string, { prev: string; action: Action } | null>([[worldKey(start), null]])
+  const cost = new Map<string, number>([[worldKey(start), 0]])
+  const buckets: World[][] = [[start]]
+
+  for (let q = 0; q < buckets.length; q++) {
+    const bucket = buckets[q] ?? []
+    for (let i = 0; i < bucket.length; i++) {
+      const world = bucket[i]!
+      const key = worldKey(world)
+      if (cost.get(key)! < q) continue // reached in fewer beats since it was queued
+      for (const action of actions) {
+        const result = beat(room, world, action)
+        if (result.outcome === 'blocked' || result.outcome === 'caught') continue
+        if (keepLamps && result.events.some((e) => e.type === 'lampOut')) continue
+        if (keepGrates && result.events.some((e) => e.type === 'lever')) continue
+        if (keepDry && result.events.some((e) => e.type === 'wade')) continue
+        if (result.outcome === 'won') {
+          if (darkOnly && result.world.lamps !== 0) continue // only the dark counts here
+          const path: Action[] = [action]
+          for (let at = parent.get(key); at; at = parent.get(at.prev)) path.push(at.action)
+          return path.reverse()
+        }
+        if (prune && pointless(action, result.events)) continue
+        const next = worldKey(result.world)
+        const spent = result.world.beats - world.beats
+        const c = q + spent
+        if ((cost.get(next) ?? Infinity) <= c) continue
+        if (cost.size >= maxStates) throw new Error(`${room.name}: more than ${maxStates} states — is the room too open?`)
+        cost.set(next, c)
+        parent.set(next, { prev: key, action })
+        ;(buckets[c] ??= []).push(result.world)
+      }
+    }
+  }
+  return null
+}

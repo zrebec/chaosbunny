@@ -11,6 +11,54 @@ carrot** to open the moon-lit exit, and escape to the surface — past spiders,
 outline-wing bats, crumbling ledges and a ladder or two. Dark, atmospheric,
 *never cruel*: creatures retreat and curl, they are never killed.
 
+## Two games, one repo — read this first
+
+On these branches `index.html` loads **`src/stealth/main.ts`**: chaosBunny is a
+**beat-based tile stealth game** now (owner's call, 2026-09-11). One screen is one
+room, 16×11 tiles, and every action you take moves the whole world one beat. The verb
+is **slip past**: eighteen rooms, each proved solvable by a solver in its own test.
+
+The **cave climber** described further down is what `master` still holds; nothing of it
+was deleted, and `src/main.ts` still builds. Which of the two chaosBunny is, is the
+owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
+
+### The stealth game's keys
+
+| Key | Action |
+|---|---|
+| `←` `↑` `→` `↓` / d-pad | Step one cell — and one beat for everyone else |
+| `Z` / `P` / gamepad Start | Ears up / down. Up: you see every cone. Down: the dark hides you, for two steps |
+| `X` / `F` / gamepad A, then an arrow | Throw the carrot that way (`X` again cancels) |
+| `Space` / gamepad Y | Wait a beat |
+| `U` | Take the last beat back — including the one a fox caught you on |
+| `C` | The cellar map: arrows pick a room, `Enter` goes in, `Esc` back to where you were |
+| `M` | The cellar hum on / off |
+| `L` | How dark the cellar is: as it was → the cellar → the deep cellar. Picture only — no rule, no par, changes |
+| `R` | Start the room again |
+| `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) |
+| `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum, `F` `G` `H` mute the hum's three voices one at a time and `J` brings them all back |
+| `H` | What the cellar knows: the rules the rooms are built on — from the picture or mid-room |
+| `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
+
+On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it),
+**Start** works the ears and **Y** waits a beat. The kit's pad has one action button and
+the throw has it, so the other two verbs borrow buttons the kit spends elsewhere — pause,
+which a beat-based game has no use for, and the debug toggle, which this game has no
+overlay for (`docs/zx-kit-findings.md`).
+
+Caught three times in the same room, the cellar names the verb that room cannot be
+left without — *the ears down*, *a carrot thrown*, *the lamp out*, *the lever*, *wet
+feet*, or *only timing* for a room that needs no tool at all. It is read off the solver
+(take a verb away, see whether the room still opens) and checked by a test, so it can
+name the tool without ever naming a step. Being caught again names the next one.
+
+Nine rules the rooms rely on are said once in-game the first time each bites: **a `?` is a
+warning, not a capture** (the second sighting in a row is what ends the room), the dark
+hides only lowered ears, a crate hides lowered ears only, a thrown carrot is heard five
+cells away, a bat hears the ones that are up, wading costs two beats a step, a board
+creaks either way, the handle is heard too, and a lit shadow hides nobody. They are said on the beat that
+catches you as well as on a clean one — a capture is usually how the last three are met.
+
 ## Play
 
 ```bash
@@ -29,7 +77,7 @@ bumps `package.json`, prepends `CHANGELOG.md`, tags `vX.Y.Z` and pushes a
 before committing more. The deploy builds the post-release tip, so the in-game
 version readout matches the new release immediately.
 
-## Controls
+## The cave climber's controls (`master`)
 
 | Key | Action |
 |-----|--------|

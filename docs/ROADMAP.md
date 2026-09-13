@@ -7,7 +7,81 @@
 
 **Legend:** ✅ done · 🔜 next · 🔲 planned · 💭 later / idea
 
+## 2026-09-12 — the tile-stealth direction (read this first)
+
+chaosBunny turned into a **beat-based tile stealth game** on 2026-09-11 (owner's call,
+after the platformer's charge-jump failed twice). One screen is one room, 16×11 tiles;
+every action moves the whole world one beat; the verb is **slip past**. It is not a
+sketch any more: **eighteen rooms**, each proved solvable by a solver in its own test,
+a cellar map that is also the room chooser, a story and an ending, records and replays.
+
+- Where it lives: `src/stealth/` (`beat.ts` is the rulebook, `solver.ts` the guarantee),
+  rooms in `src/stealth/rooms/` with the order in `rooms/index.ts`, the design tool in
+  `tools/roomgen/` (`npm run roomgen`).
+- What to read: **`docs/stealth-design.md`** — the verb ladder, how a room gets designed
+  and what each of them costs. A Slovak copy sits beside it.
+- Where the work is: local branches, newest last, each one a working state. The nights'
+  diaries with the whole table are `retro/docs/sk/chaosbunny-noc-2026-09-12.md` and
+  `-13.md` (the second night; the room numbers in the first one have since shifted).
+- What a stuck player is told: four rules are said once at the beat they first bite, all
+  twelve are on one screen (`H`, from the picture or mid-room), and after three catches
+  the room names the verb it cannot be left without — read off the solver by `wants.ts`
+  and held to it by a test, so it names the tool and never the way.
+- Still open, and only the owner can close it: **the sound** — every blip and the AY
+  loop are a guess. `S` on the loaded picture opens a bench that plays all twelve.
+- Resolution: asked again on 2026-09-12 and answered the same way as below — **256×192
+  stays**, and for the stealth game there is a further reason: its rules are countable
+  in cells, and the solver that proves every room gets four times more expensive on a
+  finer grid.
+
+### Order of work — the stealth game
+
+| # | Task | Why | Effort | Status |
+|---|------|-----|--------|--------|
+| S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen sounds against the hum. This is the only item nobody but the owner can do. **The mix underneath it is now built** (2026-09-13): a beat says at most three things and the loudest first, a warning ducks the hum, every noise is panned to the cell it came from, and the bench can mute the hum's three voices one at a time (`F` `G` `H`, `J` for all). What is left is the one thing that was always left — an ear. | S | 🔜 |
+| S2 | **Rooms on demand** | `npm run roomgen` finds them in seconds (`KIND=route` with `shadow`, `lure`, `grate`, `board`, `water`, `sentry`, `bat` gates, plus `fork`, `gentle`, `dribble`). Eighteen is a cellar's worth. The two newest each answered a question rather than filling a gap: "the flood" because the wants tally showed water was a rule no room enforced, "the shadow shelf" because the step from par 21 to par 30 was where a real player fell off. The next one should be asked for the same way. | S each | 💭 |
+| S3 | ~~**The pad cannot wait a beat**~~ | It can now: waiting borrows `consumeDebug` (Ctrl+Shift+B / gamepad **Y**), which this game has no debug overlay to spend. Four verbs on a pad, the cellar finishable with one. The kit item stands — three buttons all named after something else is the missing feature restated, and a game wanting both a debug overlay and a fourth verb has run out. See `docs/zx-kit-findings.md`. | done (kit: S) | ✅ |
+| S4 | **A second cellar, built on the patrol clock** | Water was the candidate and is now finished: one room offers the wade, the next demands it, and that pair is the whole of what one tile can ask. What made that pair work was not the tile but the clock — a wade moves the world twice, so what changes is *when* Randy arrives. So the spine is guards on loops longer than a room is wide, where the question is "where will it be in six beats". Nothing new in the rulebook; the planner has a `pace` gate for it already, and `docs/stealth-design.md` §5 says what it costs (a walking guard cannot be waited out, so its rooms have to be found rather than drawn). | M | 💭 |
+| S5 | **Publish?** | Minefield's route (itch.io) or GitHub Pages, whichever the owner wants; CI already deploys `master`. Owner's call, and only after S1. | S | 💭 |
+
+**The platformer list below is untouched.** Nothing in it has been cancelled; it is
+simply not what the game has been for the last day. Which of the two chaosBunny is, is
+the owner's decision, not this document's.
+
 ## Recently done
+
+- ✅ **2026-09-13 — The polish pass: sound, light, and the hand on the shoulder.**
+  - **Sound (S1's half that is not an ear).** A beat used to fire every one of its
+    events at once, so the `?` that cost you the room arrived under four other blips;
+    it now says at most three things, loudest first (`sound.ts` `orderEvents`). A
+    warning pulls the hum down for 220 ms (`music.ts` `duckMusic`, through the
+    `LoopHandle` mixer, which survives the loop seam). Every noise is panned to the
+    cell it came from, measured from Randy (`panFor`) — the plank that creaked on his
+    left is heard on the left. The `?` itself is no longer two identical ticks (which
+    read as a clock) but a rising minor third struck twice.
+  - **The border answers.** `setBorder` used to run only while the tape loaded; it now
+    flashes yellow on a `?`, red on a capture and green on the way out — the one signal
+    a Spectrum could give in a single frame, and the one that reaches a player who is
+    looking at his own rabbit.
+  - **Three levels of light instead of two.** The cellar away from a lamp is dimmed
+    into the room's layer cache, so a lamp's reach is finally an island you can see the
+    edge of — on plain floor, not only where the light happened to fall on shadow. `L`
+    walks the levels (as it was → the cellar → the deep cellar) so the amount can be
+    judged by eye rather than argued. No rule moved: all 18 pars are unchanged.
+  - **The lamp is a choice you can see.** Aiming at a burning lamp now marks the shadow
+    cells that putting it out would give back (`light.ts` `shadowsWon`, in EARS-DOWN
+    cyan). It gives away no more than "a carrot flies 3 and is heard 5" already does.
+    The lamp also breathes, and its halo takes 220 ms to die instead of cutting.
+  - **The opening pair of rooms show the next move.** Driven by the solver from wherever the
+    player actually is (`guide.ts`; `solve` gained an optional start world), so
+    wandering off gets new advice rather than breaking it. A test walks the advice in
+    both of them and in a room deliberately played into a mess, and holds it to never
+    naming a move that loses the room. There, a `?` now says *"a ? is not a catch"*
+    every time — room two cannot be crossed unseen, so the guide walks the player into
+    one on purpose.
+  - **`RULES.md`** — what may not be changed without breaking every room, and
+    `tests/stealth/rulebook.tests.ts`, which pins every rulebook constant and says so
+    loudly. 492 → 554 tests.
 
 - ✅ **2026-06-05 — Instant music control.** `M` (mute) and `N` (next) now react
   immediately instead of at the end of the ~9.6 s loop. Root fix in zx-kit:

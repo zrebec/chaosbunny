@@ -21,6 +21,32 @@ This document defines the initial sprite atlas, procedural world assumptions, en
 11. Use `pickLocale()` for all user-visible text.
 12. The world must be compatible with procedural room generation.
 
+## Branch `proto/tile-stealth` — a different game on the same repo
+
+This branch prototypes a **top-down, beat-based tile stealth** Chaosbunny (one screen per room,
+16×11 tiles of 16×16 px): each of Randy's steps moves every fox one step; ears up shows the
+foxes' cones and next steps, ears down hides him behind low cover or in shadow; a thrown carrot
+lures a fox away. Design source: `retro/docs/sk/2026-08-25-zxart-graficky-smer-a-chaosbunny.md`.
+The platformer on `master` is untouched here and nothing on this branch imports it.
+
+- **Logic lives in `src/stealth/` and is pure** — `room.ts` (parser), `rules.ts` (the sight
+  table), `patrol.ts` (fox modes), `beat.ts` (the order of one beat — read its header first),
+  `solver.ts` (breadth-first proof that a room can be left).
+- **Rules 1–7 above do not apply**: position and contact are whole cells, so there are no pixel
+  masks to overlap. Rules 8–11 do: foxes never hurt anyone, AY music, beeper SFX, `pickLocale()`.
+- **Every shipped room carries solver tests** (`tests/stealth/roomNN.tests.ts`): it can be left,
+  its `par` equals the solver's fewest beats, the verbs it is meant to teach are actually needed,
+  and `fewestSightings` (the fewest `?` any way out needs) is pinned. When a rule change breaks
+  one, redesign the room — do not loosen the test.
+- **Never write a room's way through** — not in a test, an assertion message, a comment, a
+  commit message or a console log. The owner solves the rooms himself; tests prove claims
+  (solvable, par, what is required) without printing a path. Design with metrics, not replays.
+- **Ears down is a dribble**: `SNEAK_STEPS = 2` steps, then the ears must come up (owner's call,
+  2026-09-11, after the solver showed 0 makes dark corridors impassable). Standing still hidden
+  is free.
+- Verdict after the first playtest (2026-09-11): *very fun*. The direction is on; rooms grow
+  in `src/stealth/rooms/`.
+
 ## Sprite implementation format
 
 Store text art as source data first.
@@ -1159,3 +1185,49 @@ Add debug toggles:
 
 The debug overlay must make it obvious when AABB overlaps but pixel masks do not. That is the main proof that chaosBunny is truly pixel-perfect.
 
+
+---
+
+# Tile-stealth — poznámky (2026-09-13)
+
+> Táto sekcia je po slovensky zámerne: sú to majiteľove pracovné poznámky, nie
+> špecifikácia. Doterajší obsah tohto súboru je pôvodný brief **platformera** a
+> stealth hry sa netýka.
+
+## ⚠️ Najprv si prečítaj `RULES.md`
+
+`RULES.md` v koreni tohto repa je zoznam vecí, ktoré **nesmieš prepísať** bez
+výslovného súhlasu majiteľa — konštanty rulebooku, id izieb, determinizmus
+`beat()`. Osemnásť izieb má `par` dokázaný solverom a pripnutý v testoch, takže
+väčšina „drobných vylepšení" v pravidlách prepíše všetkých osemnásť naraz, a
+väčšinou ticho.
+
+`tests/stealth/rulebook.tests.ts` to drží a pri páde hlasno povie, čo sa rozbilo.
+
+## Nápad na skóre a odomykanie (majiteľ, 2026-09-13) — NEIMPLEMENTOVANÉ
+
+Zapísané na diskusiu. **Nerobiť, kým to majiteľ nepovie.**
+
+Dve varianty, majiteľ sám označil prvú za slabšiu:
+
+1. **Kódy do ďalšej izby.** Po každej izbe sa ukáže kód, ktorým sa dá vstúpiť do
+   ľubovoľnej izby. (Autentické pre éru, ale nič nemeria.)
+2. **Skóre + save (preferovaná).** Odomknuté sú len izby, ktoré si už prešiel.
+   Bodovanie:
+   - dosiahnutý **solverov `par`** = **1000 bodov**,
+   - každý **beat navyše** = **−50 bodov**.
+
+   Po chytení sa ukáže štatistika: v ktorej izbe, prípadne helper „čo si mal
+   urobiť inak", a koľko skóre je nahrané.
+
+   Otvorená otázka, ktorú majiteľ sám položil: *skončia hráči vôbec v pluse?*
+   Pri pare 35 (izba 11 „Doska") stačí 20 beatov navyše a si na nule.
+
+**Čo už na to existuje:** `records.ts` ukladá rekord aj záznam behu per izba
+(kľúč je `RoomSource.name`), každá izba má pinnutý `par`, a mapa pivnice
+(`cellar.ts`) už kreslí, ktoré izby sú prejdené. Odomykanie by teda bolo
+obmedzenie toho, čo mapa už vie — nie nový stav.
+
+**Pozor pri návrhu:** dnes sa dá do izby skočiť číslicami `1`–`9`, `0` a `[` `]`.
+Ak by odomykanie malo niečo znamenať, tieto klávesy sa musia obmedziť tiež —
+alebo ostať ako vývojárska skratka mimo vydanej verzie.
