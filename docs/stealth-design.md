@@ -260,6 +260,30 @@ it would feel different — and exactly why its rooms have to be found, not draw
 Nothing else in the rulebook is needed: patrols already walk any closed loop and
 `fewestSightings` already prices the answer.
 
+**The rooms are also smaller than the screen they are drawn on.** Counting the cells
+Randy can stand on: the eighteen average **41 of 176**, the thinnest is 22, and every
+room has between one and six rows that are solid wall end to end — six being over half
+the picture. On a one-screen game that reads as an island in a field of rock rather than
+a room, and it is not a drawing decision either: three chambers of at most 4×3 plus
+their corridors cannot add up to more than about forty-four cells, so the planner's
+chamber budget *is* the density.
+
+Two things came of measuring it, both in the tool rather than in the shipped rooms:
+
+- **Generated rooms are centred now.** The planner drops chambers at random coordinates,
+  so a candidate could hug a corner with the rest of the screen untouched. A translation
+  is the one change that can be made to a layout without changing what it is — every
+  distance, cone and patrol phase, and therefore every number, is identical — so "kept
+  exactly as it came" still holds.
+- **`BIG=1` raises the ceiling**, to chambers of 6×4. Measured over the same 250 seeds:
+  mean floor 33 → 42, best 44 → 56, and the price is the solver going from 34 ms a room
+  to 53 ms, worst case 93 ms to 158 ms. A third of the screen for thirty milliseconds is
+  a bargain, and it is off by default only because the design loop rests on the solver
+  staying quick and that trade should be made on purpose, per search.
+
+Both are for the *next* cellar. Redrawing the eighteen that exist would move every wall
+a player has already learned, and the numbers say the rooms are honest — only thin.
+
 Three of the ideas below are now built — kept in the table with what they actually cost,
 so the next estimate has something to stand on. Water, the fourth, outgrew the table and
 has the section above to itself.

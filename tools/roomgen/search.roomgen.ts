@@ -61,6 +61,12 @@ const GAIN = Number(process.env.GAIN ?? 5)
  * *added* `fewest * 5` to the score — was ranking rooms that could never ship.
  */
 const SIGHTINGS = Number(process.env.SIGHTINGS ?? 2)
+/**
+ * The fewest cells Randy may be able to stand on. The shipped eighteen average 41 of
+ * 176 and the thinnest is 22, which on a one-screen game reads as an island in a field
+ * of rock rather than a room; a search should be able to ask for more.
+ */
+const MIN_FLOOR = Number(process.env.MIN_FLOOR ?? 0)
 const MAX_STATES = Number(process.env.MAX_STATES ?? 120_000)
 const OUT = process.env.OUT ?? path.join(import.meta.dirname, 'out', `${KIND}.txt`)
 /** How many marked rooms the report lists before the picture sheets (`LINES`). */
@@ -420,7 +426,7 @@ test(`roomgen: ${KIND}`, () => {
       const m = mark(src, MAX_STATES)
       if (!m) continue
       const hit = judge(KIND, src, m)
-      if (hit && (hit.marks.fewest ?? 99) <= SIGHTINGS) hits.push(hit)
+      if (hit && (hit.marks.fewest ?? 99) <= SIGHTINGS && hit.marks.floor >= MIN_FLOOR) hits.push(hit)
     }
   }
   hits.sort((a, b) => b.score - a.score)

@@ -27,6 +27,8 @@ export interface Marks {
   /** Par for a Randy who refuses to get his feet wet, or `null` if the room will not have it. */
   readonly dry: number | null
   /** Water cells in the room — `dry` means nothing without them. */
+  /** Cells Randy could stand on. Of 176; the shipped rooms average 41, which is thin. */
+  readonly floor: number
   readonly water: number
   /** Carrots in the room, carried or lying: without one, `noThrow` has nothing to ask. */
   readonly carrots: number
@@ -67,7 +69,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
   try {
     const best = par(room, { maxStates })
     if (best === null) {
-      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, dry: null, water: 0, carrots: 0, lamps: room.lamps.length, ms: Date.now() - t0 }
+      return { name: src.name, par: null, fewest: null, noEars: null, noThrow: null, lampsOn: null, dark: null, dry: null, floor: 0, water: 0, carrots: 0, lamps: room.lamps.length, ms: Date.now() - t0 }
     }
     const hasCarrot = room.carrots + room.pickups.length > 0
     return {
@@ -79,6 +81,7 @@ export function mark(src: RoomSource, maxStates = 120_000): Marks | null {
       lampsOn: room.lamps.length ? par(room, { lamps: false, maxStates }) : null,
       dark: room.lamps.length ? par(room, { lampsOut: true, maxStates }) : null,
       dry: src.rows.join('').includes('w') ? par(room, { wade: false, maxStates }) : null,
+      floor: src.rows.join('').split('').filter((ch) => ch !== '#').length,
       water: src.rows.join('').split('w').length - 1,
       carrots: room.carrots + room.pickups.length,
       lamps: room.lamps.length,
@@ -99,7 +102,7 @@ export function line(m: Marks): string {
   return `${m.name}: par ${n(m.par)} | fewest? ${n(m.fewest)} | noEars ${n(m.noEars)}`
     + `${m.carrots ? ` | noThrow ${n(m.noThrow)}` : ''}`
     + `${m.lamps ? ` | lampsOn ${n(m.lampsOn)} | dark ${n(m.dark)}` : ''}`
-    + `${m.water ? ` | dry ${n(m.dry)}` : ''} | ${m.ms} ms`
+    + `${m.water ? ` | dry ${n(m.dry)}` : ''} | floor ${m.floor} | ${m.ms} ms`
 }
 
 /** The room as text, with its guards — enough to paste into `src/stealth/rooms/`. */

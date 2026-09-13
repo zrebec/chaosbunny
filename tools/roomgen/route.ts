@@ -302,10 +302,18 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   const want = opts.gates.length + 1
 
   // 1. A chain of chambers that do not touch.
+  //
+  // How big they may be is the single number that decides how much of the screen a room
+  // covers: three chambers of at most 4×3 plus corridors tops out near forty-four cells
+  // of a hundred and seventy-six, which is why the shipped rooms average forty-one and
+  // read as an island in a field of rock. `BIG` raises the ceiling for a search that
+  // wants fuller rooms; it is off by default because every cell a room gains is states
+  // the solver has to walk, and the whole design loop rests on the solver being quick.
+  const big = process.env.BIG === '1'
   const rooms: Rect[] = []
   for (let tries = 0; rooms.length < want && tries < 400; tries++) {
-    const w = r.int(2, 4)
-    const h = r.int(2, 3)
+    const w = r.int(2, big ? 6 : 4)
+    const h = r.int(2, big ? 4 : 3)
     const x = r.int(1, W - 1 - w)
     const y = r.int(1, H - 1 - h)
     const clash = rooms.some((o) => x - 2 <= o.x + o.w && o.x - 2 <= x + w && y - 2 <= o.y + o.h && o.y - 2 <= y + h)
@@ -531,5 +539,52 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
     if (watched) { opts.onFail?.('water-in-sight'); return null }
   }
 
-  return { seed, src: { name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1, bats } }
+  return { seed, src: centred({ name: `route${seed}`, rows: rowsOf(), patrols, carrots: 1, bats }) }
+}
+
+/**
+ * Slides the whole room to the middle of the screen.
+ *
+ * The planner drops chambers at random coordinates, so a candidate can end up hugging a
+ * corner with half the screen left as untouched rock — measured across the shipped
+ * eighteen, a room uses 23% of its cells and every one of them has between one and six
+ * rows that are solid wall end to end, six being over half the screen. On a one-screen
+ * game that reads as a small island in a black field rather than a room.
+ *
+ * (Named `centred`, not `centre`: `generateRoute` already has a local `centre(rect)`
+ * that returns the middle cell of a chamber, and calling this one from inside it
+ * silently handed the search a `{x, y}` where a room should have been.)
+ *
+ * A translation is the one change that can be made to a generated layout without
+ * touching what it is: every distance, every cone, every patrol phase and therefore
+ * every number the solver returns is the same. So the rule that a layout ships exactly
+ * as it came still holds — this *is* how it came, only centred.
+ */
+function centred(src: RoomSource): RoomSource {
+  let minX = W, minY = H, maxX = -1, maxY = -1
+  src.rows.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      if (ch === '#') return
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    })
+  })
+  if (maxX < 0) return src
+  // A door sits in a wall, so keep a ring of rock around everything that is not.
+  const dx = Math.floor((W - 1 - maxX - minX) / 2)
+  const dy = Math.floor((H - 1 - maxY - minY) / 2)
+  if (dx === 0 && dy === 0) return src
+  const rows = Array.from({ length: H }, () => Array.from({ length: W }, () => '#'))
+  src.rows.forEach((row, y) => {
+    [...row].forEach((ch, x) => { if (ch !== '#') rows[y + dy]![x + dx] = ch })
+  })
+  const move = ([x, y]: readonly [number, number]): [number, number] => [x + dx, y + dy]
+  return {
+    ...src,
+    rows: rows.map((r) => r.join('')),
+    patrols: src.patrols.map((p) => ({ ...p, route: p.route.map(move) })),
+    bats: src.bats?.map(move),
+  }
 }
