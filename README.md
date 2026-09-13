@@ -29,7 +29,7 @@ owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
 | `←` `↑` `→` `↓` / d-pad | Step one cell — and one beat for everyone else |
 | `Z` / `P` / gamepad Start | Ears up / down. Up: you see every cone. Down: the dark hides you, for two steps |
 | `X` / `F` / gamepad A, then an arrow | Throw the carrot that way (`X` again cancels) |
-| `Space` | Wait a beat |
+| `Space` / gamepad Y | Wait a beat |
 | `U` | Take the last beat back — including the one a fox caught you on |
 | `C` | The cellar map: arrows pick a room, `Enter` goes in, `Esc` back to where you were |
 | `M` | The cellar hum on / off |
