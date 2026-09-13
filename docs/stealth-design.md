@@ -233,12 +233,18 @@ And counting the shipped rooms turned that from a hunch into a hole:
 > **Of the twenty-five guards in the cellar, five walk — and all five pace a line two
 > cells long.** Everything else stands still or turns on the spot.
 
-That is not a design decision anybody made. It is what the tool grew into: the shape-rolling
-generator made walking patrols, the route planner that replaced it places `watcher`,
-`turner` and `listener`, and every one of those returns a guard with a single waypoint.
-The planner got better at building rooms and quietly stopped building the thing the game
-is *about* — the ears show a fox's next two steps, and in most rooms both of them are the
-cell it is already standing on.
+Half of that *was* decided, and for a good reason: the night's notes record that more than
+two moving foxes in one room is millions of states, because every `?` throws their phases
+apart — so standing guards and short routes were chosen to keep the solver able to answer
+at all. That cost is real and this search re-measured it: fifteen hundred seeds of walking
+guards took two hundred seconds, where the standing-guard kinds answer in a handful.
+
+The half nobody decided is what it did to the *game*. The route planner places `watcher`,
+`turner` and `listener`, and every one of those returns a guard with a single waypoint, so
+the choice made for the solver's sake became the only shape the tool could produce. The
+ears show a fox's next two steps, and in most rooms both of them are the cell it is
+already standing on. A budget spent on tractability is fair; a budget spent by accident on
+the main dial is not.
 
 So the planner has a `pace` gate now: the chamber past the corridor gets a guard walking
 its whole perimeter, a ring of six to ten cells, and the ablation is the obvious one —
