@@ -177,6 +177,11 @@ function say(text: string): void {
  */
 function hint(world: World, events: readonly BeatEvent[], caught: boolean): void {
   const randy = world.randy
+  const lit = litCells(room, world.lamps)
+  // In the order a player needs them, not the order they were written. What just went
+  // wrong comes first; what merely happened comes last, because only one line can be
+  // said in a beat and a beat can hold several of these at once.
+
   // "Hide this beat" is no use to somebody who has already been caught; every other
   // line here is *more* use then, because it says why.
   if (!caught && !hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
@@ -184,12 +189,21 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
     say(STR.spottedHint)
     return
   }
-  // The first throw a fox answers. The aim overlay draws how far a carrot flies; how far
-  // it carries is a second number, twice as big, and nothing on screen shows it — which
-  // is why a fox two rooms away sometimes seems to come for no reason.
-  if (!hinted.carrot && events.some((e) => e.type === 'throw') && events.some((e) => e.type === 'heard')) {
-    hinted.carrot = true
-    say(STR.carrotHint)
+  // Cover is the quietest no in the game: a fox looking straight at him who would not be,
+  // had his ears been down. Not on a shadow cell — that is a line below, and there the
+  // difference is the dark rather than the crate.
+  if (!hinted.crate && !randy.earsDown && tileAt(room, randy.cell) !== 'shadow'
+    && world.foxes.some((f) => spots(room, f.cell, f.facing, randy.cell, false, lit) !== null
+      && spots(room, f.cell, f.facing, randy.cell, true, lit) === null)) {
+    hinted.crate = true
+    say(STR.crateHint)
+    return
+  }
+  // He has done the right thing and it is not working, because a lamp is on the cell.
+  if (!hinted.lamp && randy.earsDown && tileAt(room, randy.cell) === 'shadow'
+    && lit.has(cellIndex(room, randy.cell))) {
+    hinted.lamp = true
+    say(STR.lampHint)
     return
   }
   // Two sounds the player makes and cannot see: the plank under his own foot and the
@@ -204,37 +218,27 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
     say(STR.leverHint)
     return
   }
+  const heard = world.bats.some((b) => b.mode === 'roost' && manhattan(b.cell, randy.cell) <= BAT_HEARING)
+  if (!hinted.bat && !randy.earsDown && heard) {
+    hinted.bat = true
+    say(STR.batHint)
+    return
+  }
   if (!hinted.water && events.some((e) => e.type === 'wade')) {
     hinted.water = true
     say(STR.waterHint)
     return
   }
+  // Nothing has gone wrong in these two: he is standing somewhere that will not hide him
+  // yet, and a carrot has just been heard. Advice and a number, in that order, last.
   if (!hinted.shadow && !randy.earsDown && tileAt(room, randy.cell) === 'shadow') {
     hinted.shadow = true
     say(STR.shadowHint)
     return
   }
-  // Cover is the quietest no in the game: a fox looking straight at him who would not be,
-  // had his ears been down. Not on a shadow cell — that is the line above, and there the
-  // difference is the dark rather than the crate.
-  const lit = litCells(room, world.lamps)
-  if (!hinted.crate && !randy.earsDown && tileAt(room, randy.cell) !== 'shadow'
-    && world.foxes.some((f) => spots(room, f.cell, f.facing, randy.cell, false, lit) !== null
-      && spots(room, f.cell, f.facing, randy.cell, true, lit) === null)) {
-    hinted.crate = true
-    say(STR.crateHint)
-    return
-  }
-  if (!hinted.lamp && randy.earsDown && tileAt(room, randy.cell) === 'shadow'
-    && lit.has(cellIndex(room, randy.cell))) {
-    hinted.lamp = true
-    say(STR.lampHint)
-    return
-  }
-  const heard = world.bats.some((b) => b.mode === 'roost' && manhattan(b.cell, randy.cell) <= BAT_HEARING)
-  if (!hinted.bat && !randy.earsDown && heard) {
-    hinted.bat = true
-    say(STR.batHint)
+  if (!hinted.carrot && events.some((e) => e.type === 'throw') && events.some((e) => e.type === 'heard')) {
+    hinted.carrot = true
+    say(STR.carrotHint)
   }
 }
 let titleMode: TitleMode = 'prompt'
