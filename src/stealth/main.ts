@@ -119,10 +119,16 @@ let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
 let escaped = false
 /**
- * Times a fox or a bat has ended this room since it was entered. Three is where being
- * unlucky turns into being stuck, and the room starts saying what it wants (`wants.ts`).
+ * Times a fox or a bat has ended each room, by room name, for as long as the page is
+ * open. Three is where being unlucky turns into being stuck and the room starts saying
+ * what it wants (`wants.ts`).
+ *
+ * Per room rather than per visit: a player who cannot get through goes and tries another
+ * room and comes back, and a counter that started again each time would keep the advice
+ * from the one player it is for. Not saved — a stuck player is stuck now, and a count
+ * carried across days would greet him with advice he never asked for.
  */
-let caughtHere = 0
+const caughtIn = new Map<string, number>()
 /** Catches before the room names the verb it cannot be left without. */
 const NUDGE_AFTER = 3
 
@@ -220,7 +226,6 @@ function goToRoom(i: number): void {
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
-  caughtHere = 0
   hinted.spotted = false
   hinted.shadow = false
   hinted.bat = false
@@ -236,10 +241,11 @@ function goToRoom(i: number): void {
  * order a player would think of them, and starts over rather than running out.
  */
 function nudge(): string | null {
-  if (caughtHere < NUDGE_AFTER) return null
+  const caught = caughtIn.get(room.name) ?? 0
+  if (caught < NUDGE_AFTER) return null
   const wants = room.wants
   if (wants.length === 0) return STR.wants.none
-  return STR.wants[wants[(caughtHere - NUDGE_AFTER) % wants.length]!]
+  return STR.wants[wants[(caught - NUDGE_AFTER) % wants.length]!]
 }
 
 function restart(): void {
@@ -349,7 +355,7 @@ function play(action: Action): void {
     bittenBy = by && by.type === 'bitten' ? by.bat : null
     phase = 'caught'
     phaseMs = 0
-    caughtHere++
+    caughtIn.set(room.name, (caughtIn.get(room.name) ?? 0) + 1)
     queued = null
     aiming = false
   } else if (r.outcome === 'won') {
