@@ -49,11 +49,11 @@ feet*, or *only timing* for a room that needs no tool at all. It is read off the
 (take a verb away, see whether the room still opens) and checked by a test, so it can
 name the tool without ever naming a step. Being caught again names the next one.
 
-Eight rules the rooms rely on are said once in-game the first time each bites: **a `?` is a
+Nine rules the rooms rely on are said once in-game the first time each bites: **a `?` is a
 warning, not a capture** (the second sighting in a row is what ends the room), the dark
-hides only lowered ears, a crate hides lowered ears only, a bat hears the ones that are
-up, wading costs two beats a step, a board creaks either way, the handle is heard too,
-and a lit shadow hides nobody. They are said on the beat that
+hides only lowered ears, a crate hides lowered ears only, a thrown carrot is heard five
+cells away, a bat hears the ones that are up, wading costs two beats a step, a board
+creaks either way, the handle is heard too, and a lit shadow hides nobody. They are said on the beat that
 catches you as well as on a clean one — a capture is usually how the last three are met.
 
 ## Play

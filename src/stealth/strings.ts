@@ -85,6 +85,12 @@ export interface Strings {
    * not be, had his ears been down. Standing behind a crate with the ears up is the
    * quietest way the game says no.
    */
+  /**
+   * The first throw a fox actually reacts to. The aim overlay already draws how far a
+   * carrot flies; how far it is *heard* is a second number, twice as big, and nothing
+   * on screen ever shows it.
+   */
+  readonly carrotHint: string
   readonly crateHint: string
   readonly boardHint: string
   /** The first handle he works: iron, and the guard is listening. */
@@ -181,6 +187,7 @@ const EN: Strings = {
   spottedHint: 'SPOTTED - HIDE THIS BEAT',
   shadowHint: 'THE DARK HIDES EARS DOWN ONLY',
   lampHint: 'A LIT SHADOW HIDES NOBODY',
+  carrotHint: 'IT FLIES 3 AND IS HEARD 5',
   crateHint: 'A CRATE HIDES LOWERED EARS ONLY',
   boardHint: 'A BOARD CREAKS EITHER WAY',
   leverHint: 'THE HANDLE IS HEARD TOO',
@@ -272,6 +279,7 @@ const SK: Strings = {
   spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
   shadowHint: 'TIEN SKRYJE LEN SKLOPENE USI',
   lampHint: 'OSVETLENY TIEN NESKRYJE NIKOHO',
+  carrotHint: 'LETI 3, ALE POCUT JU NA 5',
   crateHint: 'DEBNA KRYJE LEN SKLOPENE USI',
   boardHint: 'DOSKA VRZGNE TAK CI TAK',
   leverHint: 'PAKU TIEZ POCUT',
@@ -289,8 +297,8 @@ const SK: Strings = {
  * documents count them in prose and a doc test holds those counts to this list.
  */
 export const SPOKEN_RULES = [
-  'spottedHint', 'shadowHint', 'crateHint', 'lampHint', 'boardHint', 'leverHint', 'batHint',
-  'waterHint',
+  'spottedHint', 'shadowHint', 'crateHint', 'carrotHint', 'lampHint', 'boardHint', 'leverHint',
+  'batHint', 'waterHint',
 ] as const
 
 export const LOCALES = { en: EN, sk: SK } as const

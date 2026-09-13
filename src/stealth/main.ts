@@ -115,7 +115,7 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
  * The rules the game states nowhere else, each said once per visit to a room, at the
  * moment it first matters. A player who already knows them never sees them twice.
  */
-const hinted = { spotted: false, shadow: false, crate: false, lamp: false, board: false, lever: false, bat: false, water: false }
+const hinted = { spotted: false, shadow: false, crate: false, carrot: false, lamp: false, board: false, lever: false, bat: false, water: false }
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -182,6 +182,14 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
   if (!caught && !hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
     hinted.spotted = true
     say(STR.spottedHint)
+    return
+  }
+  // The first throw a fox answers. The aim overlay draws how far a carrot flies; how far
+  // it carries is a second number, twice as big, and nothing on screen shows it — which
+  // is why a fox two rooms away sometimes seems to come for no reason.
+  if (!hinted.carrot && events.some((e) => e.type === 'throw') && events.some((e) => e.type === 'heard')) {
+    hinted.carrot = true
+    say(STR.carrotHint)
     return
   }
   // Two sounds the player makes and cannot see: the plank under his own foot and the
@@ -274,6 +282,7 @@ function goToRoom(i: number): void {
   hinted.spotted = false
   hinted.shadow = false
   hinted.crate = false
+  hinted.carrot = false
   hinted.lamp = false
   hinted.board = false
   hinted.lever = false
