@@ -166,10 +166,19 @@ function say(text: string): void {
  * player has *not* done the thing; this one fires when he has — ears down, standing in
  * shadow — and it is not working, because a lamp is lighting that very cell. That is the
  * only rule in the cellar that looks like a bug from the inside.
+ *
+ * Which is why these run on a **caught** beat too, and not only on a clean one. The
+ * lamp's lesson is usually delivered by the capture itself: he lowers his ears in a
+ * shadow the lamp is on, the fox sees him anyway, and the room ends. Skipping the hint
+ * there — as this did at first — meant the one rule that most needs saying was the one
+ * rule that could not be said. The `?` line is the exception and is held back: "hide
+ * this beat" is no use to somebody who has already been caught.
  */
-function hint(world: World, events: readonly BeatEvent[]): void {
+function hint(world: World, events: readonly BeatEvent[], caught: boolean): void {
   const randy = world.randy
-  if (!hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
+  // "Hide this beat" is no use to somebody who has already been caught; every other
+  // line here is *more* use then, because it says why.
+  if (!caught && !hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
     hinted.spotted = true
     say(STR.spottedHint)
     return
@@ -357,7 +366,7 @@ function play(action: Action): void {
     return
   }
   playEvents(r.events)
-  if (r.outcome === 'ok') hint(r.world, r.events)
+  if (r.outcome === 'ok' || r.outcome === 'caught') hint(r.world, r.events, r.outcome === 'caught')
   runActions.push(action)
   history.push(world)
   prev = world
