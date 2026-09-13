@@ -347,13 +347,16 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
   for (const a of actors(ctx, f)) a.draw()
   drawGlow(ctx, scene, f.world)
   if (settled && f.aiming) drawAim(ctx, scene.room, f.world)
-  if (f.toast) drawTextCentered(ctx, f.toast, 8, 32, C.B_WHITE, C.BLACK)
   if (over) {
     blit(ctx, scene.dimLayer)
     drawTextCentered(ctx, str.caught, 80, 32, C.B_RED, C.BLACK)
     if (f.canUndo) drawTextCentered(ctx, str.caughtHint, 96, 32, C.WHITE, C.BLACK)
     if (f.nudge) drawTextCentered(ctx, f.nudge, 116, 32, C.B_YELLOW, C.BLACK)
   }
+  // After the dim, not before it. Three of the one-shot rules are met *by* being caught —
+  // the lamp on a shadow, the plank underfoot, the bat overhead — and a sentence that
+  // explains the capture has to be as readable as the word CAUGHT above it.
+  if (f.toast) drawTextCentered(ctx, f.toast, 8, 32, C.B_WHITE, C.BLACK)
   if (f.won) {
     blit(ctx, scene.dimLayer)
     drawTextCentered(ctx, str.won, 56, 32, C.B_GREEN, C.BLACK)
