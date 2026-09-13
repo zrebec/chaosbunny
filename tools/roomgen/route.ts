@@ -24,13 +24,15 @@ import { visibleCells } from '../../src/stealth/rules.js'
 import { rng, W, H, type Candidate } from './gen.js'
 
 /** What a corridor can be made to cost. */
-export type Gate = 'grate' | 'board' | 'dark' | 'shadow' | 'lure' | 'bat' | 'sentry' | 'water' | 'open'
+export type Gate = 'grate' | 'board' | 'dark' | 'shadow' | 'lure' | 'pace' | 'bat' | 'sentry' | 'water' | 'open'
 
 interface Rect { x: number; y: number; w: number; h: number }
 
 type Grid = string[][]
 
 const at = (g: Grid, c: Cell): string => g[c.y]?.[c.x] ?? '#'
+/** The same, under a name the `pace` gate can use where `at` is a corridor index. */
+const at2 = at
 const put = (g: Grid, c: Cell, ch: string): void => { g[c.y]![c.x] = ch }
 const inside = (c: Cell): boolean => c.x > 0 && c.y > 0 && c.x < W - 1 && c.y < H - 1
 
@@ -372,7 +374,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   const src = (): RoomSource => ({ name: `route${seed}`, rows: rowsOf(), patrols: [], carrots: 1 })
 
   /** Puts one gate on one corridor. False when this shape cannot carry that gate. */
-  const dress = (gate: Gate, corridor: readonly Cell[], cell: Cell): boolean => {
+  const dress = (gate: Gate, corridor: readonly Cell[], cell: Cell, at = -1): boolean => {
     if (gate === 'open') return true // a way with nothing on it is still a way
     if (gate === 'grate') {
       put(g, cell, '+')
@@ -427,6 +429,29 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       taken.add(`${guard.route[0]![0]},${guard.route[0]![1]}`)
       return true
     }
+    if (gate === 'pace') {
+      // A guard that *walks*. Of the twenty-five guards in the shipped cellar only five
+      // move at all, and all five pace a two-cell line — the planner learned to place
+      // standing watchers and never unlearned it, so the game's own dial (ears up shows
+      // a fox's next two steps) has almost nothing to read. This gate hands the chamber
+      // on the far side of the corridor a guard walking its whole perimeter: a loop of
+      // eight or ten cells, long enough that the room cannot be read in one glance.
+      const rect = rooms[at + 1]
+      if (!rect || rect.w < 3 || rect.h < 3) return false
+      const ring: Cell[] = []
+      for (let x = rect.x; x < rect.x + rect.w; x++) ring.push({ x, y: rect.y })
+      for (let y = rect.y + 1; y < rect.y + rect.h; y++) ring.push({ x: rect.x + rect.w - 1, y })
+      for (let x = rect.x + rect.w - 2; x >= rect.x; x--) ring.push({ x, y: rect.y + rect.h - 1 })
+      for (let y = rect.y + rect.h - 2; y > rect.y; y--) ring.push({ x: rect.x, y })
+      if (ring.some((c) => at2(g, c) !== '.' || taken.has(`${c.x},${c.y}`))) return false
+      const corners: Array<[number, number]> = [
+        [rect.x, rect.y], [rect.x + rect.w - 1, rect.y],
+        [rect.x + rect.w - 1, rect.y + rect.h - 1], [rect.x, rect.y + rect.h - 1],
+      ]
+      patrols.push({ route: corners })
+      for (const c of ring) taken.add(`${c.x},${c.y}`)
+      return true
+    }
     if (gate === 'lure') {
       // The same eyes as `shadow`, on plain floor: nowhere to hide and nothing to wait
       // for, because a standing guard never turns and never walks off. The carrot is
@@ -468,7 +493,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
     const corridor = corridors[i]!
     const cell = corridor[Math.floor(corridor.length / 2)]!
     if (connected(g, start, door, cell)) { opts.onFail?.('chain-not-a-bridge'); return null } // the plan does not hold
-    if (!dress(gate, corridor, cell)) { opts.onFail?.(`chain-gate-${gate}`); return null }
+    if (!dress(gate, corridor, cell, i)) { opts.onFail?.(`chain-gate-${gate}`); return null }
   }
   if (opts.fork) {
     const ways = [corridors[corridors.length - 1]!, forked!]

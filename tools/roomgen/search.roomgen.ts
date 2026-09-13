@@ -244,6 +244,18 @@ function judge(kind: Kind, src: RoomSource, m: Marks): Hit | null {
       if (!drained?.par || m.par! - drained.par < GAIN) return null
       note += `drained it is par ${drained.par}; `
     }
+    if (src.patrols.some((p) => p.route.length > 2)) {
+      // A guard that walks a loop earns its place only if the walking is the room: stand
+      // it still on the first cell of its round and the room has to get markedly cheaper,
+      // or the loop was scenery and a standing guard would have done.
+      const still = mark({
+        ...src,
+        name: `${src.name} (still)`,
+        patrols: src.patrols.map((p) => (p.route.length > 2 ? { route: [p.route[0]!], facing: 'down' as const } : p)),
+      }, MAX_STATES)
+      if (!still?.par || m.par! - still.par < 3) return null
+      note += `stood still it is par ${still.par}; `
+    }
     if (src.patrols.some((p) => p.turns)) {
       // A sentry earns its place only if its turning is the way through: freeze every
       // one of them on its first facing and the room must close.

@@ -74,9 +74,14 @@ been passing every shape for nothing.
 `play.roomgen.ts` writes the keys that play a room, for a browser driver to press:
 
 ```bash
-OUT=/some/scratch/play.json ROOMS=room3b,room13 \
-  npx vitest run --config tools/roomgen/vitest.config.ts tools/roomgen/play.roomgen.ts
+PLAY_OUT=/some/scratch/play.json ROOMS=room3b,room13 npm run roomgen:play
 ```
+
+It has its own suffix (`play.tool.ts`), its own config and its own env var on purpose.
+While it was a `*.roomgen.ts` file it ran on **every** search — `npm run roomgen` runs
+them all — and since both read `OUT`, one search wrote its report to a path that then
+held the way through all eighteen rooms instead, and the next `head` of that report put
+them on screen. `PLAY_OUT` is also refused if it points inside the repository.
 
 It exists because the solver and the game are two implementations of one rulebook and
 have disagreed before — the solver counted actions while the game counted beats, and
@@ -84,7 +89,7 @@ nothing noticed until water made a step cost two. No test can catch that: a test
 `beat.ts` the same question twice. The real page is the only second opinion, and the
 win screen's beat count is the answer.
 
-`OUT` is required and must be **outside the repository**. This is the one thing here
+`PLAY_OUT` is required and must be **outside the repository** (the tool checks). This is the one thing here
 that writes a way through a room down, and the rule above still holds: the file is
 scratch, the driver reads it, and what comes back is a number.
 

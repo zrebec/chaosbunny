@@ -27,6 +27,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "roomgen": "vitest run --config tools/roomgen/vitest.config.ts",
+    "roomgen:play": "vitest run --config tools/roomgen/play.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },

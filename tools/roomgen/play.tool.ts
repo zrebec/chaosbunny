@@ -1,6 +1,12 @@
 /**
  * Writes the keys that play a room, for a browser to press.
  *
+ * **It is not a `*.roomgen.ts` file, and must never become one.** `npm run roomgen`
+ * runs every file with that suffix, so while this lived under it, every search also ran
+ * this — and both read `OUT`, so a search's report was overwritten by a JSON file
+ * holding the way through all eighteen rooms, which then went straight to a terminal.
+ * Hence the separate suffix, the separate config, and `PLAY_OUT` instead of `OUT`.
+ *
  * The solver and the game are two implementations of the same rulebook, and they have
  * disagreed before: the solver counted actions while the game counted beats, which
  * nothing noticed until water made a step cost two. A test cannot catch that — it asks
@@ -8,7 +14,7 @@
  * to a browser driver and lets the win screen say whether the numbers match.
  *
  * ```bash
- * OUT=/some/scratch/play.json ROOMS=room3b,room13 npm run roomgen -- tools/roomgen/play.roomgen.ts
+ * PLAY_OUT=/some/scratch/play.json ROOMS=room3b,room13 npm run roomgen:play
  * ```
  *
  * `OUT` is required and must be **outside the repository**: this is the one thing in
@@ -34,8 +40,12 @@ const keys = (plan: readonly Action[]): string[] =>
     : [' '])
 
 it('writes the keys that play each room', () => {
-  const out = process.env.OUT
-  if (!out) throw new Error('OUT is required, and must be a path outside the repository')
+  const out = process.env.PLAY_OUT
+  if (!out) throw new Error('PLAY_OUT is required')
+  // Never inside the repository: this file's whole output is spoilers, and a stray copy
+  // in the working tree is one `git add -A` away from being published.
+  const repo = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
+  if (out.startsWith(repo)) throw new Error(`PLAY_OUT must be outside ${repo}`)
   const want = process.env.ROOMS?.split(',')
   const plans = ROOM_SOURCES
     .map((src, i) => ({ src, place: i + 1 }))
@@ -47,5 +57,6 @@ it('writes the keys that play each room', () => {
       return { room: src.name, place, par: room.par, keys: keys(plan) }
     })
   writeFileSync(out, JSON.stringify(plans))
-  console.log(`${plans.length} rooms written to ${out}`)
+  // The count and nothing else: whatever prints here can end up in a transcript.
+  console.log(`${plans.length} rooms written`)
 }, 600_000)
