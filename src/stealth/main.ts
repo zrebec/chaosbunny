@@ -10,6 +10,8 @@
  * - Space: wait a beat
  * - U: take the last beat back (and, while a fox has you, the one that lost the room)
  * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
+ * - L: how dark the cellar is — as it was, the cellar, the deep cellar. Picture only:
+ *   it changes no rule, and a room's par is the same at every level
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
  * - H: the rules the rooms are built on — from the picture or from inside a room,
@@ -41,8 +43,9 @@ import { ensureAudio } from '../audio/sfx.js'
 import { BAT_HEARING } from './bat.js'
 import { beat, startWorld, type Action, type BeatEvent, type World } from './beat.js'
 import { manhattan } from './grid.js'
+import { guide as guideFor, isGuided, type Guidance } from './guide.js'
 import { cellIndex, litCells } from './light.js'
-import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
+import { musicOn, pauseMusic, resetChannels, startMusic, toggleChannel, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom, tileAt } from './room.js'
@@ -52,8 +55,8 @@ import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape } fr
 import { roomLabel, STR } from './strings.js'
 import { loadStateAt } from './loader.js'
 import { renderCellar } from './cellar.js'
-import { createTitle, renderTitle, setBorder, type TitleMode } from './title.js'
-import { createScene, render, type Frame, type Scene } from './view.js'
+import { clearBorderFlash, createTitle, flashBorder, renderTitle, setBorder, VOICE_KEYS, type TitleMode } from './title.js'
+import { createScene, cycleAmbience, render, type Frame, type Scene } from './view.js'
 
 const BEAT_MS = 150
 /**
@@ -117,6 +120,16 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
  * moment it first matters. A player who already knows them never sees them twice.
  */
 const hinted = { spotted: false, shadow: false, crate: false, carrot: false, lamp: false, board: false, lever: false, bat: false, water: false }
+/**
+ * The next best move in the taught rooms, worked out once when a beat settles rather
+ * than every frame — a search is cheap here but not sixty times a second cheap.
+ */
+let guidance: Guidance | null = null
+
+function refreshGuidance(): void {
+  guidance = isGuided(roomIndex) && phase === 'play' ? guideFor(room, world) : null
+}
+
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -185,10 +198,23 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
 
   // "Hide this beat" is no use to somebody who has already been caught; every other
   // line here is *more* use then, because it says why.
-  if (!caught && !hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
-    hinted.spotted = true
-    say(STR.spottedHint)
-    return
+  if (!caught && world.foxes.some((f) => f.mode === 'suspicious')) {
+    // In the two taught rooms this is said *every* time, and it says the half of the
+    // rule the ordinary line leaves out. Room two cannot be crossed unseen — the
+    // solver puts its `fewestSightings` at one — so the guide will itself walk the
+    // player into a `?`, and a player who reads that as a mistake will undo the one
+    // move the room is built on. Once a session is not enough for a lesson that
+    // arrives looking like a failure.
+    if (isGuided(roomIndex)) {
+      hinted.spotted = true
+      say(STR.guideSpotted)
+      return
+    }
+    if (!hinted.spotted) {
+      hinted.spotted = true
+      say(STR.spottedHint)
+      return
+    }
   }
   // Cover is the quietest no in the game: a fox looking straight at him who would not be,
   // had his ears been down. Not on a shadow cell — that is a line below, and there the
@@ -252,6 +278,7 @@ window.addEventListener('pointerdown', ensureAudio)
 
 function goToTitle(mode: TitleMode): void {
   pauseMusic()
+  clearBorderFlash()
   phase = 'title'
   titleMode = mode
   loadMs = 0
@@ -280,6 +307,7 @@ function goToRoom(i: number): void {
   if (phase === 'title') stopTape()
   escaped = false
   setBorder(null, 0)
+  clearBorderFlash() // the colour of the room just left must not follow him into the next
   roomIndex = ((i % ROOMS.length) + ROOMS.length) % ROOMS.length
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
@@ -323,7 +351,9 @@ function restart(): void {
   runActions = []
   history.length = 0
   replay = null
+  guidance = null
   resetInput()
+  refreshGuidance()
 }
 
 /**
@@ -347,6 +377,7 @@ function undo(): boolean {
   phaseMs = 0
   playUndo()
   say(STR.undone)
+  refreshGuidance()
   return true
 }
 
@@ -387,7 +418,9 @@ function stepReplay(r: NonNullable<typeof replay>, dt: number): void {
   const result = beat(room, world, r.actions[r.next]!)
   r.next = result.outcome === 'ok' ? r.next + 1 : r.actions.length
   if (result.outcome === 'blocked') return
-  playEvents(result.events)
+  playEvents(result.events, result.world)
+  // A replay shows what happened, border and all — it is the same beat played again.
+  if (result.events.some((e) => e.type === 'suspicious')) flashBorder('spotted')
   prev = world
   world = result.world
   t = 0
@@ -401,7 +434,13 @@ function play(action: Action): void {
     playBlocked()
     return
   }
-  playEvents(r.events)
+  playEvents(r.events, r.world)
+  // The border answers with the sound, not after it: yellow for a `?`, red for the
+  // room ending, green for the way out. A Spectrum said these things with the border
+  // long before it could say them with a sprite.
+  if (r.outcome === 'caught') flashBorder('caught')
+  else if (r.outcome === 'won') flashBorder('won')
+  else if (r.events.some((e) => e.type === 'suspicious')) flashBorder('spotted')
   if (r.outcome === 'ok' || r.outcome === 'caught') hint(r.world, r.events, r.outcome === 'caught')
   runActions.push(action)
   history.push(world)
@@ -410,6 +449,7 @@ function play(action: Action): void {
   t = 0
   const toss = r.events.find((e) => e.type === 'throw')
   thrown = toss && toss.type === 'throw' ? { from: toss.from, to: toss.to } : null
+  refreshGuidance()
   if (r.outcome === 'caught') {
     const by = r.events.find((e) => e.type === 'caught' || e.type === 'bitten')
     caughtBy = by && by.type === 'caught' ? by.fox : null
@@ -480,13 +520,22 @@ window.addEventListener('keydown', (e) => {
     return
   }
   if (phase === 'title' && titleMode === 'sound') {
-    if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
+    const key = e.key.toUpperCase()
+    if (e.key === 'Escape' || key === 'Q') {
       pauseMusic() // the bench is for the beeper; the hum stops when you leave
+      resetChannels() // and a voice muted for tuning does not follow you into a room
       titleMode = 'ready'
     }
     // The tuning question is whether a blip cuts through the hum, so the hum is here too.
-    else if (e.key === 'm' || e.key === 'M') toggleMusic()
-    else SOUND_BENCH.find((s) => s.key === e.key.toUpperCase())?.play()
+    else if (key === 'M') toggleMusic()
+    // …and whether it does depends on which of the three voices is in the way, so each
+    // one can be taken out while it plays. J brings them all back.
+    else if (key === 'J') resetChannels()
+    else {
+      const voice = VOICE_KEYS.find(([k]) => k === key)
+      if (voice) toggleChannel(voice[1])
+      else SOUND_BENCH.find((s) => s.key === key)?.play()
+    }
     resetInput()
     return
   }
@@ -569,6 +618,12 @@ window.addEventListener('keydown', (e) => {
     case 'm':
     case 'M':
       say(toggleMusic() ? STR.musicOn : STR.musicOff)
+      break
+    case 'l':
+    case 'L':
+      // How dark the cellar is, walked rather than argued. It touches the picture and
+      // nothing else: the solver, the rules and every par are untouched by it.
+      say(STR.ambience[cycleAmbience()])
       break
   }
 })
@@ -654,13 +709,14 @@ function frame(now: number): void {
     )
   }
   else render(ctx, scene, {
-      world, prev, t, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
+      world, prev, t, now, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
       record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
       replaying: phase === 'replay',
       bestRunKept: book.bestRun(room.name) !== null,
       toast: toast?.text ?? null,
       canUndo: history.length > 0,
       nudge: phase === 'caught' ? nudge() : null,
+      guide: phase === 'play' ? guidance : null,
     }, STR)
   requestAnimationFrame(frame)
 }

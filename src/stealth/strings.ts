@@ -57,6 +57,12 @@ export interface Strings {
   readonly soundTitle: string
   readonly soundNames: readonly string[]
   readonly soundHint: string
+  /**
+   * The bench's three AY voices, on F, G and H. Three voices written blind cannot be
+   * judged together \u2014 the only way to hear whether the drip is too loud is to hear
+   * the drip alone \u2014 so the bench can mute each one while it plays.
+   */
+  readonly voiceNames: readonly [string, string, string]
   /** The map between rooms: its title, and how to leave it. */
   readonly cellar: string
   readonly cellarHint: string
@@ -103,6 +109,23 @@ export interface Strings {
   readonly roomToast: (n: number) => string
   readonly musicOn: string
   readonly musicOff: string
+  /**
+   * What `L` says when it walks the cellar's darkness. Three looks rather than two,
+   * because how dark a cellar should be is not an argument anybody wins on paper.
+   */
+  readonly ambience: Readonly<Record<'off' | 'dim' | 'dark', string>>
+  /**
+   * The first two rooms show the next best move (`guide.ts`). One line each, in place
+   * of the key row — in a room that is teaching you, what the keys are called matters
+   * less than what to do with them.
+   */
+  readonly guide: Readonly<Record<'step' | 'throw' | 'earsDown' | 'earsUp' | 'wait', string>>
+  /**
+   * Said in the taught rooms every time a fox notices Randy, not once a session like
+   * {@link Strings.spottedHint}. It carries the half of the rule that sentence leaves
+   * out and that room two is entirely built on: being noticed is not being caught.
+   */
+  readonly guideSpotted: string
 }
 
 const EN: Strings = {
@@ -174,7 +197,8 @@ const EN: Strings = {
     'STEP', 'EARS', 'THROW', 'CARROT LANDS', 'LAMP OUT', 'CREAK',
     'LEVER', 'PICKUP', 'SPOTTED', 'CAUGHT', 'BAT', 'ESCAPED', 'WADING',
   ],
-  soundHint: 'M THE HUM - ESC BACK',
+  soundHint: 'M HUM  J ALL VOICES - ESC BACK',
+  voiceNames: ['DRONE', 'DRIP', 'AIR'],
   cellar: 'THE CELLAR',
   cellarHint: 'ARROWS PICK - ENTER IN - ESC OUT',
   roomNames: [
@@ -196,6 +220,15 @@ const EN: Strings = {
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
+  ambience: { off: 'LIGHT: AS IT WAS', dim: 'LIGHT: CELLAR', dark: 'LIGHT: DEEP CELLAR' },
+  guide: {
+    step: 'GO TO THE MARK',
+    throw: 'THROW A CARROT AT THE MARK',
+    earsDown: 'PUT YOUR EARS DOWN',
+    earsUp: 'PUT YOUR EARS UP',
+    wait: 'WAIT A BEAT',
+  },
+  guideSpotted: 'A ? IS NOT A CATCH - HIDE NOW',
 }
 
 const SK: Strings = {
@@ -267,7 +300,8 @@ const SK: Strings = {
     'KROK', 'USI', 'HOD', 'DOPAD MRKVY', 'SKLO LAMPY', 'VRZGNUTIE',
     'PAKA', 'ZOBRAL MRKVU', 'VSIMOL SI TA', 'CHYTENY', 'NETOPIER', 'PREKLZOL', 'BRODENIE',
   ],
-  soundHint: 'M HUKOT - ESC SPAT',
+  soundHint: 'M HUKOT  J HLASY - ESC SPAT',
+  voiceNames: ['HUKOT', 'KVAPKA', 'VZDUCH'],
   cellar: 'PIVNICA',
   cellarHint: 'SIPKY - ENTER DNU - ESC VON',
   roomNames: [
@@ -288,6 +322,15 @@ const SK: Strings = {
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',
+  ambience: { off: 'SVETLO: AKO PREDTYM', dim: 'SVETLO: PIVNICA', dark: 'SVETLO: HLBOKA PIVNICA' },
+  guide: {
+    step: 'CHOD NA ZNACKU',
+    throw: 'HOD MRKVU NA ZNACKU',
+    earsDown: 'SKLOP USI',
+    earsUp: 'ZDVIHNI USI',
+    wait: 'POCKAJ BEAT',
+  },
+  guideSpotted: '? NIE JE CHYTENIE - SKRY SA',
 }
 
 /** Both tongues, for the tests that hold them to the same shape. */

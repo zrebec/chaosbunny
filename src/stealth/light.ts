@@ -26,6 +26,34 @@ export function cellIndex(room: Pick<Room, 'cols'>, c: Cell): number {
   return c.y * room.cols + c.x
 }
 
+/** The other way round: the cell a lit-set index names. */
+export function cellOfIndex(room: Pick<Room, 'cols'>, i: number): Cell {
+  return { x: i % room.cols, y: Math.floor(i / room.cols) }
+}
+
+/**
+ * The shadow cells a carrot would buy back by putting lamp `i` out — the cells that
+ * are shadow, are lit now, and would not be.
+ *
+ * This is what makes the lamp a **choice you can see** rather than one you guess at.
+ * It gives away no more than the rules already do: `LAMP_REACH` is a number a player
+ * counts on his fingers, the same as a carrot flying three and being heard five, and
+ * the game says both of those out loud. Where to stand, when to throw and which fox
+ * it brings are untouched.
+ */
+export function shadowsWon(room: Room, lamps: number, i: number): Cell[] {
+  if (!lampOn(lamps, i)) return []
+  const now = litCells(room, lamps)
+  const after = litCells(room, lamps & ~(1 << i))
+  const won: Cell[] = []
+  for (const index of now) {
+    if (after.has(index)) continue
+    const cell = cellOfIndex(room, index)
+    if (tileAt(room, cell) === 'shadow') won.push(cell)
+  }
+  return won
+}
+
 /** Whether lamp `i` is still burning, in a `World.lamps` mask. */
 export function lampOn(mask: number, i: number): boolean {
   return (mask & (1 << i)) !== 0

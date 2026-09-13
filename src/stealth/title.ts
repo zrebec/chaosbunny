@@ -23,10 +23,21 @@ import {
   C, createLayerCache, drawBitmap, drawBitmapAttrs, drawBlinkingText, drawChar, drawText, drawTextCentered,
   parseSCR, refreshLayer, type LayerCache,
 } from 'zx-kit'
+import type { AYChannel } from 'zx-kit'
 import { CHAOSBUNNY_STEALTH_LOADING_SCR } from '../art/zx/chaosbunny-stealth-loading.js'
 import { loadStateAt, screenRowOfMemoryRow, type LoadPhase } from './loader.js'
+import { channelMix } from './music.js'
 import { SOUND_BENCH } from './sound.js'
 import type { Strings } from './strings.js'
+
+/**
+ * The bench's voice keys, in the order `str.voiceNames` names them. F, G and H sit
+ * together on the row and none of them is spoken for: the sounds take the digits,
+ * `M` the hum, `J` all the voices back, and `H` only opens the rules from the picture.
+ */
+export const VOICE_KEYS: ReadonlyArray<readonly [key: string, channel: AYChannel]> = [
+  ['F', 'A'], ['G', 'B'], ['H', 'C'],
+]
 
 export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound' | 'rules'
 
@@ -64,21 +75,78 @@ function rows(ctx: CanvasRenderingContext2D, layer: LayerCache, y: number, h: nu
 }
 
 /**
- * The Spectrum border, played by the page behind the canvas: wide red and cyan
- * bands for the pilot tone, thin blue and yellow ones for the data, black otherwise.
+ * What the border says when the room answers. A Spectrum game flashed the border
+ * because it was the one thing it could change in a single frame without touching
+ * the screen — and this game needs exactly that: a signal that reaches a player who
+ * is looking at his own rabbit rather than at the fox.
  */
-export function setBorder(phase: LoadPhase | null, now: number): void {
+export type BorderFlash = 'spotted' | 'caught' | 'won'
+
+const FLASH_COLOUR: Readonly<Record<BorderFlash, string>> = {
+  spotted: '#CDCD00',
+  caught: '#CD0000',
+  won: '#00CD00',
+}
+
+/** Long enough to register, short enough not to be a light show. */
+export const FLASH_MS = 120
+
+/** The border has one owner. A flash wins over the loading stripes while it lasts. */
+let flashColour: string | null = null
+let flashTimer: ReturnType<typeof setTimeout> | null = null
+let loadPhase: LoadPhase | null = null
+let phaseNow = 0
+
+function paintBorder(): void {
+  if (typeof document === 'undefined') return // headless: the tests import this module
   const style = document.body.style
-  if (phase === 'pilot') {
+  if (flashColour) {
+    style.background = flashColour
+    style.backgroundPosition = ''
+  } else if (loadPhase === 'pilot') {
     style.background = 'repeating-linear-gradient(0deg, #CD0000 0 12px, #00CDCD 12px 24px)'
-    style.backgroundPosition = `0 ${Math.floor(now / 8) % 24}px`
-  } else if (phase === 'pixels' || phase === 'attrs') {
+    style.backgroundPosition = `0 ${Math.floor(phaseNow / 8) % 24}px`
+  } else if (loadPhase === 'pixels' || loadPhase === 'attrs') {
     style.background = 'repeating-linear-gradient(0deg, #0000CD 0 3px, #CDCD00 3px 5px, #0000CD 5px 9px, #CDCD00 9px 10px)'
-    style.backgroundPosition = `0 ${Math.floor(now / 3) % 10}px`
+    style.backgroundPosition = `0 ${Math.floor(phaseNow / 3) % 10}px`
   } else {
     style.background = ''
     style.backgroundPosition = ''
   }
+}
+
+/**
+ * The Spectrum border, played by the page behind the canvas: wide red and cyan
+ * bands for the pilot tone, thin blue and yellow ones for the data, black otherwise.
+ */
+export function setBorder(phase: LoadPhase | null, now: number): void {
+  loadPhase = phase
+  phaseNow = now
+  paintBorder()
+}
+
+/**
+ * One short colour in the border. Paints at once and clears itself, so it works in
+ * the play phase — where nothing calls {@link setBorder} every frame — without the
+ * game having to carry a border clock of its own.
+ */
+export function flashBorder(what: BorderFlash, ms = FLASH_MS): void {
+  flashColour = FLASH_COLOUR[what]
+  paintBorder()
+  if (flashTimer) clearTimeout(flashTimer)
+  flashTimer = setTimeout(() => {
+    flashTimer = null
+    flashColour = null
+    paintBorder()
+  }, ms)
+}
+
+/** Drops a flash still in flight — leaving a room must not carry its colour along. */
+export function clearBorderFlash(): void {
+  if (flashTimer) clearTimeout(flashTimer)
+  flashTimer = null
+  flashColour = null
+  paintBorder()
 }
 
 export function renderTitle(
@@ -119,6 +187,13 @@ export function renderTitle(
       const x = i % 2 === 0 ? 16 : 136
       const y = 40 + Math.floor(i / 2) * 16
       drawText(ctx, `${sound.key} ${str.soundNames[i] ?? ''}`, x, y, C.B_WHITE, C.BLACK)
+    })
+    // The three voices of the hum, each on its own key: a muted one is drawn dim, so
+    // the row is also the answer to "which of these am I listening to".
+    const mix = channelMix()
+    VOICE_KEYS.forEach(([key, ch], i) => {
+      const on = (mix[ch] ?? 0) > 0
+      drawText(ctx, `${key} ${str.voiceNames[i] ?? ''}`, 16 + i * 80, 148, on ? C.B_CYAN : C.BLUE, C.BLACK)
     })
     drawTextCentered(ctx, str.soundHint, 168, 32, C.WHITE, C.BLACK)
     return

@@ -10,6 +10,13 @@
  * This is the guarantee Minefield gives its fields, applied to a stealth room: a
  * room that ships has a solution, and a test says so.
  *
+ * Both searches take an optional `from` — the world to start looking at, instead of
+ * the room's own start. Every room test calls them without it and is untouched, which
+ * is the proof that adding it moved nothing. What it buys is advice from a position
+ * already played into: the first two rooms show the player the next best move (`guide.ts`), and
+ * that has to keep working after he has wandered off the shortest way. Answering
+ * "what now" is the same question as "what from the start", asked from where he is.
+ *
  * One pruning, on by default: a carrot thrown where no fox or bat hears it is skipped.
  * They react only to a carrot *landing*, never to one lying on the floor, so such a
  * throw just moves the carrot — the same beat as waiting with it in hand, plus a
@@ -84,7 +91,7 @@ export function actionsFor(throws: boolean, ears: boolean): Action[] {
  * A bucket queue over sightings (each beat adds 0 or more), so the first way out
  * found is one with the fewest. Beats are not minimised here; that is {@link solve}.
  */
-export function fewestSightings(room: Room, options: SolveOptions = {}): number | null {
+export function fewestSightings(room: Room, options: SolveOptions = {}, from?: World): number | null {
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
@@ -92,7 +99,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
   const keepGrates = options.levers === false
   const keepDry = options.wade === false
   const darkOnly = options.lampsOut === true
-  const start = startWorld(room)
+  const start = from ?? startWorld(room)
   const cost = new Map<string, number>([[worldKey(start), 0]])
   const buckets: World[][] = [[start]]
   for (let q = 0; q < buckets.length; q++) {
@@ -132,7 +139,7 @@ export function fewestSightings(room: Room, options: SolveOptions = {}): number 
  * than a plain breadth-first walk — the first way out it reaches is the one the game's
  * own beat counter, and therefore `par` and every record, will agree with.
  */
-export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
+export function solve(room: Room, options: SolveOptions = {}, from?: World): Action[] | null {
   const actions = actionsFor(options.throws ?? true, options.ears ?? true)
   const maxStates = options.maxStates ?? 500_000
   const prune = options.prune ?? true
@@ -140,7 +147,7 @@ export function solve(room: Room, options: SolveOptions = {}): Action[] | null {
   const keepGrates = options.levers === false
   const keepDry = options.wade === false
   const darkOnly = options.lampsOut === true
-  const start = startWorld(room)
+  const start = from ?? startWorld(room)
   const parent = new Map<string, { prev: string; action: Action } | null>([[worldKey(start), null]])
   const cost = new Map<string, number>([[worldKey(start), 0]])
   const buckets: World[][] = [[start]]

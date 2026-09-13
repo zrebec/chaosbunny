@@ -1185,3 +1185,49 @@ Add debug toggles:
 
 The debug overlay must make it obvious when AABB overlaps but pixel masks do not. That is the main proof that chaosBunny is truly pixel-perfect.
 
+
+---
+
+# Tile-stealth — poznámky (2026-09-13)
+
+> Táto sekcia je po slovensky zámerne: sú to majiteľove pracovné poznámky, nie
+> špecifikácia. Doterajší obsah tohto súboru je pôvodný brief **platformera** a
+> stealth hry sa netýka.
+
+## ⚠️ Najprv si prečítaj `RULES.md`
+
+`RULES.md` v koreni tohto repa je zoznam vecí, ktoré **nesmieš prepísať** bez
+výslovného súhlasu majiteľa — konštanty rulebooku, id izieb, determinizmus
+`beat()`. Osemnásť izieb má `par` dokázaný solverom a pripnutý v testoch, takže
+väčšina „drobných vylepšení" v pravidlách prepíše všetkých osemnásť naraz, a
+väčšinou ticho.
+
+`tests/stealth/rulebook.tests.ts` to drží a pri páde hlasno povie, čo sa rozbilo.
+
+## Nápad na skóre a odomykanie (majiteľ, 2026-09-13) — NEIMPLEMENTOVANÉ
+
+Zapísané na diskusiu. **Nerobiť, kým to majiteľ nepovie.**
+
+Dve varianty, majiteľ sám označil prvú za slabšiu:
+
+1. **Kódy do ďalšej izby.** Po každej izbe sa ukáže kód, ktorým sa dá vstúpiť do
+   ľubovoľnej izby. (Autentické pre éru, ale nič nemeria.)
+2. **Skóre + save (preferovaná).** Odomknuté sú len izby, ktoré si už prešiel.
+   Bodovanie:
+   - dosiahnutý **solverov `par`** = **1000 bodov**,
+   - každý **beat navyše** = **−50 bodov**.
+
+   Po chytení sa ukáže štatistika: v ktorej izbe, prípadne helper „čo si mal
+   urobiť inak", a koľko skóre je nahrané.
+
+   Otvorená otázka, ktorú majiteľ sám položil: *skončia hráči vôbec v pluse?*
+   Pri pare 35 (izba 11 „Doska") stačí 20 beatov navyše a si na nule.
+
+**Čo už na to existuje:** `records.ts` ukladá rekord aj záznam behu per izba
+(kľúč je `RoomSource.name`), každá izba má pinnutý `par`, a mapa pivnice
+(`cellar.ts`) už kreslí, ktoré izby sú prejdené. Odomykanie by teda bolo
+obmedzenie toho, čo mapa už vie — nie nový stav.
+
+**Pozor pri návrhu:** dnes sa dá do izby skočiť číslicami `1`–`9`, `0` a `[` `]`.
+Ak by odomykanie malo niečo znamenať, tieto klávesy sa musia obmedziť tiež —
+alebo ostať ako vývojárska skratka mimo vydanej verzie.
