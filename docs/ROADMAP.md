@@ -20,8 +20,9 @@ a cellar map that is also the room chooser, a story and an ending, records and r
   `tools/roomgen/` (`npm run roomgen`).
 - What to read: **`docs/stealth-design.md`** — the verb ladder, how a room gets designed
   and what each of them costs. A Slovak copy sits beside it.
-- Where the work is: local branches, newest last, each one a working state. The night's
-  diary with the whole table is `retro/docs/sk/chaosbunny-noc-2026-09-12.md`.
+- Where the work is: local branches, newest last, each one a working state. The nights'
+  diaries with the whole table are `retro/docs/sk/chaosbunny-noc-2026-09-12.md` and
+  `-13.md` (the second night; the room numbers in the first one have since shifted).
 - What a stuck player is told: four rules are said once at the beat they first bite, all
   eleven are on one screen (`H`, from the picture or mid-room), and after three catches
   the room names the verb it cannot be left without — read off the solver by `wants.ts`
