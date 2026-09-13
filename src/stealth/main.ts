@@ -579,6 +579,9 @@ function frame(now: number): void {
   last = now
   const dir = tickMovement(dt) // also polls the gamepad
   const flag = consumeFlag() // F or gamepad A
+  // Read every frame, like the flag, so a press on the title or the map is spent there
+  // rather than eating the first beat of the next room.
+  const wait = consumeDebug() // Ctrl+Shift+B or gamepad Y
   if (toast) {
     toast.ms -= dt
     if (toast.ms <= 0) toast = null
@@ -592,7 +595,7 @@ function frame(now: number): void {
     // written up in `docs/zx-kit-findings.md`; what they buy is a pad that can finish
     // the cellar instead of one that can walk Randy into rooms it cannot get him out of.
     if (consumePause()) request({ kind: 'ears' })
-    if (consumeDebug()) request({ kind: 'wait' })
+    if (wait) request({ kind: 'wait' })
     if (flag) toggleAim()
     if (dir) {
       request(aiming ? { kind: 'throw', dir } : { kind: 'move', dir })
