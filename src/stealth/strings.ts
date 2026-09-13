@@ -273,6 +273,15 @@ const SK: Strings = {
 }
 
 /** Both tongues, for the tests that hold them to the same shape. */
+/**
+ * The rules the game says out loud at the beat they first bite (`main.ts` `hint`), as
+ * against the ones a player only meets on the `H` screen. Named here because two
+ * documents count them in prose and a doc test holds those counts to this list.
+ */
+export const SPOKEN_RULES = [
+  'spottedHint', 'shadowHint', 'lampHint', 'boardHint', 'leverHint', 'batHint', 'waterHint',
+] as const
+
 export const LOCALES = { en: EN, sk: SK } as const
 
 export const STR: Strings = pickLocale(EN, { sk: SK }, LANGUAGE_CODE)

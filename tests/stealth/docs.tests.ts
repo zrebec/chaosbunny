@@ -4,7 +4,7 @@ import readme from '../../README.md?raw'
 import roadmap from '../../docs/ROADMAP.md?raw'
 import main from '../../src/stealth/main.ts?raw'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
-import { LOCALES } from '../../src/stealth/strings.js'
+import { LOCALES, SPOKEN_RULES } from '../../src/stealth/strings.js'
 import type { Want } from '../../src/stealth/wants.js'
 
 /**
@@ -87,6 +87,28 @@ describe('the design doc tally of what rooms want', () => {
       `the ears down in ${n('dark')} rooms, a carrot in ${n('carrot')}, a lamp out in ${n('lampOut')}, the lever in\n` +
       `   ${n('lever')}, wet feet in ${n('water')}, and nothing but timing in ${timing}`
     expect(designDoc, `${DOC} should say: ${sentence.replace(/\n +/, ' ')}`).toContain(sentence)
+  })
+})
+
+/**
+ * Both documents count, in prose, how many rules the game says out loud at the beat they
+ * bite. That number went from four to seven in one morning and both documents said four,
+ * then one of them said six because the lever's line was forgotten in the counting. It is
+ * derivable — every one of them is a `…Hint` string — so it is derived.
+ */
+describe('the documents that count the spoken rules', () => {
+  const spoken = SPOKEN_RULES.length
+
+  it('names only strings that exist', () => {
+    for (const key of SPOKEN_RULES) expect(LOCALES.en[key], `${key} is not a string any more`).toBeTruthy()
+  })
+
+  it.each([['README.md', readme], [DOC, designDoc]])('%s says how many rules the game speaks', (file, text) => {
+    const counts = [...text.matchAll(/(\w+) (?:rules the rooms rely on|of them are now said)/g)]
+      .map((m) => WORDS.indexOf(m[1]!.toLowerCase()))
+      .filter((n) => n > 0)
+    expect(counts.length, `${file} should count the spoken rules`).toBeGreaterThan(0)
+    for (const n of counts) expect(n, `${file}: says ${WORDS[n]}, there are ${spoken}`).toBe(spoken)
   })
 })
 
