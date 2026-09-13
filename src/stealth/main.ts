@@ -283,15 +283,10 @@ function goToRoom(i: number): void {
   room = ROOMS[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
-  hinted.spotted = false
-  hinted.shadow = false
-  hinted.crate = false
-  hinted.carrot = false
-  hinted.lamp = false
-  hinted.board = false
-  hinted.lever = false
-  hinted.bat = false
-  hinted.water = false
+  // The hints are *not* reset here. They were, once per room, which read as helpful and
+  // is not: nine rules times eighteen rooms is a hundred and sixty chances to be told
+  // something you already know, and a plank room entered five times said the same
+  // sentence five times. A rule is learned once; `H` is there for the rest.
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
   say(roomLabel(STR, roomIndex))
 }
