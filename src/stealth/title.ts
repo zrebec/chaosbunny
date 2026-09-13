@@ -30,6 +30,15 @@ import type { Strings } from './strings.js'
 
 export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound' | 'rules'
 
+/**
+ * Where the rules screen starts and how far apart its lines sit, and the row its "back"
+ * footer keeps. Named because a rule was added and the last line landed on the footer:
+ * `tests/stealth/strings.tests.ts` now does the arithmetic before a player has to.
+ */
+export const RULES_TOP = 40
+export const RULES_STEP = 11
+export const RULES_FOOTER = 176
+
 export interface Title {
   /** The bitmap alone, white ink on black paper — what a screen shows before its attributes arrive. */
   readonly mono: LayerCache
@@ -98,8 +107,10 @@ export function renderTitle(
   }
   if (mode === 'rules') {
     drawTextCentered(ctx, str.rulesTitle, 16, 32, C.B_CYAN, C.BLACK)
-    str.rules.forEach((line, i) => drawTextCentered(ctx, line, 40 + i * 12, 32, C.B_WHITE, C.BLACK))
-    drawTextCentered(ctx, str.soundHint.split(' - ').at(-1) ?? 'ESC', 176, 32, C.WHITE, C.BLACK)
+    // Eleven columns a line, not twelve: the twelfth rule arrived and at twelve the last
+    // one sat on the ESC footer. `tests/stealth/strings.tests.ts` holds the arithmetic.
+    str.rules.forEach((line, i) => drawTextCentered(ctx, line, RULES_TOP + i * RULES_STEP, 32, C.B_WHITE, C.BLACK))
+    drawTextCentered(ctx, str.soundHint.split(' - ').at(-1) ?? 'ESC', RULES_FOOTER, 32, C.WHITE, C.BLACK)
     return
   }
   if (mode === 'sound') {

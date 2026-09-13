@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { RULES_FOOTER, RULES_STEP, RULES_TOP } from '../../src/stealth/title.js'
 import { LOCALES, roomLabel, STR, type Strings } from '../../src/stealth/strings.js'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 
@@ -70,5 +71,23 @@ describe('the cellar has names', () => {
 
   it('falls back to the number when a room has outgrown the names', () => {
     expect(roomLabel(STR, 99)).toBe(STR.roomToast(100))
+  })
+})
+
+/**
+ * The rules screen is the one place every rule is written down, so it grows whenever the
+ * game learns to say something new — and it grew tonight, from eleven lines to twelve.
+ * At the old spacing the twelfth sat on top of the "back" footer. Nothing would have
+ * failed; it would just have looked broken to the one player who opened it while stuck.
+ */
+describe('the rules screen fits on the screen', () => {
+  it.each(Object.entries(LOCALES))('%s: the last rule clears the footer', (_lang, str) => {
+    const bottom = RULES_TOP + (str.rules.length - 1) * RULES_STEP + 8 // 8 rows a glyph
+    expect(bottom, `${str.rules.length} rules reach row ${bottom}, the footer is at ${RULES_FOOTER}`)
+      .toBeLessThanOrEqual(RULES_FOOTER - 4)
+  })
+
+  it('says the same number of rules in both tongues', () => {
+    expect(LOCALES.sk.rules.length).toBe(LOCALES.en.rules.length)
   })
 })
