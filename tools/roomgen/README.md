@@ -68,6 +68,25 @@ been passing every shape for nothing.
    path** — see `room07.tests.ts`.
 4. If the tool found a piece the room does not need (a guard that changes no number),
    take it out. A guard the player must respect while the room does not need it is a lie.
+   `tests/stealth/guards.tests.ts` and `carrots.tests.ts` now ask this of every fox, bat
+   and carrot in the cellar, so it is checked rather than remembered.
+
+   **Terrain is exempt, on purpose.** Auditing it the same way finds idle shadow or
+   crates in seven rooms — patches no best line ever touches, changing neither par, nor
+   the fairness number, nor what the room wants. Leave them. A guard or a carrot demands
+   the player's attention and can point him at a plan that cannot work; a shadow patch is
+   scenery that is either useful or not, and having more of it never costs him a beat or
+   a wrong idea. It also buys something: `room1b` has shadow nothing forces you to use,
+   precisely so that the room which *does* force it is not also the room introducing it
+   (`tests/stealth/teaching.tests.ts`). An audit that "cleaned up" idle terrain would
+   delete that on sight.
+
+   Two warnings from running these audits, both about the ablation being too coarse:
+   - "does it change par or the fairness number" misses a piece on a **fork's other
+     way**. Room16's guard passes that test and still prices nothing; room14's plank
+     fails it and is load-bearing. Ask the other way's price too.
+   - a piece can change **what the room wants** without changing a number. Room03's
+     crates are the only reason its ears are needed, and par is the same without them.
 
 ## Checking the game agrees with the solver
 
