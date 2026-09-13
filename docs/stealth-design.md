@@ -284,6 +284,17 @@ Two things came of measuring it, both in the tool rather than in the shipped roo
 Both are for the *next* cellar. Redrawing the eighteen that exist would move every wall
 a player has already learned, and the numbers say the rooms are honest — only thin.
 
+And a warning that came with the knob, which is the reason to write any of this down:
+**a fuller room is a less fair room.** Six hundred seeds of `BIG=1 MIN_FLOOR=48` kept
+seven rooms, floor 49 to 56, par 22 to 28 — and every single one forces two sightings,
+the ladder's cap. The same search without `BIG` puts rooms with a *clean sneak* at the
+top of the list. It is obvious once seen: a bigger chamber is a longer sightline, and
+the cells you gain are cells a fox can watch. So density is not free design polish; it
+is a trade against the one number this game promises. A second cellar built on fuller
+rooms would have to buy the fairness back with something — more cover, shorter cones, or
+guards whose loops leave the room genuinely empty for a while, which is the timing spine
+above. The seeds are in `tools/roomgen/out/` if it is worth trying.
+
 Three of the ideas below are now built — kept in the table with what they actually cost,
 so the next estimate has something to stand on. Water, the fourth, outgrew the table and
 has the section above to itself.
