@@ -121,6 +121,13 @@ browser-test dependency and does not need one for this). What it has to get righ
 - **Pacing:** one key per beat with ~450 ms between them. The game buffers a single
   keypress during the ~150 ms tween, so faster than that silently drops beats and the
   run desynchronises three rooms later.
+- **Arrows sometimes do nothing at all.** Steps do not come from the keydown handler;
+  they come from zx-kit's `tickMovement`, read once a frame from the *held* keys. A
+  driver's instant down-and-up can fall between two frames, and then the whole run sits
+  at beat 0 with no error anywhere. Hold each arrow across a frame — `down`, ~120 ms,
+  `up` — rather than pressing it. Letter keys are on `keydown` and do not have this
+  problem, which is what makes the failure so confusing: the room changes, the ears
+  toggle, and only walking is silently ignored.
 - **Reading the answer:** the win banner is drawn *after* the dim overlay, so pure green
   (`0,255,0`) in the nine pixel rows at y=56 is the banner and nothing else — a door
   tile in the same rows has been dimmed and no longer matches. Counting green over the
