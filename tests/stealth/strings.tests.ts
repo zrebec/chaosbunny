@@ -22,12 +22,17 @@ function lines(s: Strings): [string, string][] {
 }
 
 describe('the strings', () => {
-  it('all fit the 32 columns of the screen', () => {
-    for (const [name, line] of lines(STR)) expect(line.length, `${name}: "${line}"`).toBeLessThanOrEqual(32)
+  // Both tongues, not just the one the tests happen to pick: a line is only as wide as
+  // its longest translation, and the untested half is where an overlong line hides.
+  const every = Object.entries(LOCALES).flatMap(([code, s]) =>
+    lines(s).map(([name, line]) => [`${code}.${name}`, line] as [string, string]))
+
+  it('all fit the 32 columns of the screen, in both tongues', () => {
+    for (const [name, line] of every) expect(line.length, `${name}: "${line}"`).toBeLessThanOrEqual(32)
   })
 
   it('use only glyphs the ROM font has — ASCII, no diacritics', () => {
-    for (const [name, line] of lines(STR)) expect(/^[\x20-\x7e]*$/.test(line), `${name}: "${line}"`).toBe(true)
+    for (const [name, line] of every) expect(/^[\x20-\x7e]*$/.test(line), `${name}: "${line}"`).toBe(true)
   })
 
   it('says nothing twice: each key has its own line', () => {
