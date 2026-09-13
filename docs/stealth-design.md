@@ -41,7 +41,7 @@ either cannot be finished or collapses to something much shorter.
 | 10 | the plank | **the creaky board**: a noise the ears cannot hide | wall the plank off: no way out; plain floor: par 21 against 35 |
 | 11 | the handle | **a lever and a grate**: a switch that changes the room elsewhere | wall the grate up: no way out; open from the start: par 13 against 27 |
 | 12 | the long way round | **two gates on one route**: a grate and a plank | wall the grate up: no way out; silent floor: par 21 against 28 |
-| 13 | the wade | **water**: two beats a cell, and no fox will follow | drained, the room is three beats cheaper; dry, three dearer |
+| 13 | the wade | **water**: two beats a cell, and no fox will follow | drained, the room is three beats cheaper; dry, three dearer — the guard in the alcove, it turns out, prices neither (see its header) |
 | 14 | the flood | **water as the only door**: not a choice but a tax with teeth | keep his feet dry: no way out; drained, the room is four beats cheaper |
 | 15 | the fork | **a decision**: two ways to the door, one carrot | both ways are real and two beats apart, and the carrot is needed either way |
 | 16 | the roost | **a bat over the lamp room**: dark is no help against ears | without the bat, par 24 against 33 |
