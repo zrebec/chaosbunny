@@ -79,6 +79,10 @@ export interface Strings {
    * lit shadow is not a shadow, and it is the one rule that looks like a bug.
    */
   readonly lampHint: string
+  /** The first plank he stands on: the creak is a sound the player cannot see. */
+  readonly boardHint: string
+  /** The first handle he works: iron, and the guard is listening. */
+  readonly leverHint: string
   /** Said once, the first time a roosting bat is close enough to hear him walk. */
   readonly batHint: string
   /** Said once, the first time he puts a foot in the water. */
@@ -170,6 +174,8 @@ const EN: Strings = {
   spottedHint: 'SPOTTED - HIDE THIS BEAT',
   shadowHint: 'THE DARK HIDES EARS DOWN ONLY',
   lampHint: 'A LIT SHADOW HIDES NOBODY',
+  boardHint: 'A BOARD CREAKS EITHER WAY',
+  leverHint: 'THE HANDLE IS HEARD TOO',
   batHint: 'THE BAT HEARS EARS-UP STEPS',
   waterHint: 'WADING COSTS TWO BEATS A STEP',
   roomToast: (n) => `ROOM ${n}`,
@@ -257,6 +263,8 @@ const SK: Strings = {
   spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
   shadowHint: 'TIEN SKRYJE LEN SKLOPENE USI',
   lampHint: 'OSVETLENY TIEN NESKRYJE NIKOHO',
+  boardHint: 'DOSKA VRZGNE TAK CI TAK',
+  leverHint: 'PAKU TIEZ POCUT',
   batHint: 'NETOPIER POCUJE KROKY S USAMI',
   waterHint: 'BRODENIE STOJI DVA BEATY',
   roomToast: (n) => `MIESTNOST ${n}`,

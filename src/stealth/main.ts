@@ -114,7 +114,7 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
  * The rules the game states nowhere else, each said once per visit to a room, at the
  * moment it first matters. A player who already knows them never sees them twice.
  */
-const hinted = { spotted: false, shadow: false, lamp: false, bat: false, water: false }
+const hinted = { spotted: false, shadow: false, lamp: false, board: false, lever: false, bat: false, water: false }
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -181,6 +181,18 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
   if (!caught && !hinted.spotted && world.foxes.some((f) => f.mode === 'suspicious')) {
     hinted.spotted = true
     say(STR.spottedHint)
+    return
+  }
+  // Two sounds the player makes and cannot see: the plank under his own foot and the
+  // handle he just pulled. Both bring a fox, and without a word the fox looks arbitrary.
+  if (!hinted.board && events.some((e) => e.type === 'creak')) {
+    hinted.board = true
+    say(STR.boardHint)
+    return
+  }
+  if (!hinted.lever && events.some((e) => e.type === 'lever')) {
+    hinted.lever = true
+    say(STR.leverHint)
     return
   }
   if (!hinted.water && events.some((e) => e.type === 'wade')) {
@@ -250,6 +262,8 @@ function goToRoom(i: number): void {
   hinted.spotted = false
   hinted.shadow = false
   hinted.lamp = false
+  hinted.board = false
+  hinted.lever = false
   hinted.bat = false
   hinted.water = false
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape
