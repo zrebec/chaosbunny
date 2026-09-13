@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { parseRoom } from '../../src/stealth/room.js'
-import { wantsOf, WANTS } from '../../src/stealth/wants.js'
+import { wantsOf, offersChoice, WANTS } from '../../src/stealth/wants.js'
 import { LOCALES } from '../../src/stealth/strings.js'
 
 /**
@@ -27,9 +27,17 @@ describe('what each room says it wants', () => {
     expect(ROOM_SOURCES.some((src) => (src.wants ?? []).length === 0)).toBe(true)
   })
 
+  it.each(ROOM_SOURCES.map((src) => [src.name, src] as const))('%s says truthfully whether it offers a choice', (_name, src) => {
+    expect(src.choice ?? false).toBe(offersChoice(parseRoom(src)))
+  }, 30_000)
+
+  it('has at least one room that offers a choice and wants nothing, or the line is dead', () => {
+    expect(ROOM_SOURCES.some((s) => s.choice && (s.wants ?? []).length === 0)).toBe(true)
+  })
+
   it('has a sentence for every want, in both tongues, inside the 32 columns', () => {
     for (const locale of Object.values(LOCALES)) {
-      for (const want of [...WANTS, 'none' as const]) {
+      for (const want of [...WANTS, 'none' as const, 'choice' as const]) {
         const line = locale.wants[want]
         expect(line, `${want} has no line`).toBeTruthy()
         expect(line.length, `${line} is ${line.length} columns`).toBeLessThanOrEqual(32)

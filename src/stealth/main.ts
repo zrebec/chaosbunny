@@ -244,7 +244,10 @@ function nudge(): string | null {
   const caught = caughtIn.get(room.name) ?? 0
   if (caught < NUDGE_AFTER) return null
   const wants = room.wants
-  if (wants.length === 0) return STR.wants.none
+  // A room that asks for no tool is usually about timing — but two of them are about
+  // picking a route instead, and saying "timing" there would be the one wrong thing the
+  // nudge can say (`wants.ts` `offersChoice`).
+  if (wants.length === 0) return room.choice ? STR.wants.choice : STR.wants.none
   return STR.wants[wants[(caught - NUDGE_AFTER) % wants.length]!]
 }
 

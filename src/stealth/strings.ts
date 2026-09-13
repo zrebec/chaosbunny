@@ -23,7 +23,7 @@ export interface Strings {
    * room cannot be left without (`wants.ts`), or `none` for a room that wants no tool
    * at all. One line each, at most 32 columns, and never a step of the way through.
    */
-  readonly wants: Readonly<Record<Want | 'none', string>>
+  readonly wants: Readonly<Record<Want | 'none' | 'choice', string>>
   /** Toast after a beat is taken back. */
   readonly undone: string
   readonly won: string
@@ -99,6 +99,7 @@ const EN: Strings = {
     lever: 'THIS ROOM WANTS THE LEVER',
     water: 'THIS ROOM WANTS WET FEET',
     none: 'THIS ROOM WANTS ONLY TIMING',
+    choice: 'THIS ROOM HAS MORE THAN ONE WAY',
   },
   undone: 'ONE BEAT BACK',
   won: 'SLIPPED OUT',
@@ -185,6 +186,7 @@ const SK: Strings = {
     lever: 'TATO IZBA CHCE PAKU',
     water: 'TATO IZBA CHCE MOKRE NOHY',
     none: 'TATO IZBA CHCE LEN NACASOVANIE',
+    choice: 'TATO IZBA MA VIAC CIEST',
   },
   undone: 'O BEAT SPAT',
   won: 'PREKLZOL SI',

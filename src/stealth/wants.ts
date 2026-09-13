@@ -17,6 +17,7 @@
  * want it does not have, and may not hide one it does.
  */
 import { solve, type SolveOptions } from './solver.js'
+import { beat, startWorld, type Action } from './beat.js'
 import type { Room } from './room.js'
 
 /** A verb a room can be built on. */
@@ -48,4 +49,36 @@ export const WANTS: readonly Want[] = WANT_ABLATIONS.map(([want]) => want)
  */
 export function wantsOf(room: Room): Want[] {
   return WANT_ABLATIONS.filter(([, options]) => solve(room, options) === null).map(([want]) => want)
+}
+
+/** The beats a plan actually spends — not its length, since a wade costs two. */
+function beatsOf(room: Room, plan: readonly Action[]): number {
+  let world = startWorld(room)
+  for (const action of plan) world = beat(room, world, action).world
+  return world.beats
+}
+
+/**
+ * Whether the room has a **second way through at a different price**.
+ *
+ * A room that wants nothing is usually a room about timing, and the nudge says so. But
+ * two of them are not: the wade and the fork each offer a way that is real and dearer,
+ * and telling a player stuck on one of those that the room "wants only timing" is the
+ * one thing the nudge is built never to do — say something untrue. So the same
+ * ablations are asked a second question: is any of them still winnable, but for a
+ * different number of beats? If so, the room is a choice, and that is what it says.
+ *
+ * `lampsOut` joins the list here though it is no want: "leave every lamp dark" is how
+ * the fork's other way is priced, and without it the fork looks like a room with one
+ * answer.
+ */
+export function offersChoice(room: Room): boolean {
+  const best = solve(room)
+  if (!best) return false
+  const par = beatsOf(room, best)
+  const options: SolveOptions[] = [...WANT_ABLATIONS.map(([, o]) => o), { lampsOut: true }]
+  return options.some((o) => {
+    const other = solve(room, o)
+    return other !== null && beatsOf(room, other) !== par
+  })
 }

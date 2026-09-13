@@ -76,6 +76,12 @@ export interface RoomSource {
    * no tool at all, only timing, which is itself worth telling him.
    */
   readonly wants?: readonly Want[]
+  /**
+   * True when the room has a second way through at a different price (`wants.ts`
+   * `offersChoice`). Only ever read for a room that wants nothing: such a room is
+   * usually about timing, and these two are not.
+   */
+  readonly choice?: boolean
 }
 
 export interface Patrol {
@@ -114,6 +120,8 @@ export interface Room {
   readonly grates: readonly Cell[]
   /** See {@link RoomSource.wants}. */
   readonly wants: readonly Want[]
+  /** See {@link RoomSource.choice}. */
+  readonly choice: boolean
 }
 
 /** Lamps a room may hold: one bit each in `World.lamps`, and more than a few would be a lit room. */
@@ -271,5 +279,5 @@ export function parseRoom(src: RoomSource): Room {
       throw new Error(`${src.name}: bat ${i} shares (${c.x},${c.y}) with another creature`)
     }
   })
-  return { ...base, patrols, bats, lamps, levers, grates, wants: src.wants ?? [] }
+  return { ...base, patrols, bats, lamps, levers, grates, wants: src.wants ?? [], choice: src.choice ?? false }
 }
