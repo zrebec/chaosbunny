@@ -13,7 +13,12 @@
  *   the room costs;
  * - not with the ears kept up;
  * - the guard hears the handle from where it stands;
- * - even the most careful player is noticed twice.
+ * - even the most careful player is noticed twice;
+ * - and there is no carrot in it. The generator left one lying in the east chamber and
+ *   it was kept for a while; asked properly, the solver says it changes nothing — not
+ *   par, not the fairness number, not with it and not without. A carrot a player will
+ *   spend beats fetching and that cannot help him is the same lie as a guard the room
+ *   does not need, so it went. `tests/stealth/carrots.tests.ts` now asks every room.
  *
  * Found with the room generator (`tools/roomgen`, KIND=lever) and kept as it came.
  * Do not write the way through here, in the tests, or in a commit message.
@@ -31,7 +36,7 @@ export const ROOM_09: RoomSource = {
     '#...############',
     '#...############',
     '#...############',
-    '#R..####...c####',
+    '#R..####....####',
     '##s.+s.s....####',
     '##s#######s#####',
     '#...######.D####',
