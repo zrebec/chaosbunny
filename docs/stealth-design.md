@@ -227,14 +227,32 @@ What water actually taught, once it existed:
   twice while Randy moves once, so what actually changes is *when* he arrives. The
   interesting half of water is the patrol phase it shifts, not the beats it spends.
 
-So the candidate for a second cellar is no longer a tile but that clock, used on purpose:
-a cellar where **the guards are on a longer loop than the room is wide**, so a room cannot
-be read in one pass and the question is always "where will it be in six beats", not "can
-it see me now". Nothing new is needed in the rulebook for it — patrols already walk any
-closed loop, and `fewestSightings` already prices the answer. What it would need is a
-generator kind that builds long loops and a way to *show* a loop the player has not walked
-yet, which the ears already half do: with them up you see a fox's next two steps, and a
-cellar built on timing would want that number to be its main dial.
+So the candidate for a second cellar is no longer a tile but that clock, used on purpose.
+And counting the shipped rooms turned that from a hunch into a hole:
+
+> **Of the twenty-five guards in the cellar, five walk — and all five pace a line two
+> cells long.** Everything else stands still or turns on the spot.
+
+That is not a design decision anybody made. It is what the tool grew into: the shape-rolling
+generator made walking patrols, the route planner that replaced it places `watcher`,
+`turner` and `listener`, and every one of those returns a guard with a single waypoint.
+The planner got better at building rooms and quietly stopped building the thing the game
+is *about* — the ears show a fox's next two steps, and in most rooms both of them are the
+cell it is already standing on.
+
+So the planner has a `pace` gate now: the chamber past the corridor gets a guard walking
+its whole perimeter, a ring of six to ten cells, and the ablation is the obvious one —
+stand it still on the first cell of its round and the room must get at least three beats
+cheaper, or the walking was scenery. Two rooms out of fifteen hundred seeds pass that and
+the fairness cap together (par 18 and par 28, each forcing two sightings), which is few,
+and the reason is worth writing down: **a walking guard is hard to build a room around
+because it is the only piece that cannot be waited out.** A standing cone has a shape you
+can learn in one look; a loop has a phase, and a room where the phase is wrong when you
+arrive has no answer at all rather than a slow one. That is exactly why a cellar built on
+it would feel different — and exactly why its rooms have to be found, not drawn.
+
+Nothing else in the rulebook is needed: patrols already walk any closed loop and
+`fewestSightings` already prices the answer.
 
 Three of the ideas below are now built — kept in the table with what they actually cost,
 so the next estimate has something to stand on. Water, the fourth, outgrew the table and

@@ -31,8 +31,6 @@ interface Rect { x: number; y: number; w: number; h: number }
 type Grid = string[][]
 
 const at = (g: Grid, c: Cell): string => g[c.y]?.[c.x] ?? '#'
-/** The same, under a name the `pace` gate can use where `at` is a corridor index. */
-const at2 = at
 const put = (g: Grid, c: Cell, ch: string): void => { g[c.y]![c.x] = ch }
 const inside = (c: Cell): boolean => c.x > 0 && c.y > 0 && c.x < W - 1 && c.y < H - 1
 
@@ -374,7 +372,7 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
   const src = (): RoomSource => ({ name: `route${seed}`, rows: rowsOf(), patrols: [], carrots: 1 })
 
   /** Puts one gate on one corridor. False when this shape cannot carry that gate. */
-  const dress = (gate: Gate, corridor: readonly Cell[], cell: Cell, at = -1): boolean => {
+  const dress = (gate: Gate, corridor: readonly Cell[], cell: Cell, index = -1): boolean => {
     if (gate === 'open') return true // a way with nothing on it is still a way
     if (gate === 'grate') {
       put(g, cell, '+')
@@ -436,14 +434,17 @@ export function generateRoute(seed: number, opts: RouteOptions): Candidate | nul
       // a fox's next two steps) has almost nothing to read. This gate hands the chamber
       // on the far side of the corridor a guard walking its whole perimeter: a loop of
       // eight or ten cells, long enough that the room cannot be read in one glance.
-      const rect = rooms[at + 1]
-      if (!rect || rect.w < 3 || rect.h < 3) return false
+      const rect = rooms[index + 1]
+      // A ring of six cells or more. A 2-high chamber's ring is the whole chamber, which
+      // is still a loop and still takes six beats to come round — the point is that the
+      // guard is somewhere else in four beats' time, not that the circuit is grand.
+      if (!rect || rect.w < 3 || rect.h < 2 || 2 * (rect.w + rect.h - 2) < 6) return false
       const ring: Cell[] = []
       for (let x = rect.x; x < rect.x + rect.w; x++) ring.push({ x, y: rect.y })
       for (let y = rect.y + 1; y < rect.y + rect.h; y++) ring.push({ x: rect.x + rect.w - 1, y })
       for (let x = rect.x + rect.w - 2; x >= rect.x; x--) ring.push({ x, y: rect.y + rect.h - 1 })
       for (let y = rect.y + rect.h - 2; y > rect.y; y--) ring.push({ x: rect.x, y })
-      if (ring.some((c) => at2(g, c) !== '.' || taken.has(`${c.x},${c.y}`))) return false
+      if (ring.some((c) => at(g, c) !== '.' || taken.has(`${c.x},${c.y}`))) return false
       const corners: Array<[number, number]> = [
         [rect.x, rect.y], [rect.x + rect.w - 1, rect.y],
         [rect.x + rect.w - 1, rect.y + rect.h - 1], [rect.x, rect.y + rect.h - 1],
