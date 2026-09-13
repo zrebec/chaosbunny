@@ -73,6 +73,12 @@ export interface Strings {
   readonly spottedHint: string
   /** Said once, the first time Randy stands in the dark with his ears up. */
   readonly shadowHint: string
+  /**
+   * The first time he does the right thing and it does not work: ears down, standing in
+   * shadow, and a lamp is lighting that very cell. Nothing else in the game says that a
+   * lit shadow is not a shadow, and it is the one rule that looks like a bug.
+   */
+  readonly lampHint: string
   /** Said once, the first time a roosting bat is close enough to hear him walk. */
   readonly batHint: string
   /** Said once, the first time he puts a foot in the water. */
@@ -163,6 +169,7 @@ const EN: Strings = {
   ],
   spottedHint: 'SPOTTED - HIDE THIS BEAT',
   shadowHint: 'THE DARK HIDES EARS DOWN ONLY',
+  lampHint: 'A LIT SHADOW HIDES NOBODY',
   batHint: 'THE BAT HEARS EARS-UP STEPS',
   waterHint: 'WADING COSTS TWO BEATS A STEP',
   roomToast: (n) => `ROOM ${n}`,
@@ -249,6 +256,7 @@ const SK: Strings = {
   ],
   spottedHint: 'VSIMOL SI TA - SKRY SA HNED',
   shadowHint: 'TIEN SKRYJE LEN SKLOPENE USI',
+  lampHint: 'OSVETLENY TIEN NESKRYJE NIKOHO',
   batHint: 'NETOPIER POCUJE KROKY S USAMI',
   waterHint: 'BRODENIE STOJI DVA BEATY',
   roomToast: (n) => `MIESTNOST ${n}`,

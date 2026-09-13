@@ -40,6 +40,7 @@ import { ensureAudio } from '../audio/sfx.js'
 import { BAT_HEARING } from './bat.js'
 import { beat, startWorld, type Action, type BeatEvent, type World } from './beat.js'
 import { manhattan } from './grid.js'
+import { cellIndex, litCells } from './light.js'
 import { musicOn, pauseMusic, startMusic, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
@@ -113,7 +114,7 @@ let replay: { actions: readonly Action[]; next: number; waitMs: number; holdMs: 
  * The rules the game states nowhere else, each said once per visit to a room, at the
  * moment it first matters. A player who already knows them never sees them twice.
  */
-const hinted = { spotted: false, shadow: false, bat: false, water: false }
+const hinted = { spotted: false, shadow: false, lamp: false, bat: false, water: false }
 /** The room the map's arrows are resting on. */
 let mapPick = 0
 /** Set when the map is showing the last cellar just escaped: leaving it is the ending. */
@@ -160,6 +161,11 @@ function say(text: string): void {
  * player a room: being noticed is a warning, not a capture. The other two are the
  * things a player can stand in the middle of without being told: the dark only hides
  * lowered ears, and a bat hears the ones that are up.
+ *
+ * The lamp one is the odd member and the most important. The other three fire when the
+ * player has *not* done the thing; this one fires when he has — ears down, standing in
+ * shadow — and it is not working, because a lamp is lighting that very cell. That is the
+ * only rule in the cellar that looks like a bug from the inside.
  */
 function hint(world: World, events: readonly BeatEvent[]): void {
   const randy = world.randy
@@ -176,6 +182,12 @@ function hint(world: World, events: readonly BeatEvent[]): void {
   if (!hinted.shadow && !randy.earsDown && tileAt(room, randy.cell) === 'shadow') {
     hinted.shadow = true
     say(STR.shadowHint)
+    return
+  }
+  if (!hinted.lamp && randy.earsDown && tileAt(room, randy.cell) === 'shadow'
+    && litCells(room, world.lamps).has(cellIndex(room, randy.cell))) {
+    hinted.lamp = true
+    say(STR.lampHint)
     return
   }
   const heard = world.bats.some((b) => b.mode === 'roost' && manhattan(b.cell, randy.cell) <= BAT_HEARING)
@@ -228,6 +240,7 @@ function goToRoom(i: number): void {
   restart()
   hinted.spotted = false
   hinted.shadow = false
+  hinted.lamp = false
   hinted.bat = false
   hinted.water = false
   if (musicOn()) startMusic() // a room is where the hum belongs; the title has the tape

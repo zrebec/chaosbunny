@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 import { beat, startWorld, throwAt, type World } from '../../src/stealth/beat.js'
 import { allLampsOn, cellIndex, lampOn, litCells, LAMP_REACH } from '../../src/stealth/light.js'
 import { foxCanEnter, parseRoom, randyCanEnter, tileAt, ROOM_COLS, ROOM_ROWS, type Room } from '../../src/stealth/room.js'
@@ -176,5 +177,24 @@ describe('the two halves of a plan', () => {
   it('leaves a room without lamps able to win either way — there is nothing to put out', () => {
     const plain = testRoom(['#R.....D########', '#..............#'])
     expect(solve(plain, { lampsOut: true })?.length).toBe(solve(plain)?.length)
+  })
+})
+
+/**
+ * The lit-shadow hint (`main.ts`) fires when Randy is standing, ears down, on a shadow
+ * cell a lamp is lighting — the one rule in the cellar that looks like a bug from the
+ * inside, because he has done the right thing and it is not working. A hint whose
+ * situation no room contains is dead code, and nothing else would notice.
+ */
+describe('the situation the lit-shadow hint is written for', () => {
+  it('exists in the cellar: some room has a shadow cell a lamp lights', () => {
+    const lit = ROOM_SOURCES.map(parseRoom).filter((room) => room.lamps.length > 0).flatMap((room) => {
+      const on = litCells(room, allLampsOn(room))
+      return room.tiles
+        .map((kind, i) => ({ kind, i }))
+        .filter(({ kind, i }) => kind === 'shadow' && on.has(i))
+        .map(({ i }) => `${room.name}:${i % room.cols},${Math.floor(i / room.cols)}`)
+    })
+    expect(lit.length, 'no lamp in the cellar lights a shadow — the hint can never fire').toBeGreaterThan(0)
   })
 })
