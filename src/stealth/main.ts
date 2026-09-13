@@ -34,7 +34,8 @@
  * when it ends, so a held arrow walks at the key-repeat pace without dropping beats.
  */
 import {
-  consumeAnyKey, consumeFlag, consumePause, initInput, resetInput, SCALE, setupCanvas, tickMovement,
+  consumeAnyKey, consumeDebug, consumeFlag, consumePause, initInput, resetInput, SCALE, setupCanvas,
+  tickMovement,
 } from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
 import { BAT_HEARING } from './bat.js'
@@ -584,9 +585,14 @@ function frame(now: number): void {
   }
 
   if (phase === 'play') {
-    // The pad has one action button and the throw has it, so the ears take Start —
-    // otherwise a gamepad can walk Randy into a room it cannot get him out of.
+    // The pad has one *action* button and the throw has it, so the other two verbs
+    // borrow buttons the kit spends elsewhere: the ears take Start (`consumePause` — a
+    // beat-based game has nothing to pause) and waiting takes Y (`consumeDebug` — this
+    // game has no debug overlay for it to toggle). Both are workarounds and both are
+    // written up in `docs/zx-kit-findings.md`; what they buy is a pad that can finish
+    // the cellar instead of one that can walk Randy into rooms it cannot get him out of.
     if (consumePause()) request({ kind: 'ears' })
+    if (consumeDebug()) request({ kind: 'wait' })
     if (flag) toggleAim()
     if (dir) {
       request(aiming ? { kind: 'throw', dir } : { kind: 'move', dir })

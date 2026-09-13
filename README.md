@@ -39,9 +39,11 @@ owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
 | `H` | What the cellar knows: the rules the rooms are built on — from the picture or mid-room |
 | `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
 
-On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it) and
-**Start** works the ears — the kit's pad has one action button and the throw already has
-it (`docs/zx-kit-findings.md`). Waiting a beat is still the space bar.
+On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it),
+**Start** works the ears and **Y** waits a beat. The kit's pad has one action button and
+the throw has it, so the other two verbs borrow buttons the kit spends elsewhere — pause,
+which a beat-based game has no use for, and the debug toggle, which this game has no
+overlay for (`docs/zx-kit-findings.md`).
 
 Caught three times in the same room, the cellar names the verb that room cannot be
 left without — *the ears down*, *a carrot thrown*, *the lamp out*, *the lever*, *wet

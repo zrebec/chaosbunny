@@ -28,9 +28,19 @@ and the gamepad can move and throw but not lower the rabbit's ears. A general
 `consumeButton('b' | 'x' | 'y')`, or a way to register a key/button pair, would make
 gamepad play possible for anything with more than one verb.
 
-The game works around it by spending the pause button: `consumePause` (P / Start) is the
-ears, since a beat-based game has nothing to pause. That is two verbs on a pad and one
-still missing (waiting a beat), which is about as far as the workaround goes.
+The game works around it by spending the buttons the kit has already spent. `consumePause`
+(P / Start) is the ears, since a beat-based game has nothing to pause; `consumeDebug`
+(Ctrl+Shift+B / **Y**) is waiting a beat, since this game has no debug overlay to toggle.
+That is four verbs on a pad — walk, throw, ears, wait — and the cellar is finishable with
+one, which it was not an hour ago.
+
+It is worth being plain about what that means for the kit: **the pad's whole button
+vocabulary here is three, and all three are named after something else.** A reader of
+this game's input code has to be told that pause means ears and debug means wait. That
+is not a bug in the workaround, it is the missing feature restated — `consumeButton('b' |
+'x' | 'y')`, or a register-a-pair call, would let a game say what it means. And the
+borrowing has a real edge: any game that wants *both* a debug overlay and a fourth verb
+has run out, with no way to ask for another.
 
 ## What worked exactly as advertised
 
