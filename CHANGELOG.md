@@ -1,3 +1,10 @@
+## [0.10.1](https://github.com/zrebec/chaosbunny/compare/v0.10.0...v0.10.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **stealth:** take the drip out of the cellar hum ([#27](https://github.com/zrebec/chaosbunny/issues/27)) ([fbd254a](https://github.com/zrebec/chaosbunny/commit/fbd254af0a694f7869767b60f479dfb040355ff3))
+
 # [0.10.0](https://github.com/zrebec/chaosbunny/compare/v0.9.0...v0.10.0) (2026-09-15)
 
 
