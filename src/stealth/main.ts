@@ -13,7 +13,9 @@
  * - L: how dark the cellar is — as it was, the cellar, the deep cellar. Picture only:
  *   it changes no rule, and a room's par is the same at every level
  * - R: start the room again
- * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other
+ * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other —
+ *   development builds only (`STEALTH_ROOM_SKIP`): a released cellar opens a room once
+ *   the one before it has been escaped (`score.ts`)
  * - H: the rules the rooms are built on — from the picture or from inside a room,
  *   where any key puts you back on the beat you left
  * - C: the cellar map, where the arrows pick a room — from the loaded picture or from
@@ -40,6 +42,7 @@ import {
   tickMovement,
 } from 'zx-kit'
 import { ensureAudio } from '../audio/sfx.js'
+import { STEALTH_ROOM_SKIP } from '../config.js'
 import { BAT_HEARING } from './bat.js'
 import { beat, startWorld, type Action, type BeatEvent, type World } from './beat.js'
 import { manhattan } from './grid.js'
@@ -50,6 +53,7 @@ import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
 import { parseRoom, tileAt } from './room.js'
 import { spots } from './rules.js'
+import { cellarScore, isUnlocked } from './score.js'
 import { ROOM_SOURCES } from './rooms/index.js'
 import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape } from './sound.js'
 import { roomLabel, STR } from './strings.js'
@@ -165,6 +169,11 @@ function wholeCellarBeats(): number | null {
     total += beats
   }
   return total
+}
+
+/** Whether room `i` may be opened: once the room before it is escaped, or always while tuning. */
+function canEnter(i: number): boolean {
+  return STEALTH_ROOM_SKIP || isUnlocked(ROOMS, book.records(), i)
 }
 
 function say(text: string): void {
@@ -493,7 +502,8 @@ window.addEventListener('keydown', (e) => {
     else if (e.key === 'Enter' || e.key === ' ') {
       // Out of the last cellar, with the mark still on it: that way is the night air.
       if (escaped && mapPick === roomIndex) goToTitle('ending')
-      else goToRoom(mapPick)
+      else if (canEnter(mapPick)) goToRoom(mapPick)
+      else playBlocked() // shut: the map already says which room opens it
     }
     // Peeked at from inside a room, Esc costs nothing: the beat you were on is still there.
     else if (e.key === 'Escape') {
@@ -568,13 +578,15 @@ window.addEventListener('keydown', (e) => {
     resetInput()
     return
   }
+  // A tuning shortcut, not a way through the cellar: with rooms that open one after
+  // another, a key that jumps to any of them would make the lock mean nothing.
   const digit = e.key === '0' ? 10 : Number(e.key) // 0 is the tenth room, as on a Spectrum menu
-  if (Number.isInteger(digit) && digit >= 1 && digit <= ROOMS.length) {
+  if (STEALTH_ROOM_SKIP && Number.isInteger(digit) && digit >= 1 && digit <= ROOMS.length) {
     goToRoom(digit - 1)
     return
   }
   // The cellar outgrew the number row: [ and ] walk it.
-  if (e.key === '[' || e.key === ']') {
+  if (STEALTH_ROOM_SKIP && (e.key === '[' || e.key === ']')) {
     goToRoom(roomIndex + (e.key === ']' ? 1 : -1))
     return
   }
@@ -674,7 +686,7 @@ function frame(now: number): void {
   } else if (phase === 'title') {
     if (titleMode === 'sound' || titleMode === 'rules') {
       setBorder(null, now)
-      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL)
+      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL, cellarScore(ROOMS, book.records()))
       requestAnimationFrame(frame)
       return // its keys are handled on keydown, so no key may advance the title here
     }
@@ -700,7 +712,7 @@ function frame(now: number): void {
     }
   }
 
-  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL)
+  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL, cellarScore(ROOMS, book.records()))
   else if (phase === 'map') {
     renderCellar(
       ctx,

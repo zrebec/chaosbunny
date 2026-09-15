@@ -13,14 +13,28 @@ outline-wing bats, crumbling ledges and a ladder or two. Dark, atmospheric,
 
 ## Two games, one repo — read this first
 
-On these branches `index.html` loads **`src/stealth/main.ts`**: chaosBunny is a
-**beat-based tile stealth game** now (owner's call, 2026-09-11). One screen is one
-room, 16×11 tiles, and every action you take moves the whole world one beat. The verb
-is **slip past**: eighteen rooms, each proved solvable by a solver in its own test.
+`index.html` loads **`src/stealth/main.ts`**: chaosBunny is a **beat-based tile stealth
+game** (owner's call, 2026-09-11; on `master` since 2026-09-13). One screen is one room,
+16×11 tiles, and every action you take moves the whole world one beat. The verb is
+**slip past**: eighteen rooms, each proved solvable by a solver in its own test.
 
-The **cave climber** described further down is what `master` still holds; nothing of it
-was deleted, and `src/main.ts` still builds. Which of the two chaosBunny is, is the
-owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
+**Why it changed.** The cave climber was never short of craft — pixel-perfect masks,
+four playfield looks, pulsing torchlight, AY music. It was short of a **verb**. Climbing
+is not interesting, and two attempts to fix that with more craft (the charge-jump, then
+the fall) failed for the same reason both times: they polished a verb that was not worth
+having. The owner's verdict on the replacement, the day it landed:
+
+> *chaosBunny got a verb, and it turned into a game I want to play. The earlier attempts
+> already had lovely, fussed-over graphics and still were not a game I wanted to play.
+> This one is — even though its graphics are terrible so far.*
+
+That is the shape of the whole project and it is written up in
+[`docs/retrospective-2026-09-13.md`](docs/retrospective-2026-09-13.md). **Polish cannot
+rescue a missing verb; a verb does not need polish to be felt.**
+
+The **cave climber** described further down was not deleted — `src/main.ts` still
+builds, and every level, enemy and lighting mode is still there. See `docs/ROADMAP.md`
+and `docs/stealth-design.md`.
 
 ### The stealth game's keys
 
@@ -35,7 +49,7 @@ owner's decision — see `docs/ROADMAP.md` and `docs/stealth-design.md`.
 | `M` | The cellar hum on / off |
 | `L` | How dark the cellar is: as it was → the cellar → the deep cellar. Picture only — no rule, no par, changes |
 | `R` | Start the room again |
-| `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) |
+| `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) — **`npm run dev` only**. A build opens a room once the one before it is escaped |
 | `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum, `F` `G` `H` mute the hum's three voices one at a time and `J` brings them all back |
 | `H` | What the cellar knows: the rules the rooms are built on — from the picture or mid-room |
 | `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
@@ -45,6 +59,13 @@ On a gamepad: the d-pad walks, **A** aims the carrot (then a direction throws it
 the throw has it, so the other two verbs borrow buttons the kit spends elsewhere — pause,
 which a beat-based game has no use for, and the debug toggle, which this game has no
 overlay for (`docs/zx-kit-findings.md`).
+
+**Score and medals.** A room escaped on par is worth 1000 points, and every beat over
+par costs a share of that — `1000 × par / beats`, so a finished room never scores zero.
+Each room also earns a medal: `*` on par, `+` within a quarter of par. The cellar map
+shows both, the whole cellar's points sit in its title line, and a room stays shut
+until the one before it has been escaped. Nothing new is saved for any of it — it is
+all read off the records (`src/stealth/score.ts`).
 
 Caught three times in the same room, the cellar names the verb that room cannot be
 left without — *the ears down*, *a carrot thrown*, *the lamp out*, *the lever*, *wet

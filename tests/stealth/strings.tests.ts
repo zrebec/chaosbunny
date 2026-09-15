@@ -51,8 +51,9 @@ describe('the screens at either end', () => {
   it('both fit above the prompt, however long the tale is', () => {
     const storyBottom = 56 + (STR.story(12).length - 1) * 14 + 8
     expect(storyBottom, `story: ${STR.story(12).length} lines reach ${storyBottom}px`).toBeLessThan(176)
-    // The ending carries one more line under it: the beats for the whole cellar.
-    const endBottom = 56 + STR.ending(12).length * 14 + 8 + 8
+    // The ending carries three more lines under it: the whole cellar's beats, its par and
+    // its score (`title.ts`), 14 px apart.
+    const endBottom = 56 + STR.ending(12).length * 14 + 8 + 28 + 8
     expect(endBottom, `ending: ${STR.ending(12).length} lines reach ${endBottom}px`).toBeLessThan(176)
   })
 })

@@ -19,6 +19,15 @@ export const PLAYFIELD_H = GAME_HEIGHT // 192 px = 24 cells
 export const LANGUAGE_CODE = 'sk'
 
 /**
+ * Stealth game: whether a room that is still locked can be opened anyway — by the room
+ * keys (`1`…`9`, `0`, `[`, `]`) or from the cellar map. On under `npm run dev`, so rooms
+ * can be walked into straight away while they are being tuned; off in a build, where a
+ * room opens only once the one before it has been escaped (`src/stealth/score.ts`) and
+ * the room keys do nothing.
+ */
+export const STEALTH_ROOM_SKIP: boolean = import.meta.env.DEV === true
+
+/**
  * Floors to climb before the escape hatch — the room's goal, shown in the HUD.
  * 11 matches the hand-built vertical slice (one platform ≈ one floor). The full
  * game targets 50 across ~5 escalating cave strata; bump this as the level grows

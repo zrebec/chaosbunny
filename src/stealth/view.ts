@@ -31,6 +31,7 @@ import { allLampsOn, cellIndex, lampOn, litCells, shadowsWon } from './light.js'
 import { advanceFox, type Fox } from './patrol.js'
 import { tileAt, type Room } from './room.js'
 import { visibleCells } from './rules.js'
+import { medalFor, roomScore } from './score.js'
 import type { Strings } from './strings.js'
 
 export const TILE = 16
@@ -561,15 +562,19 @@ export function render(ctx: CanvasRenderingContext2D, scene: Scene, f: Frame, st
     drawTextCentered(ctx, str.wonBeats(f.world.beats), 72, 32, C.B_WHITE, C.BLACK)
     const par = scene.room.par
     if (par !== null) {
-      const onPar = f.world.beats <= par
-      drawTextCentered(ctx, onPar ? str.onPar : str.par(par), 88, 32, onPar ? C.B_YELLOW : C.WHITE, C.BLACK)
+      // The medal, said in words here; the map says it again with one glyph a room.
+      const medal = medalFor(par, f.world.beats)
+      const text = medal === 'par' ? str.onPar : medal === 'near' ? str.nearPar(par) : str.par(par)
+      drawTextCentered(ctx, text, 88, 32, medal === 'par' ? C.B_YELLOW : medal === 'near' ? C.B_WHITE : C.WHITE, C.BLACK)
+      // This run's points, not the record's: the record has its own line underneath.
+      drawTextCentered(ctx, str.score(roomScore(par, f.world.beats)), 104, 32, C.B_WHITE, C.BLACK)
     }
     if (f.record) {
       const text = f.record.isNew ? str.newRecord : str.record(f.record.best)
-      drawTextCentered(ctx, text, 104, 32, f.record.isNew ? C.B_CYAN : C.WHITE, C.BLACK)
+      drawTextCentered(ctx, text, 120, 32, f.record.isNew ? C.B_CYAN : C.WHITE, C.BLACK)
     }
-    drawTextCentered(ctx, str.replayHint(f.bestRunKept), 120, 32, C.B_WHITE, C.BLACK)
-    drawTextCentered(ctx, str.again, 136, 32, C.WHITE, C.BLACK)
+    drawTextCentered(ctx, str.replayHint(f.bestRunKept), 136, 32, C.B_WHITE, C.BLACK)
+    drawTextCentered(ctx, str.again, 152, 32, C.WHITE, C.BLACK)
   }
   drawHud(ctx, scene, f, str)
 }
