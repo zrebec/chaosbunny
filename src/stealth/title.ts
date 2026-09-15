@@ -31,12 +31,12 @@ import { SOUND_BENCH } from './sound.js'
 import type { Strings } from './strings.js'
 
 /**
- * The bench's voice keys, in the order `str.voiceNames` names them. F, G and H sit
- * together on the row and none of them is spoken for: the sounds take the digits,
- * `M` the hum, `J` all the voices back, and `H` only opens the rules from the picture.
+ * The bench's voice keys, in the order `str.voiceNames` names them. F and G sit
+ * together on the row and neither is spoken for: the sounds take the digits, `M` the
+ * hum, `J` all the voices back. (H muted the drip until the drip went.)
  */
 export const VOICE_KEYS: ReadonlyArray<readonly [key: string, channel: AYChannel]> = [
-  ['F', 'A'], ['G', 'B'], ['H', 'C'],
+  ['F', 'A'], ['G', 'C'],
 ]
 
 export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound' | 'rules'
@@ -190,7 +190,7 @@ export function renderTitle(
       const y = 40 + Math.floor(i / 2) * 16
       drawText(ctx, `${sound.key} ${str.soundNames[i] ?? ''}`, x, y, C.B_WHITE, C.BLACK)
     })
-    // The three voices of the hum, each on its own key: a muted one is drawn dim, so
+    // The voices of the hum, each on its own key: a muted one is drawn dim, so
     // the row is also the answer to "which of these am I listening to".
     const mix = channelMix()
     VOICE_KEYS.forEach(([key, ch], i) => {

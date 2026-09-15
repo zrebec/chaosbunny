@@ -68,7 +68,7 @@ export interface Strings {
    * judged together \u2014 the only way to hear whether the drip is too loud is to hear
    * the drip alone \u2014 so the bench can mute each one while it plays.
    */
-  readonly voiceNames: readonly [string, string, string]
+  readonly voiceNames: readonly [string, string]
   /** The map between rooms: its title, and how to leave it. */
   readonly cellar: string
   readonly cellarHint: string
@@ -207,7 +207,7 @@ const EN: Strings = {
     'LEVER', 'PICKUP', 'SPOTTED', 'CAUGHT', 'BAT', 'ESCAPED', 'WADING',
   ],
   soundHint: 'M HUM  J ALL VOICES - ESC BACK',
-  voiceNames: ['DRONE', 'DRIP', 'AIR'],
+  voiceNames: ['DRONE', 'AIR'],
   cellar: 'THE CELLAR',
   cellarHint: 'ARROWS PICK - ENTER IN - ESC OUT',
   roomNames: [
@@ -313,7 +313,7 @@ const SK: Strings = {
     'PAKA', 'ZOBRAL MRKVU', 'VSIMOL SI TA', 'CHYTENY', 'NETOPIER', 'PREKLZOL', 'BRODENIE',
   ],
   soundHint: 'M HUKOT  J HLASY - ESC SPAT',
-  voiceNames: ['HUKOT', 'KVAPKA', 'VZDUCH'],
+  voiceNames: ['HUKOT', 'VZDUCH'],
   cellar: 'PIVNICA',
   cellarHint: 'SIPKY - ENTER DNU - ESC VON',
   roomNames: [

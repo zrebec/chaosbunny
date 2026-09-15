@@ -1,10 +1,16 @@
 /**
  * The cellar hum: one AY loop, quiet enough to leave the beeper in charge.
  *
- * Three voices, each 12.8 s long so the loop never drifts: a low drone that
- * breathes, a drip that lands rarely and high, and a noise channel that moves like
- * air in a cellar. Nothing on a beat — the music is the room, not the clock, and
- * the beeper's `?` and `!` must always cut through it.
+ * Two voices, each 12.8 s long so the loop never drifts: a low drone that breathes,
+ * and a noise channel that moves like air in a cellar. Nothing on a beat — the music
+ * is the room, not the clock, and the beeper's `?` and `!` must always cut through it.
+ *
+ * **There was a third voice, a drip, and it went (2026-09-15).** A short high drop
+ * every few seconds, in a game where a short high sound *is* an event, was heard by
+ * the owner as a beep coming from nowhere — constant, on the map too, meaning nothing,
+ * and teaching the ear to ignore beeps. The hum is not allowed to sound like the
+ * beeper again: {@link HUM_MIN_NOTE_MS} is the rule and `music.tests.ts` holds any
+ * future tune to it.
  *
  * Untested by ear. Every number here is a guess for the owner to tune; the notes
  * are data, so tuning is editing three strings.
@@ -19,16 +25,18 @@ const quiet = (notes: AYNote[], vol: number): AYNote[] => notes.map((n) => ({ ..
 /** A slow low pulse: the building itself. */
 export const DRONE = quiet(seq('A1:2400 r:600 G1:2400 r:800 A1:2400 r:600 F1:2400 r:1200'), 5)
 
-/** Water somewhere, three times a loop, each drop a short decay. */
-export const DRIP = seq('r:3000 E6:90 r:5200 B5:90 r:4000 E6:70 r:350').map((n) =>
-  n.freq === 0 ? n : { ...n, envShape: 0, envCycleDurMs: 220 },
-)
-
 /** Air moving: noise, low and long. */
 export const AIR = quiet(seq('r:1500 D2:2000 r:3000 C2:1800 r:2500 D2:1500 r:500', { noise: true, noisePeriod: 24 }), 3)
 
-/** The three voices, in the order `playAYLoop` takes them. */
-export const CHANNELS: readonly AYChannel[] = ['A', 'B', 'C']
+/** The voices the hum plays on. Channel B is free — the drip used to live there. */
+export const CHANNELS: readonly AYChannel[] = ['A', 'C']
+
+/**
+ * The shortest sound the hum may make, and the shortest envelope it may decay over.
+ * Anything quicker is a blip, and a blip in this game means something happened
+ * (`sound.ts`). A tune for a room can be as busy as it likes above this line.
+ */
+export const HUM_MIN_NOTE_MS = 250
 
 /**
  * How far the hum drops out of the way of a warning. Not to silence: a `?` that
@@ -112,7 +120,7 @@ export function resetChannels(): void {
 export function startMusic(): void {
   wanted = true
   if (!loop && getAudioContext()) {
-    loop = playAYLoop({ a: DRONE, b: DRIP, c: AIR })
+    loop = playAYLoop({ a: DRONE, c: AIR })
     applyMix(0) // a voice muted at the bench stays muted when the hum comes back
   }
 }
