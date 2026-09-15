@@ -1,3 +1,10 @@
+# [0.10.0](https://github.com/zrebec/chaosbunny/compare/v0.9.0...v0.10.0) (2026-09-15)
+
+
+### Features
+
+* **stealth:** BRIGHT lamplight as the first L look ([#26](https://github.com/zrebec/chaosbunny/issues/26)) ([1881db8](https://github.com/zrebec/chaosbunny/commit/1881db8252bf021df35d4aad5852c8b4980639e5))
+
 # [0.9.0](https://github.com/zrebec/chaosbunny/compare/v0.8.0...v0.9.0) (2026-09-15)
 
 
