@@ -52,6 +52,15 @@ the owner's decision, not this document's.
 
 ## Recently done
 
+- ✅ **2026-09-15 — Randy redrawn: four facings, ears up and down, a hop.** A rounder,
+  chubbier Randy in the owner's colours (`B_CYAN`, `B_MAGENTA`, `B_WHITE`), 16×24 as
+  before: facing the camera, facing away, and side-on (left is the mirror), each with the
+  ears up and laid back, each in two frames — standing and mid-hop. Twelve rasters drawn
+  by hand and validated with the `zx-spectrum-screen` skill (`src/art/zx/randy-td-*.json`).
+  Which way he faces is picture only (`view.ts` `faceAfter`, kept with U and replays in
+  `main.ts`); `World` never learns it, so no par moves. A step lifts him two pixels on an
+  arc (`hopLift`). The move animation is slower: 150 → 220 ms a beat (foxes too), replay
+  260 → 330 ms.
 - ✅ **2026-09-15 — Score, medals and rooms that open in order.** `src/stealth/score.ts`:
   a room is worth `round(1000 × par / beats)` (a ratio rather than the −50-a-beat
   countdown, so a finished room never scores zero), a medal for on par (`*`) and within

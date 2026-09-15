@@ -60,9 +60,10 @@ import { roomLabel, STR } from './strings.js'
 import { loadStateAt } from './loader.js'
 import { renderCellar } from './cellar.js'
 import { clearBorderFlash, createTitle, flashBorder, renderTitle, setBorder, VOICE_KEYS, type TitleMode } from './title.js'
-import { createScene, cycleAmbience, render, type Frame, type Scene } from './view.js'
+import { createScene, cycleAmbience, faceAfter, render, type Frame, type Scene } from './view.js'
+import type { Dir } from './grid.js'
 
-const BEAT_MS = 150
+const BEAT_MS = 220
 /**
  * How long the room stays dimmed with `!` before it starts again on its own. Long
  * enough to read the `!` and take the beat back with U; any other key starts again
@@ -72,7 +73,7 @@ const CAUGHT_MS = 1600
 /** A pause after winning before a key restarts, so the winning keypress cannot skip the screen. */
 const WON_GRACE_MS = 400
 /** Replay pace: a little slower than play, so a run can be followed. */
-const REPLAY_BEAT_MS = 260
+const REPLAY_BEAT_MS = 330
 /** How long the last beat of a replay stays before the win screen returns. */
 const REPLAY_HOLD_MS = 700
 
@@ -98,6 +99,12 @@ function sceneFor(i: number): Scene {
 
 let world: World = startWorld(room)
 let prev: World = world
+/** Which way Randy looks. Picture only — the rules have no idea (`view.ts` `faceAfter`). */
+let facing: Dir = 'down'
+/** The facing before each beat, in step with {@link history}, so U turns him back too. */
+const facings: Dir[] = []
+/** The facing he won in, for the win screen a replay returns to. */
+let wonFacing: Dir = 'down'
 let t = 1
 let thrown: Frame['thrown'] = null
 let aiming = false
@@ -349,6 +356,8 @@ function nudge(): string | null {
 function restart(): void {
   world = startWorld(room)
   prev = world
+  facing = 'down' // every room starts with him looking at the player
+  facings.length = 0
   t = 1
   thrown = null
   aiming = false
@@ -374,6 +383,7 @@ function undo(): boolean {
   const back = history.pop()
   if (!back) return false
   runActions.pop()
+  facing = facings.pop() ?? 'down'
   world = back
   prev = back
   t = 1
@@ -395,6 +405,7 @@ function startReplay(actions: readonly Action[]): void {
   phase = 'replay'
   world = startWorld(room)
   prev = world
+  facing = 'down'
   t = 1
   thrown = null
   replay = { actions, next: 0, waitMs: 0, holdMs: 0 }
@@ -407,6 +418,7 @@ function stopReplay(): void {
   phaseMs = 0
   world = wonWorld
   prev = wonWorld
+  facing = wonFacing
   t = 1
   thrown = null
   replay = null
@@ -424,9 +436,11 @@ function stepReplay(r: NonNullable<typeof replay>, dt: number): void {
   r.waitMs += dt
   if (r.waitMs < REPLAY_BEAT_MS - BEAT_MS) return
   r.waitMs = 0
-  const result = beat(room, world, r.actions[r.next]!)
+  const action = r.actions[r.next]!
+  const result = beat(room, world, action)
   r.next = result.outcome === 'ok' ? r.next + 1 : r.actions.length
   if (result.outcome === 'blocked') return
+  facing = faceAfter(facing, action)
   playEvents(result.events, result.world)
   // A replay shows what happened, border and all — it is the same beat played again.
   if (result.events.some((e) => e.type === 'suspicious')) flashBorder('spotted')
@@ -439,7 +453,9 @@ function stepReplay(r: NonNullable<typeof replay>, dt: number): void {
 
 function play(action: Action): void {
   const r = beat(room, world, action)
+  const turned = faceAfter(facing, action)
   if (r.outcome === 'blocked') {
+    facing = turned // no beat, but he looked that way
     playBlocked()
     return
   }
@@ -453,6 +469,8 @@ function play(action: Action): void {
   if (r.outcome === 'ok' || r.outcome === 'caught') hint(r.world, r.events, r.outcome === 'caught')
   runActions.push(action)
   history.push(world)
+  facings.push(facing)
+  facing = turned
   prev = world
   world = r.world
   t = 0
@@ -471,6 +489,7 @@ function play(action: Action): void {
   } else if (r.outcome === 'won') {
     lastRun = book.finish(room.name, world.beats, encodeRun(runActions))
     wonWorld = world
+    wonFacing = facing
     phase = 'won'
     phaseMs = 0
     queued = null
@@ -721,7 +740,7 @@ function frame(now: number): void {
     )
   }
   else render(ctx, scene, {
-      world, prev, t, now, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
+      world, prev, t, facing, now, thrown, aiming, caughtBy, bittenBy, won: phase === 'won',
       record: phase === 'won' && lastRun ? { best: lastRun.records[room.name]!, isNew: lastRun.isNew } : null,
       replaying: phase === 'replay',
       bestRunKept: book.bestRun(room.name) !== null,
