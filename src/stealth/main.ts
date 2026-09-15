@@ -10,7 +10,7 @@
  * - Space: wait a beat
  * - U: take the last beat back (and, while a fox has you, the one that lost the room)
  * - M: the cellar hum on or off (on the loaded picture, S opens the sound bench)
- * - L: how dark the cellar is — as it was, the cellar, the deep cellar. Picture only:
+ * - L: how the cellar is lit — BRIGHT lamplight, as it was, the cellar, the deep cellar. Picture only:
  *   it changes no rule, and a room's par is the same at every level
  * - R: start the room again
  * - 1, 2, … 9, 0: jump to that room, 0 being the tenth; [ and ] step to any other —

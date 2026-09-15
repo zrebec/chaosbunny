@@ -103,6 +103,32 @@ export function mirrored(art: Layered): Layered {
   return { ...art, layers: art.layers.map((l) => ({ ...l, bitmap: mirrorBitmap(l.bitmap) })) }
 }
 
+/**
+ * The Spectrum's own way to say "lit": the same colour with its BRIGHT bit set. Black has
+ * no brighter self, and a colour already bright stays as it is — so the palette never
+ * grows by a single entry, and a picture brightened twice is the picture brightened once.
+ */
+const BRIGHT_OF: ReadonlyMap<SpectrumColor, SpectrumColor> = new Map([
+  [C.BLUE, C.B_BLUE], [C.RED, C.B_RED], [C.MAGENTA, C.B_MAGENTA], [C.GREEN, C.B_GREEN],
+  [C.CYAN, C.B_CYAN], [C.YELLOW, C.B_YELLOW], [C.WHITE, C.B_WHITE],
+])
+
+export function brightInk(ink: SpectrumColor): SpectrumColor {
+  return BRIGHT_OF.get(ink) ?? ink
+}
+
+const BRIGHTENED = new WeakMap<Layered, Layered>()
+
+/** The same picture with every ink BRIGHT — the same bitmaps, made once per picture and kept. */
+export function brightened(art: Layered): Layered {
+  let lit = BRIGHTENED.get(art)
+  if (!lit) {
+    lit = { ...art, layers: art.layers.map((l) => ({ ...l, ink: brightInk(l.ink) })) }
+    BRIGHTENED.set(art, lit)
+  }
+  return lit
+}
+
 export function drawLayered(ctx: CanvasRenderingContext2D, art: Layered, x: number, y: number): void {
   for (const l of art.layers) drawBitmap(ctx, l.bitmap, Math.round(x), Math.round(y), l.ink)
 }

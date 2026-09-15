@@ -119,7 +119,7 @@ export interface Strings {
    * What `L` says when it walks the cellar's darkness. Three looks rather than two,
    * because how dark a cellar should be is not an argument anybody wins on paper.
    */
-  readonly ambience: Readonly<Record<'off' | 'dim' | 'dark', string>>
+  readonly ambience: Readonly<Record<'bright' | 'off' | 'dim' | 'dark', string>>
   /**
    * The first two rooms show the next best move (`guide.ts`). One line each, in place
    * of the key row — in a room that is teaching you, what the keys are called matters
@@ -229,7 +229,7 @@ const EN: Strings = {
   roomToast: (n) => `ROOM ${n}`,
   musicOn: 'MUSIC ON',
   musicOff: 'MUSIC OFF',
-  ambience: { off: 'LIGHT: AS IT WAS', dim: 'LIGHT: CELLAR', dark: 'LIGHT: DEEP CELLAR' },
+  ambience: { bright: 'LIGHT: BRIGHT LAMPS', off: 'LIGHT: AS IT WAS', dim: 'LIGHT: CELLAR', dark: 'LIGHT: DEEP CELLAR' },
   guide: {
     step: 'GO TO THE MARK',
     throw: 'THROW A CARROT AT THE MARK',
@@ -334,7 +334,7 @@ const SK: Strings = {
   roomToast: (n) => `MIESTNOST ${n}`,
   musicOn: 'HUDBA ZAP',
   musicOff: 'HUDBA VYP',
-  ambience: { off: 'SVETLO: AKO PREDTYM', dim: 'SVETLO: PIVNICA', dark: 'SVETLO: HLBOKA PIVNICA' },
+  ambience: { bright: 'SVETLO: BRIGHT LAMPY', off: 'SVETLO: AKO PREDTYM', dim: 'SVETLO: PIVNICA', dark: 'SVETLO: HLBOKA PIVNICA' },
   guide: {
     step: 'CHOD NA ZNACKU',
     throw: 'HOD MRKVU NA ZNACKU',

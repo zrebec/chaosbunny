@@ -22,10 +22,10 @@ import {
   C, createGlowLayer, createLayerCache, drawChar, drawGlowSource, drawText, drawTextCentered, invalidateLayer,
   refreshLayer, renderGlow, type GlowLayer, type LayerCache, type SpectrumColor,
 } from 'zx-kit'
-import { SPRITES, TILES, drawLayered, layered, type Layered } from './art.js'
+import { SPRITES, TILES, brightened, drawLayered, layered, type Layered } from './art.js'
 import { BAT_HEARING } from './bat.js'
 import { SNEAK_STEPS, throwAt, type Action, type World } from './beat.js'
-import { DIRS, manhattan, sameCell, type Cell, type Dir } from './grid.js'
+import { DIRS, manhattan, sameCell, step, type Cell, type Dir } from './grid.js'
 import type { Guidance } from './guide.js'
 import { allLampsOn, cellIndex, lampOn, litCells, shadowsWon } from './light.js'
 import { advanceFox, type Fox } from './patrol.js'
@@ -54,15 +54,21 @@ export const HUD_Y = 176
  *
  * A cycle rather than a switch because the right amount cannot be argued, only looked
  * at: `L` walks it while the room is running.
+ *
+ * `bright` is the fourth look and the first in the cycle, and it turns the idea round:
+ * instead of darkening the cellar away from a lamp, it lifts what the lamp lights — the
+ * Spectrum's BRIGHT bit, every ink of a lit cell one step brighter ({@link looksLit}).
+ * No dots are added anywhere, so a room without a lamp looks exactly as it did before
+ * any of this, and the island has its edge where BLUE floor meets BRIGHT BLUE.
  */
-export type Ambience = 'off' | 'dim' | 'dark'
+export type Ambience = 'bright' | 'off' | 'dim' | 'dark'
 
-export const AMBIENCE_ORDER: readonly Ambience[] = ['off', 'dim', 'dark']
+export const AMBIENCE_ORDER: readonly Ambience[] = ['bright', 'off', 'dim', 'dark']
 
-/** Black pixels per 16×16 cell, as one dot in `n`. `off` stamps nothing. */
-const AMBIENCE_STEP: Readonly<Record<Ambience, number>> = { off: 0, dim: 2, dark: 1 }
+/** Black pixels per 16×16 cell, as one dot in `n`. `off` and `bright` stamp nothing. */
+const AMBIENCE_STEP: Readonly<Record<Ambience, number>> = { bright: 0, off: 0, dim: 2, dark: 1 }
 
-let ambience: Ambience = 'dim'
+let ambience: Ambience = 'bright'
 
 export function currentAmbience(): Ambience {
   return ambience
@@ -222,6 +228,23 @@ function isBright(room: Room, cell: Cell, lamps: number, lit: ReadonlySet<number
 }
 
 /**
+ * Whether a cell is drawn lit under `bright`: a cell the light reaches ({@link isBright}),
+ * or a wall touching one — the light stops at a wall, but it lands on it, and a lamp
+ * whose glow ends at a dark brick reads as a hole rather than a room. Only the wall's
+ * surface is lifted; no light is claimed on the far side of it.
+ *
+ * Pure, so a test can hold it to the rule: nothing is lit in a room without a lamp, and
+ * nothing is lit once every lamp is out.
+ */
+export function looksLit(room: Room, cell: Cell, lamps: number, lit: ReadonlySet<number>): boolean {
+  if (tileAt(room, cell) !== 'wall') return isBright(room, cell, lamps, lit)
+  return DIRS.some((d) => {
+    const n = step(cell, d)
+    return n.x >= 0 && n.y >= 0 && n.x < room.cols && n.y < room.rows && lit.has(cellIndex(room, n))
+  })
+}
+
+/**
  * One 16×16 stamp of black dots per level, made once and reused for every dim cell —
  * a `drawImage` instead of two hundred and fifty-six `fillRect`s.
  */
@@ -266,7 +289,9 @@ function drawRoom(scene: Scene, lamps: number, pulled: boolean): void {
     ctx.fillRect(0, 0, PLAY_W, PLAY_H)
     for (let y = 0; y < room.rows; y++) {
       for (let x = 0; x < room.cols; x++) {
-        const art = tileArt(room, x, y, lamps, lit, pulled)
+        const plain = tileArt(room, x, y, lamps, lit, pulled)
+        // Under `bright` the lamp's reach is the same tiles with the BRIGHT bit set.
+        const art = plain && ambience === 'bright' && looksLit(room, { x, y }, lamps, lit) ? brightened(plain) : plain
         if (art) drawLayered(ctx, art, x * TILE, y * TILE)
         // The dim goes on last and on top, so it darkens the tile rather than hiding
         // under it. Baked into the cache: it costs nothing until a lamp goes out.

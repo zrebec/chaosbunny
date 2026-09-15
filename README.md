@@ -47,7 +47,7 @@ and `docs/stealth-design.md`.
 | `U` | Take the last beat back — including the one a fox caught you on |
 | `C` | The cellar map: arrows pick a room, `Enter` goes in, `Esc` back to where you were |
 | `M` | The cellar hum on / off |
-| `L` | How dark the cellar is: as it was → the cellar → the deep cellar. Picture only — no rule, no par, changes |
+| `L` | How the cellar is lit: BRIGHT lamplight (a lamp's reach drawn with the Spectrum's BRIGHT bit) → as it was → the cellar → the deep cellar. Picture only — no rule, no par, changes |
 | `R` | Start the room again |
 | `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) — **`npm run dev` only**. A build opens a room once the one before it is escaped |
 | `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum, `F` `G` `H` mute the hum's three voices one at a time and `J` brings them all back |
