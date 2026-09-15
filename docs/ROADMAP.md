@@ -40,7 +40,7 @@ a cellar map that is also the room chooser, a story and an ending, records and r
 
 | # | Task | Why | Effort | Status |
 |---|------|-----|--------|--------|
-| S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen sounds against the hum. This is the only item nobody but the owner can do. **The mix underneath it is now built** (2026-09-13): a beat says at most three things and the loudest first, a warning ducks the hum, every noise is panned to the cell it came from, and the bench can mute the hum's three voices one at a time (`F` `G` `H`, `J` for all). What is left is the one thing that was always left — an ear. | S | 🔜 |
+| S1 | **Play it and say what the sound is wrong about** | Every blip and the AY loop are a guess; `S` on the loaded picture plays all thirteen sounds against the hum. This is the only item nobody but the owner can do. **The mix underneath it is now built** (2026-09-13): a beat says at most three things and the loudest first, a warning ducks the hum, every noise is panned to the cell it came from, and the bench can mute the hum's voices one at a time (`F` `G`, `J` for all). What is left is the one thing that was always left — an ear. | S | 🔜 |
 | S2 | **Rooms on demand** | `npm run roomgen` finds them in seconds (`KIND=route` with `shadow`, `lure`, `grate`, `board`, `water`, `sentry`, `bat` gates, plus `fork`, `gentle`, `dribble`). Eighteen is a cellar's worth. The two newest each answered a question rather than filling a gap: "the flood" because the wants tally showed water was a rule no room enforced, "the shadow shelf" because the step from par 21 to par 30 was where a real player fell off. The next one should be asked for the same way. | S each | 💭 |
 | S3 | ~~**The pad cannot wait a beat**~~ | It can now: waiting borrows `consumeDebug` (Ctrl+Shift+B / gamepad **Y**), which this game has no debug overlay to spend. Four verbs on a pad, the cellar finishable with one. The kit item stands — three buttons all named after something else is the missing feature restated, and a game wanting both a debug overlay and a fourth verb has run out. See `docs/zx-kit-findings.md`. | done (kit: S) | ✅ |
 | S4 | **A second cellar, built on the patrol clock** | Water was the candidate and is now finished: one room offers the wade, the next demands it, and that pair is the whole of what one tile can ask. What made that pair work was not the tile but the clock — a wade moves the world twice, so what changes is *when* Randy arrives. So the spine is guards on loops longer than a room is wide, where the question is "where will it be in six beats". Nothing new in the rulebook; the planner has a `pace` gate for it already, and `docs/stealth-design.md` §5 says what it costs (a walking guard cannot be waited out, so its rooms have to be found rather than drawn). | M | 💭 |
@@ -52,6 +52,13 @@ the owner's decision, not this document's.
 
 ## Recently done
 
+- ✅ **2026-09-15 — The drip is out of the hum.** The owner's first verdict on the sound:
+  a short high blip every few seconds, from nowhere, on the map too — the AY loop's drip
+  voice, heard as a beep that means nothing in a game where every beep means something.
+  The hum is now two voices (drone and air), the bench mutes them on `F` `G`, and
+  `music.tests.ts` holds any future tune to `HUM_MIN_NOTE_MS` (no note or envelope under
+  250 ms), so a composed track cannot bring the blip back. Music per room is the bigger,
+  still open question.
 - ✅ **2026-09-15 — Randy redrawn: four facings, ears up and down, a hop.** A rounder,
   chubbier Randy in the owner's colours (`B_CYAN`, `B_MAGENTA`, `B_WHITE`), 16×24 as
   before: facing the camera, facing away, and side-on (left is the mirror), each with the

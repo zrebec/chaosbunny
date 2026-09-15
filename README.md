@@ -50,7 +50,7 @@ and `docs/stealth-design.md`.
 | `L` | How the cellar is lit: BRIGHT lamplight (a lamp's reach drawn with the Spectrum's BRIGHT bit) → as it was → the cellar → the deep cellar. Picture only — no rule, no par, changes |
 | `R` | Start the room again |
 | `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) — **`npm run dev` only**. A build opens a room once the one before it is escaped |
-| `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum, `F` `G` `H` mute the hum's three voices one at a time and `J` brings them all back |
+| `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum, `F` `G` mute the hum's two voices one at a time and `J` brings them both back |
 | `H` | What the cellar knows: the rules the rooms are built on — from the picture or mid-room |
 | `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
 
