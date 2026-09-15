@@ -1,3 +1,10 @@
+# [0.9.0](https://github.com/zrebec/chaosbunny/compare/v0.8.0...v0.9.0) (2026-09-15)
+
+
+### Features
+
+* **stealth:** Randy redrawn in four facings, ears up and down, with … ([#25](https://github.com/zrebec/chaosbunny/issues/25)) ([aaf08c9](https://github.com/zrebec/chaosbunny/commit/aaf08c9ed15199a6565bf0221c23ae5c6a7abed3))
+
 # [0.8.0](https://github.com/zrebec/chaosbunny/compare/v0.7.2...v0.8.0) (2026-09-15)
 
 
