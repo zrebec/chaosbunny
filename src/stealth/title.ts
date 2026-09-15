@@ -157,6 +157,8 @@ export function renderTitle(
   rooms = 0,
   /** The pars of every room added up — the number a perfect cellar would take. */
   parTotal = 0,
+  /** Every record's points added up (`score.ts`) — shown on the ending with the beats. */
+  score = 0,
 ): void {
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, 256, 192)
@@ -210,6 +212,7 @@ export function renderTitle(
       drawTextCentered(ctx, str.wholeCellar(total), y, 32, C.B_CYAN, C.BLACK)
       // What a perfect cellar would take, so the number above has something to beat.
       if (parTotal > 0) drawTextCentered(ctx, str.par(parTotal), y + 14, 32, total <= parTotal ? C.B_YELLOW : C.CYAN, C.BLACK)
+      if (score > 0) drawTextCentered(ctx, str.score(score), y + 28, 32, C.B_WHITE, C.BLACK)
     }
     const sx = Math.floor((256 - str.startPrompt.length * 8) / 2)
     drawBlinkingText(ctx, str.startPrompt, sx, 176, now, C.WHITE, C.BLACK)

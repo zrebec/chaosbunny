@@ -12,16 +12,32 @@
  * It is also how a room is chosen: the arrows walk the chain and the marked room is
  * the one that opens. Coming off a win, the next room is already marked, so carrying
  * on is still a single key.
+ *
+ * A room stays shut until the one before it is escaped (`score.ts` `isUnlocked`), and
+ * its box is drawn dark. Beside every escaped room sits its medal — one glyph, because
+ * the number under it is what nobody remembers — and the title line carries the whole
+ * cellar's points.
  */
-import { C, drawBlinkingText, drawText, drawTextCentered } from 'zx-kit'
+import { C, drawBlinkingText, drawText, drawTextCentered, type SpectrumColor } from 'zx-kit'
 import type { Records } from './records.js'
 import type { Room } from './room.js'
+import { cellarScore, isUnlocked, recordScore, roomMedal, type Medal } from './score.js'
 import { roomLabel, type Strings } from './strings.js'
 import { PLAY_H, PLAY_W } from './view.js'
 
 /** Rooms across before the chain turns back. */
 const COLS = 4
 const NODE = 14
+
+/**
+ * A medal as one ROM glyph and its ink. `done` has none: a lit box already says escaped,
+ * and a third mark would make the two that are worth chasing harder to pick out.
+ */
+export const MEDAL_GLYPH: Readonly<Record<Medal, { readonly char: string; readonly ink: SpectrumColor } | null>> = {
+  par: { char: '*', ink: C.B_YELLOW },
+  near: { char: '+', ink: C.B_WHITE },
+  done: null,
+}
 
 export interface MapNode {
   readonly x: number
@@ -72,16 +88,27 @@ export function renderCellar(
   const names = rooms.map((r) => r.name)
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, PLAY_W, 192)
-  drawTextCentered(ctx, str.cellar, 16, 32, C.B_CYAN, C.BLACK)
+  const total = cellarScore(rooms, records)
+  drawTextCentered(ctx, total > 0 ? `${str.cellar}  ${str.score(total)}` : str.cellar, 16, 32, C.B_CYAN, C.BLACK)
   // The room just left, by name: a cellar with names is a place, not a list.
   drawTextCentered(ctx, roomLabel(str, selected), 32, 32, C.WHITE, C.BLACK)
-  // What the marked cellar costs at best, and what it has cost you.
-  const par = rooms[selected]?.par
-  const best = records[names[selected]!]
-  const line = [par === null || par === undefined ? '' : str.par(par), best === undefined ? '' : str.record(best)]
-    .filter(Boolean)
-    .join('  ')
-  if (line) drawTextCentered(ctx, line, 152, 32, C.CYAN, C.BLACK)
+  // What the marked cellar costs at best, and what it has cost you — or, while it is
+  // shut, which room opens it.
+  if (!isUnlocked(rooms, records, selected)) {
+    drawTextCentered(ctx, str.locked(selected), 152, 32, C.BLUE, C.BLACK)
+  } else {
+    const room = rooms[selected]
+    const par = room?.par
+    const best = records[names[selected]!]
+    const line = [
+      par === null || par === undefined ? '' : str.par(par),
+      best === undefined ? '' : str.record(best),
+      room && best !== undefined ? str.score(recordScore(room, records)) : '',
+    ]
+      .filter(Boolean)
+      .join('  ')
+    if (line) drawTextCentered(ctx, line, 152, 32, C.CYAN, C.BLACK)
+  }
 
   const nodes = mapNodes(names.length)
   for (let i = 0; i + 1 < nodes.length; i++) {
@@ -90,13 +117,15 @@ export function renderCellar(
 
   nodes.forEach((n, i) => {
     const done = records[names[i]!] !== undefined
+    const open = isUnlocked(rooms, records, i)
     const here = i === current
     // The box grows with its number, so a two-digit room is not written over its own wall.
     const label = String(i + 1)
     const w = label.length * 8 + 6
     const x = n.x - w / 2
     const y = n.y - NODE / 2
-    ctx.fillStyle = done ? C.B_CYAN : C.BLUE
+    // Escaped: filled. Open and waiting: a white outline. Shut: blue, the colour of the dark.
+    ctx.fillStyle = done ? C.B_CYAN : open ? C.WHITE : C.BLUE
     if (done) ctx.fillRect(x, y, w, NODE)
     else {
       ctx.fillRect(x, y, w, 1)
@@ -105,10 +134,15 @@ export function renderCellar(
       ctx.fillRect(x + w - 1, y, 1, NODE)
     }
     // The number sits in the box, dark on light where the room is behind you.
-    drawText(ctx, label, n.x - label.length * 4, n.y - 4, done ? C.BLACK : C.WHITE, done ? C.B_CYAN : C.BLACK)
+    const ink = done ? C.BLACK : open ? C.B_WHITE : C.BLUE
+    drawText(ctx, label, n.x - label.length * 4, n.y - 4, ink, done ? C.B_CYAN : C.BLACK)
     if (done) {
       const beats = String(records[names[i]!])
       drawText(ctx, beats, n.x - beats.length * 4, n.y + NODE / 2 + 2, C.CYAN, C.BLACK)
+      // The medal to the right, clear of the cursor frame that sits three pixels out.
+      const medal = roomMedal(rooms[i]!, records)
+      const glyph = medal ? MEDAL_GLYPH[medal] : null
+      if (glyph) drawText(ctx, glyph.char, x + w + 5, n.y - 4, glyph.ink, C.BLACK)
     }
     // Where you are, pointed at from the side: above the box it would touch the name line.
     if (here) drawBlinkingText(ctx, '>', x - 12, n.y - 4, now, C.B_YELLOW, C.BLACK)

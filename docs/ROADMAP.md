@@ -1,8 +1,10 @@
 # chaosBunny — Roadmap & task board
 
 > Source of truth for **what's next and in what order**. Kept up to date as we go.
-> Design brief: [`CLAUDE.md`](../CLAUDE.md). Latest retrospective:
-> [`docs/retrospective-2026-06-01.md`](./retrospective-2026-06-01.md).
+> Design brief: [`CLAUDE.md`](../CLAUDE.md). What may not be changed:
+> [`RULES.md`](../RULES.md). Latest retrospective:
+> [`docs/retrospective-2026-09-13.md`](./retrospective-2026-09-13.md) — why the game
+> changed shape, and what that cost.
 > Controls table lives in [`README.md`](../README.md) (an in-game overlay is on the list).
 
 **Legend:** ✅ done · 🔜 next · 🔲 planned · 💭 later / idea
@@ -50,6 +52,15 @@ the owner's decision, not this document's.
 
 ## Recently done
 
+- ✅ **2026-09-15 — Score, medals and rooms that open in order.** `src/stealth/score.ts`:
+  a room is worth `round(1000 × par / beats)` (a ratio rather than the −50-a-beat
+  countdown, so a finished room never scores zero), a medal for on par (`*`) and within
+  a quarter of it (`+`), and a room opens once the one before it has a record. All of it
+  is read off `records.ts` — no new save field. The win screen says the medal and the
+  run's points, the map draws medals, locks and the cellar's total, the ending adds the
+  score. The room keys (`1`…`0`, `[` `]`) and entering a locked room from the map are
+  dev-only now (`STEALTH_ROOM_SKIP = import.meta.env.DEV`). Still open from the same
+  proposal: the transfer code and the after-a-catch statistics.
 - ✅ **2026-09-13 — The polish pass: sound, light, and the hand on the shoulder.**
   - **Sound (S1's half that is not an ear).** A beat used to fire every one of its
     events at once, so the `?` that cost you the room arrived under four other blips;

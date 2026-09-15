@@ -30,6 +30,12 @@ export interface Strings {
   readonly wonBeats: (n: number) => string
   readonly par: (n: number) => string
   readonly onPar: string
+  /** Win screen: escaped over par, but within a quarter of it (`score.ts` medal `near`). */
+  readonly nearPar: (par: number) => string
+  /** Points: a room's on the win screen and the map, the whole cellar's on the map and the ending. */
+  readonly score: (n: number) => string
+  /** On the map, under a room that stays shut until the one before it is escaped. */
+  readonly locked: (before: number) => string
   readonly room: (n: number) => string
   readonly again: string
   /** The command a Spectrum owner typed to load a tape — the same in every language. */
@@ -151,6 +157,9 @@ const EN: Strings = {
   wonBeats: (n) => `IN ${n} BEATS`,
   par: (n) => `PAR ${n}`,
   onPar: 'ON PAR!',
+  nearPar: (n) => `NEAR PAR (${n})`,
+  score: (n) => `SCORE ${n}`,
+  locked: (n) => `LOCKED: ESCAPE ROOM ${n} FIRST`,
   room: (n) => `R${n}`,
   again: 'ANY KEY: THE CELLAR MAP',
   loadCommand: 'LOAD ""',
@@ -254,6 +263,9 @@ const SK: Strings = {
   wonBeats: (n) => `ZA ${n} BEATOV`,
   par: (n) => `PAR ${n}`,
   onPar: 'NA PAR!',
+  nearPar: (n) => `BLIZKO PARU (${n})`,
+  score: (n) => `BODY ${n}`,
+  locked: (n) => `ZAMKNUTA: PREJDI IZBU ${n}`,
   room: (n) => `M${n}`,
   again: 'KLAVESA: MAPA PIVNICE',
   loadCommand: 'LOAD ""',
