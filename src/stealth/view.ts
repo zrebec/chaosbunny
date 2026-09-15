@@ -24,7 +24,7 @@ import {
 } from 'zx-kit'
 import { SPRITES, TILES, drawLayered, layered, type Layered } from './art.js'
 import { BAT_HEARING } from './bat.js'
-import { SNEAK_STEPS, throwAt, type World } from './beat.js'
+import { SNEAK_STEPS, throwAt, type Action, type World } from './beat.js'
 import { DIRS, manhattan, sameCell, type Cell, type Dir } from './grid.js'
 import type { Guidance } from './guide.js'
 import { allLampsOn, cellIndex, lampOn, litCells, shadowsWon } from './light.js'
@@ -78,12 +78,42 @@ export function cycleAmbience(): Ambience {
 /** How far the sprites (16×24) rise above the tile they stand on. */
 const SPRITE_RISE = 8
 
+/**
+ * Which way Randy looks after an action: where he stepped or threw, and unchanged by
+ * the ears or a wait. A step into a wall turns him too — no beat, but he looked.
+ *
+ * This is the picture's business alone. `World` has no facing on purpose: the solver
+ * searches worlds, and four facings of the same cell would be four states the rules
+ * cannot tell apart (RULES.md R1, R7).
+ */
+export function faceAfter(facing: Dir, action: Action): Dir {
+  return action.kind === 'move' || action.kind === 'throw' ? action.dir : facing
+}
+
+/** How high Randy's hop lifts him at the top of a step, in pixels. */
+export const HOP_PX = 2
+
+/**
+ * The frame of a step: standing at either end, the hop frame through the middle — so a
+ * step reads as a hop rather than a slide, and a held arrow alternates the two.
+ */
+export function hopFrame(t: number): 0 | 1 {
+  return t > 0.2 && t < 0.8 ? 1 : 0
+}
+
+/** How far a step lifts him at `t`: an arc, nothing at either end. */
+export function hopLift(t: number): number {
+  return Math.round(Math.sin(Math.PI * Math.min(1, Math.max(0, t))) * HOP_PX)
+}
+
 /** One beat on screen: the world after it, the world before, and how far the move has got. */
 export interface Frame {
   readonly world: World
   readonly prev: World
   /** 0 → 1 across a beat's move animation. */
   readonly t: number
+  /** Which way Randy is looking — picture only, kept by `main.ts` with {@link faceAfter}. */
+  readonly facing: Dir
   /** Wall time, for the things that move on their own clock: a lamp breathing, one dying. */
   readonly now: number
   /** The carrot in flight this beat, if one was thrown. */
@@ -403,8 +433,12 @@ interface Actor {
 function actors(ctx: CanvasRenderingContext2D, f: Frame): Actor[] {
   const list: Actor[] = []
   const r = lerpCell(f.prev.randy.cell, f.world.randy.cell, f.t)
-  const randyArt = f.world.randy.earsDown ? SPRITES.randyEarsDown : SPRITES.randyEarsUp
-  list.push({ y: r.y, draw: () => drawLayered(ctx, randyArt, r.x, r.y - SPRITE_RISE) })
+  // A hop only when he actually went somewhere: a throw or the ears are not a step.
+  const stepping = f.t < 1 && !sameCell(f.prev.randy.cell, f.world.randy.cell)
+  const pose = SPRITES.randy[f.facing][f.world.randy.earsDown ? 'earsDown' : 'earsUp']
+  const randyArt = pose[stepping ? hopFrame(f.t) : 0]
+  const lift = stepping ? hopLift(f.t) : 0
+  list.push({ y: r.y, draw: () => drawLayered(ctx, randyArt, r.x, r.y - SPRITE_RISE - lift) })
 
   f.world.foxes.forEach((fox, i) => {
     const from = f.prev.foxes[i]?.cell ?? fox.cell

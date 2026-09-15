@@ -15,8 +15,18 @@ import batRoostJson from '../art/zx/bat-td-roost.json'
 import foxDownJson from '../art/zx/fox-td-down.json'
 import foxSideJson from '../art/zx/fox-td-side.json'
 import foxUpJson from '../art/zx/fox-td-up.json'
-import randyDownJson from '../art/zx/randy-td-ears-down.json'
-import randyUpJson from '../art/zx/randy-td-ears-up.json'
+import randyDownEarsDownA from '../art/zx/randy-td-down-ears-down-a.json'
+import randyDownEarsDownB from '../art/zx/randy-td-down-ears-down-b.json'
+import randyDownEarsUpA from '../art/zx/randy-td-down-ears-up-a.json'
+import randyDownEarsUpB from '../art/zx/randy-td-down-ears-up-b.json'
+import randySideEarsDownA from '../art/zx/randy-td-side-ears-down-a.json'
+import randySideEarsDownB from '../art/zx/randy-td-side-ears-down-b.json'
+import randySideEarsUpA from '../art/zx/randy-td-side-ears-up-a.json'
+import randySideEarsUpB from '../art/zx/randy-td-side-ears-up-b.json'
+import randyUpEarsDownA from '../art/zx/randy-td-up-ears-down-a.json'
+import randyUpEarsDownB from '../art/zx/randy-td-up-ears-down-b.json'
+import randyUpEarsUpA from '../art/zx/randy-td-up-ears-up-a.json'
+import randyUpEarsUpB from '../art/zx/randy-td-up-ears-up-b.json'
 import roomKitJson from '../art/zx/room-kit.json'
 import { THEME_CARROT_INK } from '../config.js'
 
@@ -122,9 +132,48 @@ export const TILES = tileset(roomKitJson)
 
 const foxSide = sprite(foxSideJson, 'fox-td-side')
 
+/** Randy's two frames of one pose: standing, and mid-hop. */
+export type RandyFrames = readonly [stand: Layered, hop: Layered]
+
+/** One facing of Randy: the same two frames with his ears up and with them down. */
+export interface RandyFacing {
+  readonly earsUp: RandyFrames
+  readonly earsDown: RandyFrames
+}
+
+function frames(a: ZxSpriteJson, b: ZxSpriteJson, where: string): RandyFrames {
+  return [sprite(a, `${where}-a`), sprite(b, `${where}-b`)]
+}
+
+const randyRight: RandyFacing = {
+  earsUp: frames(randySideEarsUpA, randySideEarsUpB, 'randy-td-side-ears-up'),
+  earsDown: frames(randySideEarsDownA, randySideEarsDownB, 'randy-td-side-ears-down'),
+}
+
+/**
+ * Randy in every direction he can face, ears up and down, two frames each. Three
+ * directions are drawn and the fourth is the side view mirrored — the same economy the
+ * fox has. Which way he faces is a matter of the picture only (`view.ts` `faceAfter`):
+ * the rules never learn it, so no par and no record can move because of it.
+ */
+const RANDY: Readonly<Record<'up' | 'down' | 'left' | 'right', RandyFacing>> = {
+  down: {
+    earsUp: frames(randyDownEarsUpA, randyDownEarsUpB, 'randy-td-down-ears-up'),
+    earsDown: frames(randyDownEarsDownA, randyDownEarsDownB, 'randy-td-down-ears-down'),
+  },
+  up: {
+    earsUp: frames(randyUpEarsUpA, randyUpEarsUpB, 'randy-td-up-ears-up'),
+    earsDown: frames(randyUpEarsDownA, randyUpEarsDownB, 'randy-td-up-ears-down'),
+  },
+  right: randyRight,
+  left: {
+    earsUp: [mirrored(randyRight.earsUp[0]), mirrored(randyRight.earsUp[1])],
+    earsDown: [mirrored(randyRight.earsDown[0]), mirrored(randyRight.earsDown[1])],
+  },
+}
+
 export const SPRITES = {
-  randyEarsUp: sprite(randyUpJson, 'randy-td-ears-up'),
-  randyEarsDown: sprite(randyDownJson, 'randy-td-ears-down'),
+  randy: RANDY,
   fox: {
     down: sprite(foxDownJson, 'fox-td-down'),
     up: sprite(foxUpJson, 'fox-td-up'),
