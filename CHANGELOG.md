@@ -1,3 +1,10 @@
+# [0.11.0](https://github.com/zrebec/chaosbunny/compare/v0.10.1...v0.11.0) (2026-09-16)
+
+
+### Features
+
+* **stealth:** a real tape, a mirrored cellar, and locks that mean so… ([#28](https://github.com/zrebec/chaosbunny/issues/28)) ([67bfeda](https://github.com/zrebec/chaosbunny/commit/67bfeda417effa54ac85af6acc5dd99634b13c7e))
+
 ## [0.10.1](https://github.com/zrebec/chaosbunny/compare/v0.10.0...v0.10.1) (2026-09-15)
 
 
