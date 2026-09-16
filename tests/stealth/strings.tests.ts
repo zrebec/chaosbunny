@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RULES_FOOTER, RULES_STEP, RULES_TOP } from '../../src/stealth/title.js'
+import { CONTROLS_PROMPT, CONTROLS_STEP, CONTROLS_TOP, RULES_FOOTER, RULES_STEP, RULES_TOP } from '../../src/stealth/title.js'
 import { LOCALES, roomLabel, STR, type Strings } from '../../src/stealth/strings.js'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
 
@@ -43,6 +43,28 @@ describe('the strings', () => {
       const clash = seen.get(line)
       expect(clash, `${name} and ${clash} are both "${line}"`).toBeUndefined()
       seen.set(line, name)
+    }
+  })
+})
+
+describe('the keys screen', () => {
+  it('leaves a margin either side: no line wider than 30 columns', () => {
+    for (const [code, str] of Object.entries(LOCALES)) {
+      for (const line of str.controls) expect(line.length, `${code}: "${line}"`).toBeLessThanOrEqual(30)
+    }
+  })
+
+  it('fits every key above its prompt, in both tongues', () => {
+    for (const [code, str] of Object.entries(LOCALES)) {
+      const bottom = CONTROLS_TOP + (str.controls.length - 1) * CONTROLS_STEP + 8
+      expect(bottom, `${code}: ${str.controls.length} lines reach ${bottom}px`).toBeLessThanOrEqual(CONTROLS_PROMPT - 4)
+    }
+  })
+
+  it('names the sound bench and the rules, so a player can find them', () => {
+    for (const str of Object.values(LOCALES)) {
+      expect(str.controls.some((l) => l.startsWith('S '))).toBe(true)
+      expect(str.controls.some((l) => l.startsWith('H '))).toBe(true)
     }
   })
 })

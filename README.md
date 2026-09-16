@@ -49,7 +49,9 @@ and `docs/stealth-design.md`.
 | `M` | The cellar hum on / off |
 | `L` | How the cellar is lit: BRIGHT lamplight (a lamp's reach drawn with the Spectrum's BRIGHT bit) → as it was → the cellar → the deep cellar. Picture only — no rule, no par, changes |
 | `R` | Start the room again |
-| `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) — **`npm run dev` only**. A build opens a room once the one before it is escaped |
+| `T` (on the map) | The same cellar mirrored — its own records, medals and locks |
+| `Esc` (in a room) | The cellar map; `Esc` there comes back to the beat you left |
+| `1`…`9`, `0`, `[`, `]` | Jump to a room (`0` is the tenth) — **only with `?dev` in the address**, on the dev server as well (every room open, `DEV` in the map's corner). Otherwise a room opens once the one before it is escaped |
 | `S` (on the loaded picture) | The sound bench: thirteen sounds on thirteen keys, `M` adds the hum, `F` `G` mute the hum's two voices one at a time and `J` brings them both back |
 | `H` | What the cellar knows: the rules the rooms are built on — from the picture or mid-room |
 | `P` / `B` (after a win) | Watch this run back, or the one that holds the record |
@@ -66,6 +68,25 @@ Each room also earns a medal: `*` on par, `+` within a quarter of par. The cella
 shows both, the whole cellar's points sit in its title line, and a room stays shut
 until the one before it has been escaped. Nothing new is saved for any of it — it is
 all read off the records (`src/stealth/score.ts`).
+
+**The cellar mirrored.** `T` on the map turns every room left to right (`src/stealth/mirror.ts`).
+The rules do not know left from right, but a fox choosing between two equally short ways
+to a noise does, so all but three of them keep their par — every mirrored par is
+measured by the solver and pinned by a test, exactly like the real ones. The fairness
+number and the verbs each room wants come out identical, so the nudge stays true. Its
+records, medals and locks are its own: it is a second climb, not a repaint.
+
+**The way in.** `LOAD ""` loads the picture as long as a real tape would (any key skips
+it), a key shows every key on one screen — the sound bench and the rules are found
+there — and the next key opens the cellar map, which is where a room is chosen and
+where the marked room's par, best, points, attempts and catches are shown. The story is
+told once, the first time room 1 is entered.
+
+**Every catch says why.** Under CAUGHT! is one line on what went wrong — ears down out
+in the open, ears up in a shadow or over a crate, a lamp on the shadow, seen again right
+after the `?`, right in front of a fox, a fox or a bat met on one cell. Each reason is
+checked against the sight rules with the ears the other way (`src/stealth/caught.ts`),
+and never says what to do next.
 
 Caught three times in the same room, the cellar names the verb that room cannot be
 left without — *the ears down*, *a carrot thrown*, *the lamp out*, *the lever*, *wet

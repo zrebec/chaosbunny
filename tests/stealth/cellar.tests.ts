@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { mapNodes } from '../../src/stealth/cellar.js'
+import { MAP_TRIES_Y, mapNodes, markedRoomLines } from '../../src/stealth/cellar.js'
+import { parseRoom } from '../../src/stealth/room.js'
 import { PLAY_H, PLAY_W } from '../../src/stealth/view.js'
 import { ROOM_SOURCES } from '../../src/stealth/rooms/index.js'
-import { STR } from '../../src/stealth/strings.js'
+import { LOCALES, STR } from '../../src/stealth/strings.js'
 
 describe('the cellar map', () => {
   const nodes = mapNodes(ROOM_SOURCES.length)
@@ -37,6 +38,31 @@ describe('the cellar map', () => {
       const line = `${STR.par(src.par!)}  ${STR.record(999)}`
       expect(line.length, `"${line}"`).toBeLessThanOrEqual(32)
     }
+  })
+
+  it('says everything about the marked room above the chain, in 32 columns, in both tongues', () => {
+    const rooms = ROOM_SOURCES.map(parseRoom)
+    const records = Object.fromEntries(rooms.map((r) => [r.name, 999]))
+    const stats = Object.fromEntries(rooms.map((r) => [r.name, { attempts: 888, caught: 888 }]))
+    const topOfChain = Math.min(...nodes.map((n) => n.y)) - 7 - 3 // box half-height, cursor frame
+    for (const str of Object.values(LOCALES)) {
+      rooms.forEach((_, i) => {
+        // Unlocked with a record and a history, and locked, both.
+        for (const recs of [records, {}]) {
+          for (const line of markedRoomLines(rooms, i, recs, stats, str)) {
+            expect(line.text.length, `"${line.text}"`).toBeLessThanOrEqual(32)
+            expect(line.y + 8, `"${line.text}" runs into the chain`).toBeLessThanOrEqual(topOfChain)
+          }
+        }
+      })
+    }
+    expect(MAP_TRIES_Y + 8).toBeLessThanOrEqual(topOfChain)
+  })
+
+  it('shows attempts and catches only for a room that has been tried', () => {
+    const rooms = ROOM_SOURCES.map(parseRoom)
+    expect(markedRoomLines(rooms, 0, {}, {}, STR)).toHaveLength(1)
+    expect(markedRoomLines(rooms, 0, {}, { [rooms[0]!.name]: { attempts: 2, caught: 1 } }, STR)).toHaveLength(2)
   })
 
   it('lays out a short cellar and a long one without stacking rows off screen', () => {

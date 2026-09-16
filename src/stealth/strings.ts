@@ -6,6 +6,7 @@
  */
 import { pickLocale } from 'zx-kit'
 import { LANGUAGE_CODE } from '../config.js'
+import type { CaughtReason } from './caught.js'
 import type { Want } from './wants.js'
 
 export interface Strings {
@@ -18,6 +19,11 @@ export interface Strings {
   readonly caught: string
   /** Under `caught`: the two ways out of a lost room. */
   readonly caughtHint: string
+  /**
+   * Under `caught`, every time: what just went wrong (`caught.ts`). One line each, at
+   * most 32 columns, saying what happened and never what to do next.
+   */
+  readonly caughtWhy: Readonly<Record<CaughtReason, string>>
   /**
    * Under `caughtHint`, for a player caught three times in the same room: the verb the
    * room cannot be left without (`wants.ts`), or `none` for a room that wants no tool
@@ -53,6 +59,19 @@ export interface Strings {
   readonly wholeCellar: (n: number) => string
   readonly record: (n: number) => string
   readonly newRecord: string
+  /**
+   * The screen after the loaded picture: every key, one line each, the key padded to
+   * eight columns. It is where the sound bench and the rules are found.
+   */
+  readonly controlsTitle: string
+  readonly controls: readonly string[]
+  /** Under the keys: what a key does from here. */
+  readonly controlsPrompt: string
+  /** On the map, for the marked room: attempts begun and catches, from the save. */
+  readonly attempts: (n: number) => string
+  readonly timesCaught: (n: number) => string
+  /** On the map while every room is open for testing (`?dev`). */
+  readonly devMark: string
   /** Win-screen hint: P replays this run, B the record run (when there is one). */
   readonly replayHint: (withBest: boolean) => string
   readonly replaying: string
@@ -69,8 +88,12 @@ export interface Strings {
    * the drip alone \u2014 so the bench can mute each one while it plays.
    */
   readonly voiceNames: readonly [string, string]
-  /** The map between rooms: its title, and how to leave it. */
+  /** The map between rooms: its title, the same cellar mirrored, and how to leave it. */
   readonly cellar: string
+  readonly cellarMirror: string
+  /** Said when `T` walks between the cellar and its mirror (`mirror.ts`). */
+  readonly mirrorOn: string
+  readonly mirrorOff: string
   readonly cellarHint: string
   /**
    * What each cellar is called, in the order they are played — the map and the line
@@ -143,6 +166,17 @@ const EN: Strings = {
   aimHints: 'THROW: PICK A DIRECTION  X NO',
   caught: 'CAUGHT!',
   caughtHint: 'U ONE BEAT BACK - ANY KEY AGAIN',
+  caughtWhy: {
+    front: 'NOTHING HIDES YOU RIGHT IN FRONT',
+    litShadow: 'THE LAMP LIGHTS YOUR SHADOW',
+    earsDownOpen: 'EARS DOWN HIDE ONLY IN SHADOW',
+    earsUpShadow: 'IN SHADOW, EARS UP SHOW YOU',
+    earsUpCover: 'OVER THE CRATE, EARS UP SHOW',
+    seenAgain: 'SEEN AGAIN RIGHT AFTER THE ?',
+    bumped: 'YOU AND A FOX MET ON ONE CELL',
+    batFlight: 'A BAT FLEW THROUGH YOUR CELL',
+    batBumped: 'YOU WALKED INTO A BAT',
+  },
   wants: {
     dark: 'THIS ROOM WANTS YOUR EARS DOWN',
     carrot: 'THIS ROOM WANTS A CARROT THROWN',
@@ -176,6 +210,27 @@ const EN: Strings = {
   ],
   record: (n) => `BEST ${n}`,
   newRecord: 'NEW BEST!',
+  controlsTitle: 'THE KEYS',
+  controls: [
+    'ARROWS  STEP - EVERYONE MOVES',
+    'Z       EARS UP / DOWN',
+    'X       AIM, AN ARROW THROWS',
+    'SPACE   WAIT A BEAT',
+    'U       ONE BEAT BACK',
+    'R       START THE ROOM AGAIN',
+    'C       THE CELLAR MAP',
+    'H       WHAT THE CELLAR KNOWS',
+    'M       MUSIC ON / OFF',
+    'L       HOW THE CELLAR IS LIT',
+    'S       THE SOUND BENCH',
+    'P  B    AFTER A WIN: REPLAYS',
+    'T       THE CELLAR MIRRORED',
+    'PAD: A THROW START EARS Y WAIT',
+  ],
+  controlsPrompt: 'ANY KEY: CHOOSE A ROOM',
+  attempts: (n) => `TRIES ${n}`,
+  timesCaught: (n) => `CAUGHT ${n}`,
+  devMark: 'DEV',
   replayHint: (withBest) => (withBest ? 'P REPLAY  B BEST RUN' : 'P REPLAY'),
   replaying: 'REPLAY - ANY KEY STOPS',
   endingTitle: 'THE NIGHT AIR',
@@ -209,6 +264,9 @@ const EN: Strings = {
   soundHint: 'M HUM  J ALL VOICES - ESC BACK',
   voiceNames: ['DRONE', 'AIR'],
   cellar: 'THE CELLAR',
+  cellarMirror: 'THE CELLAR MIRRORED',
+  mirrorOn: 'MIRRORED - ITS OWN RECORDS',
+  mirrorOff: 'THE CELLAR AS IT WAS',
   cellarHint: 'ARROWS PICK - ENTER IN - ESC OUT',
   roomNames: [
     'THE PANTRY CORRIDOR', 'THE CROSSING', 'THE DARK STEP', 'THE SHADOW SHELF',
@@ -249,6 +307,17 @@ const SK: Strings = {
   aimHints: 'HOD: VYBER SMER SIPKOU  X NIE',
   caught: 'CHYTENY!',
   caughtHint: 'U BEAT SPAT - KLAVESA ZNOVA',
+  caughtWhy: {
+    front: 'TESNE PRED LISKOU NIC NESKRYJE',
+    litShadow: 'LAMPA SVIETI NA TVOJ TIEN',
+    earsDownOpen: 'SKLOPENE USI SKRYJU LEN V TIENI',
+    earsUpShadow: 'V TIENI TA PREZRADILI USI HORE',
+    earsUpCover: 'USI HORE TRCALI SPOZA DEBNY',
+    seenAgain: 'ZBADANY ZNOVA HNED PO ?',
+    bumped: 'STRETOL SI LISKU NA JEDNEJ BUNKE',
+    batFlight: 'NETOPIER TI PRELETEL CEZ BUNKU',
+    batBumped: 'VOSIEL SI DO NETOPIERA',
+  },
   wants: {
     dark: 'TATO IZBA CHCE SKLOPENE USI',
     carrot: 'TATO IZBA CHCE HOD MRKVOU',
@@ -282,6 +351,27 @@ const SK: Strings = {
   ],
   record: (n) => `REKORD ${n}`,
   newRecord: 'NOVY REKORD!',
+  controlsTitle: 'OVLADANIE',
+  controls: [
+    'SIPKY   KROK - POHNU SA VSETCI',
+    'Z       USI HORE / DOLE',
+    'X       MIERIT A HODIT MRKVU',
+    'MEDZERA POCKAT BEAT',
+    'U       O BEAT SPAT',
+    'R       IZBA ODZNOVA',
+    'C       MAPA PIVNICE',
+    'H       CO VIE PIVNICA',
+    'M       HUDBA ZAP / VYP',
+    'L       SVETLO V PIVNICI',
+    'S       SKUSOBNA ZVUKOV',
+    'P  B    PO VYHRE: ZAZNAMY',
+    'T       PIVNICA NAOPAK',
+    'PAD: A HOD  START USI  Y CAKAT',
+  ],
+  controlsPrompt: 'KLAVESA: VYBER IZBU',
+  attempts: (n) => `POKUSY ${n}`,
+  timesCaught: (n) => `CHYTENY ${n}`,
+  devMark: 'DEV',
   replayHint: (withBest) => (withBest ? 'P ZNOVA  B REKORDNY BEH' : 'P ZNOVA POZRIET'),
   replaying: 'ZAZNAM - KLAVESA ZASTAVI',
   endingTitle: 'NOCNY VZDUCH',
@@ -315,6 +405,9 @@ const SK: Strings = {
   soundHint: 'M HUKOT  J HLASY - ESC SPAT',
   voiceNames: ['HUKOT', 'VZDUCH'],
   cellar: 'PIVNICA',
+  cellarMirror: 'PIVNICA NAOPAK',
+  mirrorOn: 'NAOPAK - S VLASTNYMI REKORDMI',
+  mirrorOff: 'PIVNICA AKO BOLA',
   cellarHint: 'SIPKY - ENTER DNU - ESC VON',
   roomNames: [
     'SPIZOVA CHODBA', 'PRECHOD', 'KROK V TME', 'TIENISTA POLICA',

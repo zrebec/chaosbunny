@@ -190,7 +190,7 @@ obrázku izby, musí do toho kľúča pribudnúť — inak ostane visieť starý
 
 ### W6. Nová klávesa
 
-Obsadené sú: `Z X U C R H M S P B L`, číslice `0`–`9`, `[` `]`, medzerník, `Esc`,
+Obsadené sú: `Z X U C R H M S P B L T`, číslice `0`–`9`, `[` `]`, medzerník, `Esc`,
 `Enter`, šípky/WASD. V skúšobni zvukov (`S`) navyše `F G` (stlmiť jeden hlas
 hukotu), `J` (všetky späť) a `Q` (odísť). Na pade sú **tri tlačidlá a všetky tri sa
 volajú po niečom inom**: `A`/flag = hod, `Start`/pause = uši, `Y`/debug = čakanie.
