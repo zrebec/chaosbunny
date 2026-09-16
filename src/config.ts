@@ -18,14 +18,26 @@ export const PLAYFIELD_H = GAME_HEIGHT // 192 px = 24 cells
 /** UI language (i18n wiring comes in a later step). */
 export const LANGUAGE_CODE = 'sk'
 
+/** Whether the page was opened with `?dev` in its address. */
+function devInAddress(): boolean {
+  return typeof location !== 'undefined' && new URLSearchParams(location.search).has('dev')
+}
+
 /**
  * Stealth game: whether a room that is still locked can be opened anyway — by the room
- * keys (`1`…`9`, `0`, `[`, `]`) or from the cellar map. On under `npm run dev`, so rooms
- * can be walked into straight away while they are being tuned; off in a build, where a
- * room opens only once the one before it has been escaped (`src/stealth/score.ts`) and
- * the room keys do nothing.
+ * keys (`1`…`9`, `0`, `[`, `]`) or from the cellar map. **Only `?dev` in the address**,
+ * in a build and on the dev server alike: a lock that is off while you develop is a
+ * lock nobody ever sees working. Otherwise a room opens once the one before it has been
+ * escaped (`src/stealth/score.ts`) and the room keys do nothing.
  */
-export const STEALTH_ROOM_SKIP: boolean = import.meta.env.DEV === true
+export const STEALTH_ROOM_SKIP: boolean = devInAddress()
+
+/**
+ * Stealth game: how much faster than a real tape the loading screen loads. 1 is the
+ * real thing — about 45 s, which is what a Spectrum owner actually sat through — and
+ * any key skips it. 2 halves it, 4 quarters it.
+ */
+export const STEALTH_TAPE_SPEED = 1 as const
 
 /**
  * Floors to climb before the escape hatch — the room's goal, shown in the HUD.

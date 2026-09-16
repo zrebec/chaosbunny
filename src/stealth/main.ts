@@ -27,9 +27,11 @@
  * shows the cellar map (`cellar.ts`) with the room just escaped lit up, and a key
  * from there walks on to the next.
  *
- * It opens on the title (`title.ts`): `LOAD ""`, a key starts the tape, a key
- * during the load finishes it, a key on the picture brings the story, and a key on
- * that starts room 1. Winning the last room comes back to the picture.
+ * It opens on the title (`title.ts`): `LOAD ""`, a key starts the tape (a real
+ * load's length), a key during the load finishes it, a key on the picture brings the
+ * keys screen, and a key on that opens the cellar map — the hub where a room is
+ * chosen. The story is told the first time room 1 is entered from it. Winning the
+ * last room comes back to the picture.
  *
  * Ears down allows only `SNEAK_STEPS` (beat.ts) steps before they must come up;
  * the pips beside EARS DOWN count them.
@@ -51,11 +53,13 @@ import { cellIndex, litCells } from './light.js'
 import { musicOn, pauseMusic, resetChannels, startMusic, toggleChannel, toggleMusic } from './music.js'
 import { openRecords, type Run } from './records.js'
 import { decodeRun, encodeRun } from './replay.js'
-import { parseRoom, tileAt } from './room.js'
+import { parseRoom, tileAt, type Room } from './room.js'
+import { mirrorSource } from './mirror.js'
 import { spots } from './rules.js'
 import { cellarScore, isUnlocked } from './score.js'
 import { ROOM_SOURCES } from './rooms/index.js'
-import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape } from './sound.js'
+import { playBlocked, playEvents, playTape, playUndo, SOUND_BENCH, stopTape, tickTape } from './sound.js'
+import { caughtReason } from './caught.js'
 import { roomLabel, STR } from './strings.js'
 import { loadStateAt } from './loader.js'
 import { renderCellar } from './cellar.js'
@@ -70,6 +74,8 @@ const BEAT_MS = 220
  * at once, so the wait is never imposed on a player who has already decided.
  */
 const CAUGHT_MS = 1600
+/** Extra time on the caught screen for reading why (`caught.ts`). */
+const REASON_MS = 1200
 /** A pause after winning before a key restarts, so the winning keypress cannot skip the screen. */
 const WON_GRACE_MS = 400
 /** Replay pace: a little slower than play, so a run can be followed. */
@@ -82,18 +88,26 @@ const ctx = setupCanvas(canvas, SCALE, 256, 192)
 canvas.style.width = '' // index.html's CSS fits the canvas to the window
 canvas.style.height = ''
 
-const ROOMS = ROOM_SOURCES.map(parseRoom)
+const PLAIN_ROOMS = ROOM_SOURCES.map(parseRoom)
+/**
+ * The same cellar mirrored left to right (`mirror.ts`): the same pars, none of the
+ * muscle memory, and records of its own. `T` walks between the two.
+ */
+const MIRROR_ROOMS = ROOM_SOURCES.map(mirrorSource).map(parseRoom)
+let mirrored = false
+const ROOMS_OF = (): readonly Room[] => (mirrored ? MIRROR_ROOMS : PLAIN_ROOMS)
 /** Every room's par added up: what the whole cellar costs a player who never wastes a beat. */
-const PAR_TOTAL = ROOMS.reduce((sum, r) => sum + (r.par ?? 0), 0)
-const scenes = new Map<number, Scene>()
+const PAR_TOTAL = PLAIN_ROOMS.reduce((sum, r) => sum + (r.par ?? 0), 0)
+const scenes = new Map<string, Scene>()
 let roomIndex = 0
-let room = ROOMS[roomIndex]!
+let room = PLAIN_ROOMS[roomIndex]!
 let scene = sceneFor(roomIndex)
 
 /** Room layers are drawn once per room and kept. */
 function sceneFor(i: number): Scene {
-  let s = scenes.get(i)
-  if (!s) scenes.set(i, (s = createScene(ROOMS[i]!, i + 1)))
+  const key = `${mirrored ? 'm' : 'p'}${i}`
+  let s = scenes.get(key)
+  if (!s) scenes.set(key, (s = createScene(ROOMS_OF()[i]!, i + 1)))
   return s
 }
 
@@ -170,7 +184,7 @@ const TOAST_MS = 1400
 function wholeCellarBeats(): number | null {
   const records = book.records()
   let total = 0
-  for (const room of ROOMS) {
+  for (const room of ROOMS_OF()) {
     const beats = records[room.name]
     if (beats === undefined) return null
     total += beats
@@ -180,7 +194,7 @@ function wholeCellarBeats(): number | null {
 
 /** Whether room `i` may be opened: once the room before it is escaped, or always while tuning. */
 function canEnter(i: number): boolean {
-  return STEALTH_ROOM_SKIP || isUnlocked(ROOMS, book.records(), i)
+  return STEALTH_ROOM_SKIP || isUnlocked(ROOMS_OF(), book.records(), i)
 }
 
 function say(text: string): void {
@@ -286,6 +300,14 @@ function hint(world: World, events: readonly BeatEvent[], caught: boolean): void
 }
 let titleMode: TitleMode = 'prompt'
 let loadMs = 0
+/** The title screen the rules and the sound bench go back to. */
+let titleReturn: TitleMode = 'ready'
+/** Told once a session, the first time room 1 is entered while it has no record. */
+let storyShown = false
+/** Whether this run has been counted as an attempt yet — its first beat counts it. */
+let attemptCounted = false
+/** Why the room just ended, in words, while the caught screen shows. */
+let reason: string | null = null
 
 // Beat-paced key repeat: a held arrow steps again after 220 ms, then every 180 ms.
 initInput(220, 180)
@@ -311,7 +333,9 @@ function advanceTitle(): void {
     stopTape()
     titleMode = 'ready'
   } else if (titleMode === 'ready') {
-    titleMode = 'story' // why he is down there, before he starts climbing out
+    titleMode = 'controls' // every key, before the first room is chosen
+  } else if (titleMode === 'controls') {
+    openCellar()
   } else if (titleMode === 'ending') {
     titleMode = 'ready' // back to the picture, for whoever wants the climb again
   } else {
@@ -319,13 +343,56 @@ function advanceTitle(): void {
   }
 }
 
+/**
+ * The cellar map from the title screens — the hub. The first room still without a
+ * record is the one marked, so carrying on is still one key.
+ */
+function openCellar(): void {
+  const records = book.records()
+  const next = ROOMS_OF().findIndex((r) => records[r.name] === undefined)
+  phase = 'map'
+  escaped = false
+  mapBack = 'title'
+  mapPick = next < 0 ? 0 : next
+  roomIndex = mapPick
+  phaseMs = WON_GRACE_MS
+  resetInput()
+}
+
+/**
+ * Walks between the cellar and its mirror (`mirror.ts`). Only from the map and the
+ * title screens: in a room it would swap the floor under Randy's feet.
+ */
+function toggleMirror(): void {
+  mirrored = !mirrored
+  room = ROOMS_OF()[roomIndex]!
+  scene = sceneFor(roomIndex)
+  // A room left waiting behind the map belongs to the other cellar now.
+  mapBack = 'title'
+  say(mirrored ? STR.mirrorOn : STR.mirrorOff)
+}
+
+/**
+ * The cellar from inside a room: a look at where you are, and a way to leave for
+ * another one. Esc (or Esc on the map) comes back to the beat you were standing on.
+ */
+function openMapFromRoom(): void {
+  phase = 'map'
+  escaped = false
+  mapBack = 'room'
+  mapPick = roomIndex
+  phaseMs = WON_GRACE_MS
+  resetInput()
+}
+
 function goToRoom(i: number): void {
   if (phase === 'title') stopTape()
   escaped = false
   setBorder(null, 0)
   clearBorderFlash() // the colour of the room just left must not follow him into the next
-  roomIndex = ((i % ROOMS.length) + ROOMS.length) % ROOMS.length
-  room = ROOMS[roomIndex]!
+  const count = ROOMS_OF().length
+  roomIndex = ((i % count) + count) % count
+  room = ROOMS_OF()[roomIndex]!
   scene = sceneFor(roomIndex)
   restart()
   // The hints are *not* reset here. They were, once per room, which read as helpful and
@@ -368,6 +435,8 @@ function restart(): void {
   queued = null
   runActions = []
   history.length = 0
+  attemptCounted = false
+  reason = null
   replay = null
   guidance = null
   resetInput()
@@ -392,6 +461,7 @@ function undo(): boolean {
   queued = null
   caughtBy = null
   bittenBy = null
+  reason = null
   phase = 'play'
   phaseMs = 0
   playUndo()
@@ -467,6 +537,11 @@ function play(action: Action): void {
   else if (r.outcome === 'won') flashBorder('won')
   else if (r.events.some((e) => e.type === 'suspicious')) flashBorder('spotted')
   if (r.outcome === 'ok' || r.outcome === 'caught') hint(r.world, r.events, r.outcome === 'caught')
+  // A run is an attempt once it has a beat in it; entering a room to look does not count.
+  if (!attemptCounted) {
+    attemptCounted = true
+    book.attempt(room.name)
+  }
   runActions.push(action)
   history.push(world)
   facings.push(facing)
@@ -484,6 +559,9 @@ function play(action: Action): void {
     phase = 'caught'
     phaseMs = 0
     caughtIn.set(room.name, (caughtIn.get(room.name) ?? 0) + 1)
+    book.caught(room.name)
+    const why = caughtReason(room, r.world, r.events)
+    reason = why ? STR.caughtWhy[why] : null
     queued = null
     aiming = false
   } else if (r.outcome === 'won') {
@@ -516,18 +594,26 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat) return
   // The map: the arrows walk the chain, Enter opens the marked room, Esc leaves.
   if (phase === 'map') {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') mapPick = (mapPick + ROOMS.length - 1) % ROOMS.length
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') mapPick = (mapPick + 1) % ROOMS.length
+    const count = ROOMS_OF().length
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') mapPick = (mapPick + count - 1) % count
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') mapPick = (mapPick + 1) % count
+    // The cellar the other way round, with records of its own. Not while a room is
+    // waiting behind the map: that room would not be there any more.
+    else if (e.key === 't' || e.key === 'T') toggleMirror()
     else if (e.key === 'Enter' || e.key === ' ') {
       // Out of the last cellar, with the mark still on it: that way is the night air.
       if (escaped && mapPick === roomIndex) goToTitle('ending')
-      else if (canEnter(mapPick)) goToRoom(mapPick)
-      else playBlocked() // shut: the map already says which room opens it
+      else if (!canEnter(mapPick)) playBlocked() // shut: the map already says which room opens it
+      else if (mapPick === 0 && !storyShown && book.records()[ROOMS_OF()[0]!.name] === undefined) {
+        // Why he is down there, told once, right before the first room.
+        storyShown = true
+        goToTitle('story')
+      } else goToRoom(mapPick)
     }
     // Peeked at from inside a room, Esc costs nothing: the beat you were on is still there.
     else if (e.key === 'Escape') {
       if (mapBack === 'room') phase = 'play'
-      else goToTitle('ready')
+      else goToTitle('controls')
     }
     resetInput()
     e.preventDefault()
@@ -537,12 +623,15 @@ window.addEventListener('keydown', (e) => {
   if (phase === 'title' && titleMode === 'rules') {
     // Any key leaves; a player who came from a room lands back on the beat they left.
     if (rulesBack === 'room') phase = 'play'
-    else titleMode = 'ready'
+    else titleMode = titleReturn
     resetInput()
     return
   }
-  if ((e.key === 'h' || e.key === 'H') && (phase === 'play' || (phase === 'title' && titleMode === 'ready'))) {
+  /** The title screens that offer the rules, the bench and the map. */
+  const onTitleMenu = phase === 'title' && (titleMode === 'ready' || titleMode === 'controls')
+  if ((e.key === 'h' || e.key === 'H') && (phase === 'play' || onTitleMenu)) {
     rulesBack = phase === 'play' ? 'room' : 'title'
+    if (phase === 'title') titleReturn = titleMode
     phase = 'title'
     titleMode = 'rules'
     resetInput()
@@ -553,7 +642,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' || key === 'Q') {
       pauseMusic() // the bench is for the beeper; the hum stops when you leave
       resetChannels() // and a voice muted for tuning does not follow you into a room
-      titleMode = 'ready'
+      titleMode = titleReturn
     }
     // The tuning question is whether a blip cuts through the hum, so the hum is here too.
     else if (key === 'M') toggleMusic()
@@ -568,39 +657,36 @@ window.addEventListener('keydown', (e) => {
     resetInput()
     return
   }
-  if (phase === 'title' && titleMode === 'ready' && (e.key === 's' || e.key === 'S')) {
+  // On the keys screen, Esc steps back to the picture rather than on to the map.
+  if (phase === 'title' && titleMode === 'controls' && e.key === 'Escape') {
+    titleMode = 'ready'
+    resetInput()
+    return
+  }
+  if (onTitleMenu && (e.key === 't' || e.key === 'T')) {
+    toggleMirror()
+    resetInput()
+    return
+  }
+  if (onTitleMenu && (e.key === 's' || e.key === 'S')) {
+    titleReturn = titleMode
     titleMode = 'sound'
     resetInput()
     return
   }
   // The cellar from the title: the first room still unbeaten is the one marked.
-  if (phase === 'title' && titleMode === 'ready' && (e.key === 'c' || e.key === 'C')) {
-    const records = book.records()
-    const next = ROOMS.findIndex((r) => records[r.name] === undefined)
-    phase = 'map'
-    escaped = false
-    mapBack = 'title'
-    mapPick = next < 0 ? 0 : next
-    roomIndex = mapPick
-    phaseMs = WON_GRACE_MS
-    resetInput()
+  if (onTitleMenu && (e.key === 'c' || e.key === 'C')) {
+    openCellar()
     return
   }
-  // The cellar from inside a room: a look at where you are, and a way to leave for
-  // another one. Esc comes back to the beat you were standing on.
   if (phase === 'play' && (e.key === 'c' || e.key === 'C')) {
-    phase = 'map'
-    escaped = false
-    mapBack = 'room'
-    mapPick = roomIndex
-    phaseMs = WON_GRACE_MS
-    resetInput()
+    openMapFromRoom()
     return
   }
   // A tuning shortcut, not a way through the cellar: with rooms that open one after
   // another, a key that jumps to any of them would make the lock mean nothing.
   const digit = e.key === '0' ? 10 : Number(e.key) // 0 is the tenth room, as on a Spectrum menu
-  if (STEALTH_ROOM_SKIP && Number.isInteger(digit) && digit >= 1 && digit <= ROOMS.length) {
+  if (STEALTH_ROOM_SKIP && Number.isInteger(digit) && digit >= 1 && digit <= ROOMS_OF().length) {
     goToRoom(digit - 1)
     return
   }
@@ -640,7 +726,10 @@ window.addEventListener('keydown', (e) => {
       toggleAim()
       break
     case 'Escape':
-      aiming = false
+      // Aiming: Esc puts the carrot away. Otherwise it is the way out of the room —
+      // the same map `C` opens, and Esc there brings you back to this beat.
+      if (aiming) aiming = false
+      else openMapFromRoom()
       break
     case 'r':
     case 'R':
@@ -705,12 +794,13 @@ function frame(now: number): void {
   } else if (phase === 'title') {
     if (titleMode === 'sound' || titleMode === 'rules') {
       setBorder(null, now)
-      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL, cellarScore(ROOMS, book.records()))
+      renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS_OF().length, PAR_TOTAL, cellarScore(ROOMS_OF(), book.records()))
       requestAnimationFrame(frame)
       return // its keys are handled on keydown, so no key may advance the title here
     }
     if (titleMode === 'loading') {
       loadMs += dt
+      tickTape()
       if (loadStateAt(loadMs).phase === 'done') titleMode = 'ready'
     }
     setBorder(titleMode === 'loading' ? loadStateAt(loadMs).phase : null, now)
@@ -719,23 +809,26 @@ function frame(now: number): void {
     t = Math.min(1, t + dt / BEAT_MS)
     phaseMs += dt
     // Advice needs longer on screen than a shrug does.
-    if (phase === 'caught' && phaseMs >= (nudge() ? CAUGHT_MS + 1400 : CAUGHT_MS)) restart()
+    if (phase === 'caught' && phaseMs >= CAUGHT_MS + (nudge() ? 1400 : 0) + (reason ? REASON_MS : 0)) restart()
     // Keys during the grace are dropped, not kept for later — or they would skip the screen the moment it ends.
     if (phase === 'won' && consumeAnyKey() && phaseMs >= WON_GRACE_MS) {
       phase = 'map' // the cellar, with the room just escaped lit up
       mapBack = 'title'
-      escaped = roomIndex === ROOMS.length - 1
+      escaped = roomIndex === ROOMS_OF().length - 1
       mapPick = escaped ? roomIndex : roomIndex + 1
       phaseMs = 0
       resetInput()
     }
   }
 
-  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS.length, PAR_TOTAL, cellarScore(ROOMS, book.records()))
+  if (phase === 'title') renderTitle(ctx, title, titleMode, loadMs, now, STR, wholeCellarBeats(), ROOMS_OF().length, PAR_TOTAL, cellarScore(ROOMS_OF(), book.records()))
   else if (phase === 'map') {
     renderCellar(
       ctx,
-      { rooms: ROOMS, current: roomIndex, selected: mapPick, records: book.records(), now },
+      {
+        rooms: ROOMS_OF(), current: roomIndex, selected: mapPick, records: book.records(), stats: book.stats(),
+        dev: STEALTH_ROOM_SKIP, mirrored, now,
+      },
       STR,
     )
   }
@@ -746,6 +839,7 @@ function frame(now: number): void {
       bestRunKept: book.bestRun(room.name) !== null,
       toast: toast?.text ?? null,
       canUndo: history.length > 0,
+      reason: phase === 'caught' ? reason : null,
       nudge: phase === 'caught' ? nudge() : null,
       guide: phase === 'play' ? guidance : null,
     }, STR)

@@ -19,7 +19,7 @@
  * cellar's points.
  */
 import { C, drawBlinkingText, drawText, drawTextCentered, type SpectrumColor } from 'zx-kit'
-import type { Records } from './records.js'
+import type { Records, Stats } from './records.js'
 import type { Room } from './room.js'
 import { cellarScore, isUnlocked, recordScore, roomMedal, type Medal } from './score.js'
 import { roomLabel, type Strings } from './strings.js'
@@ -49,7 +49,8 @@ export function mapNodes(count: number): MapNode[] {
   const rows = Math.max(1, Math.ceil(count / COLS))
   const stepX = Math.floor((PLAY_W - 64) / (COLS - 1))
   const stepY = Math.min(40, Math.floor((PLAY_H - 96) / Math.max(1, rows - 1)))
-  const top = 56
+  // Below the four lines that describe the marked room, which live at the top.
+  const top = 72
   return Array.from({ length: count }, (_, i) => {
     const row = Math.floor(i / COLS)
     const col = i % COLS
@@ -66,6 +67,44 @@ function corridor(ctx: CanvasRenderingContext2D, a: MapNode, b: MapNode, lit: bo
   }
 }
 
+/** Where the lines about the marked room sit: its name, then two lines of numbers. */
+export const MAP_LABEL_Y = 20
+export const MAP_STATS_Y = 32
+export const MAP_TRIES_Y = 44
+
+/**
+ * What the map says about the marked room, above the chain: par, best, points — or
+ * which room opens it — and, once it has been tried, the attempts and the catches.
+ * Pure, so a test can hold every line to the 32 columns.
+ *
+ * These used to sit *under* each box, one number a room, and on a cellar of eighteen
+ * they ran into the boxes of the row below. One room's numbers at a time, at the top,
+ * is both readable and roomier.
+ */
+export function markedRoomLines(
+  rooms: readonly Room[], selected: number, records: Records, stats: Stats, str: Strings,
+): Array<{ readonly text: string; readonly ink: SpectrumColor; readonly y: number }> {
+  const room = rooms[selected]
+  if (!room) return []
+  const lines: Array<{ text: string; ink: SpectrumColor; y: number }> = []
+  if (!isUnlocked(rooms, records, selected)) {
+    lines.push({ text: str.locked(selected), ink: C.BLUE, y: MAP_STATS_Y })
+  } else {
+    const best = records[room.name]
+    const numbers = [
+      room.par === null ? '' : str.par(room.par),
+      best === undefined ? '' : str.record(best),
+      best === undefined ? '' : str.score(recordScore(room, records)),
+    ].filter(Boolean).join('  ')
+    if (numbers) lines.push({ text: numbers, ink: C.CYAN, y: MAP_STATS_Y })
+  }
+  const s = stats[room.name]
+  if (s && (s.attempts > 0 || s.caught > 0)) {
+    lines.push({ text: `${str.attempts(s.attempts)}  ${str.timesCaught(s.caught)}`, ink: C.WHITE, y: MAP_TRIES_Y })
+  }
+  return lines
+}
+
 /**
  * Draws the map. `current` is the room just left (or being played), `records` says
  * which rooms are behind you, and `now` drives the blink.
@@ -80,34 +119,28 @@ export function renderCellar(
     /** The room the arrows are resting on — it is framed, and it is the one that opens. */
     readonly selected: number
     readonly records: Records
+    /** Attempts and catches per room (`records.ts`), shown for the marked room. */
+    readonly stats: Stats
+    /** Every room open for testing (`?dev`): said in the corner, so nobody forgets. */
+    readonly dev: boolean
+    /** Whether this is the mirrored cellar (`mirror.ts`) — it says so in the title. */
+    readonly mirrored: boolean
     readonly now: number
   },
   str: Strings,
 ): void {
-  const { rooms, current, selected, records, now } = opts
+  const { rooms, current, selected, records, stats, dev, mirrored, now } = opts
   const names = rooms.map((r) => r.name)
   ctx.fillStyle = C.BLACK
   ctx.fillRect(0, 0, PLAY_W, 192)
   const total = cellarScore(rooms, records)
-  drawTextCentered(ctx, total > 0 ? `${str.cellar}  ${str.score(total)}` : str.cellar, 16, 32, C.B_CYAN, C.BLACK)
-  // The room just left, by name: a cellar with names is a place, not a list.
-  drawTextCentered(ctx, roomLabel(str, selected), 32, 32, C.WHITE, C.BLACK)
-  // What the marked cellar costs at best, and what it has cost you — or, while it is
-  // shut, which room opens it.
-  if (!isUnlocked(rooms, records, selected)) {
-    drawTextCentered(ctx, str.locked(selected), 152, 32, C.BLUE, C.BLACK)
-  } else {
-    const room = rooms[selected]
-    const par = room?.par
-    const best = records[names[selected]!]
-    const line = [
-      par === null || par === undefined ? '' : str.par(par),
-      best === undefined ? '' : str.record(best),
-      room && best !== undefined ? str.score(recordScore(room, records)) : '',
-    ]
-      .filter(Boolean)
-      .join('  ')
-    if (line) drawTextCentered(ctx, line, 152, 32, C.CYAN, C.BLACK)
+  const name = mirrored ? str.cellarMirror : str.cellar
+  drawTextCentered(ctx, total > 0 ? `${name}  ${str.score(total)}` : name, 8, 32, C.B_CYAN, C.BLACK)
+  if (dev) drawText(ctx, str.devMark, PLAY_W - str.devMark.length * 8, 0, C.B_RED, C.BLACK)
+  // The marked room, by name: a cellar with names is a place, not a list.
+  drawTextCentered(ctx, roomLabel(str, selected), MAP_LABEL_Y, 32, C.WHITE, C.BLACK)
+  for (const line of markedRoomLines(rooms, selected, records, stats, str)) {
+    drawTextCentered(ctx, line.text, line.y, 32, line.ink, C.BLACK)
   }
 
   const nodes = mapNodes(names.length)
@@ -137,8 +170,6 @@ export function renderCellar(
     const ink = done ? C.BLACK : open ? C.B_WHITE : C.BLUE
     drawText(ctx, label, n.x - label.length * 4, n.y - 4, ink, done ? C.B_CYAN : C.BLACK)
     if (done) {
-      const beats = String(records[names[i]!])
-      drawText(ctx, beats, n.x - beats.length * 4, n.y + NODE / 2 + 2, C.CYAN, C.BLACK)
       // The medal to the right, clear of the cursor frame that sits three pixels out.
       const medal = roomMedal(rooms[i]!, records)
       const glyph = medal ? MEDAL_GLYPH[medal] : null

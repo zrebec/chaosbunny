@@ -9,15 +9,28 @@
  * attribute bytes come last, so the picture appears in black and white first and
  * is coloured in, one character row at a time, at the very end.
  *
- * Our timings are a shortened version of a real load (about 11 s for a screen).
+ * The timings are a real load's (owner's call, 2026-09-15 — any key skips it). The ROM
+ * saves a 0 bit as two 855 T-state pulses and a 1 bit as two of 1710, so random data
+ * averages about 0.73 ms a bit: 6144 bitmap bytes take ~36 s and the 768 attribute
+ * bytes ~4.5 s. The pilot is the few seconds of leader tone before the data block.
+ *
+ * `STEALTH_TAPE_SPEED` divides all three: 1 is a real load, 2 half of one.
  */
+import { STEALTH_TAPE_SPEED } from '../config.js'
+
+/** A real load, before the speed is applied. */
+export const REAL_PILOT_MS = 5000
+export const REAL_PIXELS_MS = 36000
+export const REAL_ATTRS_MS = 4500
+
+const speed = Math.max(0.25, Number(STEALTH_TAPE_SPEED) || 1)
 
 /** Pilot tone: stripes, no picture yet. */
-export const PILOT_MS = 900
-/** The 192 bitmap rows, in memory order. */
-export const PIXELS_MS = 1800
-/** The 24 attribute rows. */
-export const ATTRS_MS = 450
+export const PILOT_MS = Math.round(REAL_PILOT_MS / speed)
+/** The 192 bitmap rows, in memory order — 6144 bytes at the ROM's speed. */
+export const PIXELS_MS = Math.round(REAL_PIXELS_MS / speed)
+/** The 24 attribute rows — 768 bytes. */
+export const ATTRS_MS = Math.round(REAL_ATTRS_MS / speed)
 export const LOAD_MS = PILOT_MS + PIXELS_MS + ATTRS_MS
 
 /**

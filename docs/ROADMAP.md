@@ -52,6 +52,32 @@ the owner's decision, not this document's.
 
 ## Recently done
 
+- ✅ **2026-09-16 — A real tape, a mirrored cellar, and locks that mean something.**
+  The tape's tone is read from the loading screen's **own bytes** (`sound.ts`
+  `tapeToneAt`): attribute bytes repeat, so the colouring at the end settles into a
+  steady ~1700 Hz while the bitmap warbles around ~1450 — which is what the owner
+  remembered hearing and what the old seeded noise got wrong. Its length is a config
+  value now (`STEALTH_TAPE_SPEED`, 1 = a real ~45 s load). `?dev` is the **only** opener
+  of locked rooms, on the dev server too — a lock that is off while you develop is a lock
+  nobody sees working. `Esc` in a room opens the map (and comes back to the same beat).
+  **`T` mirrors the whole cellar** (`mirror.ts`): the same rooms left to right, with
+  records, medals and locks of their own. All but three keep their par; those three move
+  because a fox breaks a tie between two equally short ways in `DIRS` order — measured,
+  pinned in `MIRROR_PARS`, and recomputed by `tests/stealth/mirror.tests.ts`, which also
+  holds the fairness number and every room's wants to the real cellar's.
+- 🔲 **The story deserves a picture.** It is text on black today; Minefield's screens are
+  the model (a `.scr` or a drawn panel, and more than one screen). Owner's call, parked
+  until the sprites settle.
+- ✅ **2026-09-16 — The way in, the map as the hub, and why you were caught.** From the
+  owner's play-through: the tape loads for a real load's length (~45 s, any key skips;
+  pulses are scheduled a moment ahead instead of all at once); a key after the picture
+  shows every key (the bench and the rules were findable nowhere); the next key opens
+  the cellar map, which is now where a room is chosen, with the story kept for the first
+  entry into room 1. The marked room's numbers moved to the top of the map — par, best,
+  points, and from save version 3 attempts and catches — because one number under every
+  box ran into the row below. `?dev` in the address opens every room in a deployed build.
+  And every catch says why, in one line checked against the sight rules
+  (`caught.ts`; a random-play test holds every catch in all the rooms to having a reason).
 - ✅ **2026-09-15 — The drip is out of the hum.** The owner's first verdict on the sound:
   a short high blip every few seconds, from nowhere, on the map too — the AY loop's drip
   voice, heard as a beep that means nothing in a game where every beep means something.

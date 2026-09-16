@@ -24,6 +24,7 @@
 import { beep, getAudioContext, resumeAudio, stopBeep } from 'zx-kit'
 import type { BeatEvent, World } from './beat.js'
 import type { Cell } from './grid.js'
+import { CHAOSBUNNY_STEALTH_LOADING_SCR } from '../art/zx/chaosbunny-stealth-loading.js'
 import { ATTRS_MS, PILOT_MS, PIXELS_MS } from './loader.js'
 import { duckMusic } from './music.js'
 
@@ -240,10 +241,61 @@ export function playUndo(): void {
   blip(620, 22, 44, 0.2)
 }
 
+/** Milliseconds between two data pulses of the tape. */
+const TAPE_PULSE_MS = 9
+
+/**
+ * How long the ROM's two bits take on tape: a 0 is two pulses of 855 T-states and a 1
+ * two of 1710, at 3.5 MHz. The frequency you hear is one over that.
+ */
+export const ZERO_BIT_MS = (2 * 855) / 3500
+export const ONE_BIT_MS = (2 * 1710) / 3500
+
+/** How many bits one pulse of our tape sound averages over (~9 ms of real tape). */
+const BITS_PER_PULSE = 12
+
+const SCREEN_BITS = CHAOSBUNNY_STEALTH_LOADING_SCR.length * 8
+const DATA_MS = PIXELS_MS + ATTRS_MS
+
+/**
+ * The tone of the tape `ms` into the data — read from **the picture's own bytes**, not
+ * from a random seed.
+ *
+ * This is why the colouring at the end sounds different from the picture before it, and
+ * the owner remembered that it did: attribute bytes repeat themselves (a room of one
+ * ink over one paper is the same byte again and again), so their pulses settle into a
+ * steady high tone, while bitmap data jumps between the two bit lengths and warbles.
+ * Measured on this screen: the bitmap averages ~1450 Hz and wanders, the attributes
+ * ~1700 Hz and hold still.
+ *
+ * Pure, so the difference can be tested rather than trusted.
+ */
+export function tapeToneAt(ms: number): number {
+  const at = Math.min(0.999999, Math.max(0, ms / DATA_MS))
+  const first = Math.floor(at * SCREEN_BITS)
+  let total = 0
+  let bits = 0
+  for (let i = first; i < Math.min(SCREEN_BITS, first + BITS_PER_PULSE); i++) {
+    const byte = CHAOSBUNNY_STEALTH_LOADING_SCR[i >> 3]!
+    total += (byte >> (7 - (i & 7))) & 1 ? ONE_BIT_MS : ZERO_BIT_MS
+    bits++
+  }
+  return bits === 0 ? 1000 / ONE_BIT_MS : Math.round(1000 / (total / bits))
+}
+/** How far ahead of the audio clock {@link tickTape} schedules pulses. */
+const TAPE_LOOKAHEAD_S = 0.3
+
+/** The tape in progress: when it started and the next pulse to schedule. */
+let tape: { t0: number; next: number } | null = null
+
 /**
  * A tape loading: the 808 Hz pilot tone, then data — a stream of short pulses at
  * the two bit frequencies, drawn from a fixed seed so every load sounds the same.
  * Quiet on purpose: it is atmosphere, and a key cuts it short ({@link stopTape}).
+ *
+ * A real load is forty-odd seconds of data, thousands of pulses: they are scheduled
+ * a moment ahead by {@link tickTape} each frame rather than all at once. What each
+ * pulse sounds like comes from the picture itself ({@link tapeToneAt}).
  */
 export function playTape(): void {
   const ctx = getAudioContext()
@@ -251,13 +303,24 @@ export function playTape(): void {
   resumeAudio()
   const t0 = ctx.currentTime
   beep(808, PILOT_MS - 20, t0, 0, 0.1)
-  let seed = 0x2f6b
-  for (let t = 0; t < PIXELS_MS + ATTRS_MS; t += 9) {
-    seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff
-    beep(seed & 0x10000 ? 2000 : 1000, 6, t0 + (PILOT_MS + t) / 1000, 0, 0.06)
+  tape = { t0, next: 0 }
+}
+
+/** Schedules the next stretch of data pulses; call it every frame while the tape runs. */
+export function tickTape(): void {
+  const ctx = getAudioContext()
+  if (!ctx || !tape) return
+  const until = ctx.currentTime + TAPE_LOOKAHEAD_S
+  while (tape.next < PIXELS_MS + ATTRS_MS) {
+    const at = tape.t0 + (PILOT_MS + tape.next) / 1000
+    if (at > until) return
+    beep(tapeToneAt(tape.next), 6, at, 0, 0.06)
+    tape.next += TAPE_PULSE_MS
   }
+  tape = null
 }
 
 export function stopTape(): void {
+  tape = null
   stopBeep()
 }

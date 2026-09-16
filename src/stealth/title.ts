@@ -14,6 +14,9 @@
  *    ear. `S` from the picture, Esc back.
  * 7. `rules` — the ten lines the rooms are built on, for a player who forgot one.
  *    `H` from the picture, Esc back.
+ * 8. `controls` — every key, right after the picture; a key from here opens the cellar
+ *    map, which is where a room is chosen. The story is kept for the first time room 1
+ *    is entered.
  *
  * The screen is a native `.scr` inlined by `scripts/screen-import.mjs` and decoded
  * with zx-kit's `parseSCR`; both finished looks are drawn once to offscreen layers
@@ -39,7 +42,12 @@ export const VOICE_KEYS: ReadonlyArray<readonly [key: string, channel: AYChannel
   ['F', 'A'], ['G', 'C'],
 ]
 
-export type TitleMode = 'prompt' | 'loading' | 'ready' | 'story' | 'ending' | 'sound' | 'rules'
+export type TitleMode = 'prompt' | 'loading' | 'ready' | 'controls' | 'story' | 'ending' | 'sound' | 'rules'
+
+/** Where the keys screen starts, how far apart its lines sit, and its prompt's row. */
+export const CONTROLS_TOP = 32
+export const CONTROLS_STEP = 10
+export const CONTROLS_PROMPT = 176
 
 /**
  * Where the rules screen starts and how far apart its lines sit, and the row its "back"
@@ -181,6 +189,16 @@ export function renderTitle(
     // one sat on the ESC footer. `tests/stealth/strings.tests.ts` holds the arithmetic.
     str.rules.forEach((line, i) => drawTextCentered(ctx, line, RULES_TOP + i * RULES_STEP, 32, C.B_WHITE, C.BLACK))
     drawTextCentered(ctx, str.soundHint.split(' - ').at(-1) ?? 'ESC', RULES_FOOTER, 32, C.WHITE, C.BLACK)
+    return
+  }
+  if (mode === 'controls') {
+    drawTextCentered(ctx, str.controlsTitle, 16, 32, C.B_CYAN, C.BLACK)
+    // Left-aligned in one block, so the key column lines up down the screen.
+    const width = Math.max(...str.controls.map((l) => l.length))
+    const x = Math.floor((256 - width * 8) / 2)
+    str.controls.forEach((line, i) => drawText(ctx, line, x, CONTROLS_TOP + i * CONTROLS_STEP, C.B_WHITE, C.BLACK))
+    const px = Math.floor((256 - str.controlsPrompt.length * 8) / 2)
+    drawBlinkingText(ctx, str.controlsPrompt, px, CONTROLS_PROMPT, now, C.WHITE, C.BLACK)
     return
   }
   if (mode === 'sound') {
